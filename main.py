@@ -143,7 +143,7 @@ if __name__ == '__main__':
 
 
     #基本超参数，构建小网络的基本参数
-    parser.add_argument('--dim_img', default=112, type=int)
+    parser.add_argument('--dim_img', default=224, type=int)
     parser.add_argument('--sensitive_dim', default = 1, type = int)
     parser.add_argument('--latent_dim', default = 512, type = int)
     parser.add_argument('--identity_nums', default=10177, type = int)
@@ -161,8 +161,8 @@ if __name__ == '__main__':
     # bottleneck_nets的参数
     parser.add_argument('--encoder_model', default='ResNet50',type = str)
     parser.add_argument('--model_name', default='bottleneck_test_version', type = str)
-    parser.add_argument('--lam', default=10, type = float)
-    parser.add_argument('--gamma', default=10, type=float)
+    parser.add_argument('--lam', default=1, type = float)
+    parser.add_argument('--gamma', default=1, type=float)
     parser.add_argument('--batch_size', default = 64, type=int)
     parser.add_argument('--max_epochs', default=150, type = int)
     parser.add_argument('--min_epochs', default=100, type=int)

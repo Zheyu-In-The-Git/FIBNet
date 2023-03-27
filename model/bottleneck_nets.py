@@ -297,7 +297,7 @@ class BottleneckNets(pl.LightningModule):
 
         self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True)
 
-        return {**tensorboard_logs, 'log': tensorboard_logs}
+
 
 
     def validation_end(self, outputs):
@@ -307,7 +307,7 @@ class BottleneckNets(pl.LightningModule):
         avg_val_loss = torch.stack([x['val_loss_total'] for x in outputs]).mean()
         tensorboard_logs = {'avg_val_u_accuracy': avg_val_u_accuracy, 'avg_val_loss': avg_val_loss}
         self.log_dict(tensorboard_logs, on_epoch=True, prog_bar=True)
-        return {'avg_val_loss': avg_val_loss, 'avg_val_u_accuracy': avg_val_u_accuracy, 'log': tensorboard_logs}
+
 
     def test_step(self, batch, batch_idx):
         # 数据
@@ -338,13 +338,13 @@ class BottleneckNets(pl.LightningModule):
                             'test_s_misclass_rate': s_misclass_rate
                             }
         self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True)
-        return {**tensorboard_logs, 'log': tensorboard_logs}
+
 
     def test_end(self, outputs):
         avg_test_u_accuracy = np.stack([x['test_u_accuracy'] for x in outputs]).mean()
         avg_test_loss = torch.stack([x['test_loss_total'] for x in outputs]).mean()
         tensorboard_logs = {'avg_test_u_accuracy': avg_test_u_accuracy, 'avg_test_loss': avg_test_loss}
-        return {'avg_test_loss': avg_test_loss, 'avg_test_u_accuracy': avg_test_u_accuracy, 'log': tensorboard_logs}
+
 
 
 '''

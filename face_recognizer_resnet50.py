@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import transforms
@@ -12,6 +13,8 @@ import math
 from data import CelebaInterface
 from pytorch_lightning.loggers import TensorBoardLogger
 from argparse import ArgumentParser
+
+pl.seed_everything(83)
 
 # 要不要在这里写一下resnet50呢
 class Bottleneck(nn.Module):
@@ -166,47 +169,30 @@ class ResNetEncoder(nn.Module):
 def ResNet50Encoder(latent_dim, channels=3, act_fn = 'ReLU'):
     return ResNetEncoder(Bottleneck, [3, 4, 6, 3], latent_dim, channels, act_fn=act_fn)
 
-
-
-
+def batch_accuracy(y_pred, y_true):
+    return np.sum(y_pred == y_true) / len(y_true)
 
 
 
 class FaceRecognizer(pl.LightningModule):
     def __init__(self):
         super(FaceRecognizer, self).__init__()
-        self.resnet50 = ResNet50Encoder(512, channels=3, act_fn='ReLU')
+        self.resnet50 = ResNet50Encoder(512, channels=3, act_fn='PReLU')
+        self.BatchNorm1d = nn.BatchNorm1d(512)
+        self.relu = nn.ReLU()
         self.classifier = nn.Linear(512, 10177)
-        #self.save_hyperparameters()
+        self.softmax = nn.Softmax()
+
+        self.save_hyperparameters()
 
     def forward(self, x):
         x = self.resnet50(x)
         z = x
-        u = self.classifier(x)
+        x = self.BatchNorm1d(x)
+        x = self.relu(x)
+        x = self.classifier(x)
+        u = self.softmax(x)
         return u, z
-
-    def training_step(self, batch, batch_idx):
-        x, u, _ = batch
-        u_hat, _ = self(x)
-        loss = F.cross_entropy(u_hat, u)
-        self.log('train_loss', loss, on_step=True, on_epoch=True)
-        return loss
-
-    def validation_step(self, batch, batch_idx):
-        x, u , _ = batch
-
-        preds = self.foward(x).argmax(dim=-1)
-        acc = (u == preds).float().mean()
-        # By default logs it per epoch (weighted average over batches)
-        self.log("val_acc", acc)
-
-    def test_step(self, batch, batch_idx):
-        x, u, _ = batch
-        preds = self.forward(x).argmax(dim=-1)
-        acc = (u == preds).float().mean()
-        # By default logs it per epoch (weighted average over batches), and returns it afterwards
-        self.log("test_acc", acc)
-
 
     def configure_optimizers(self):
         b1 = 0.5
@@ -214,7 +200,33 @@ class FaceRecognizer(pl.LightningModule):
         optim_train = optim.Adam(self.parameters(), lr=0.001, betas=(b1, b2))
         return optim_train
 
+    def get_stats(self, decoded, labels):
+        preds = torch.argmax(decoded, 1).cpu().detach().numpy()
+        accuracy = batch_accuracy(preds, labels.cpu().detach().numpy())
+        return accuracy
 
+
+    def training_step(self, batch, batch_idx):
+        x, u, _ = batch
+        u_hat, _ = self(x)
+        loss = F.cross_entropy(u_hat, u)
+        acc = self.get_stats(u_hat, u)
+        self.log('train_loss', loss, on_step=True, on_epoch=True)
+        self.log('train_acc', acc, on_step = True, on_epoch=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, u , _ = batch
+
+        preds = self.foward(x).argmax(dim=-1)
+        acc = (u == preds).float().mean()
+        self.log("val_acc", acc)
+
+    def test_step(self, batch, batch_idx):
+        x, u, _ = batch
+        preds = self.forward(x).argmax(dim=-1)
+        acc = (u == preds).float().mean()
+        self.log("test_acc", acc)
 
 
 
@@ -222,8 +234,7 @@ class FaceRecognizer(pl.LightningModule):
 CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/face_recognizer_resnet50/checkpoints/')
 os.makedirs(CHECKPOINT_PATH, exist_ok=True)
 
-
-def train_model(model_name, save_name=None, **kwargs):
+def main(model_name, Resume, save_name=None):
     """
     Inputs:
         model_name - Name of the model you want to run. Is used to look up the class in "model_dict"
@@ -232,55 +243,65 @@ def train_model(model_name, save_name=None, **kwargs):
     if save_name is None:
         save_name = model_name
 
-    data_module = CelebaInterface(**vars(args))
+    data_module = CelebaInterface(num_workers =2,
+                 dataset = 'celeba_data',
+                 batch_size = 128,
+                 dim_img = 224,
+                 data_dir = 'D:\datasets\celeba',
+                 sensitive_dim = 1,
+                 identity_nums = 10177,
+                 sensitive_attr = 'Male',)
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_log', name='tensorboard_log',
-                               version='version_1', )  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_log', name='tensorboard_log', version='face_recognizer_resnet50_logger' )  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     # Create a PyTorch Lightning trainer with the generation callback
     trainer = pl.Trainer(
-        default_root_dir=os.path.join(CHECKPOINT_PATH, save_name),  # Where to save models
-        # We run on a single GPU (if possible)
-        accelerator="auto",
-        devices=1,
-        # How many epochs to train for if no patience is set
-        max_epochs=180,
         callbacks=[
             ModelCheckpoint(
-                save_weights_only=True, mode="max", monitor="val_acc"
+                mode="max",
+                monitor="val_acc",
+                dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name)
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
             LearningRateMonitor("epoch"),
         ],  # Log learning rate every epoch
-    )  # In case your notebook crashes due to the progress bar, consider increasing the refresh rate
+
+        default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
+        accelerator="auto",
+        devices=1,
+        max_epochs=120,
+        min_epochs=100,
+        logger=logger,
+        log_every_n_steps=10,
+        precision=32,
+        enable_checkpointing=True,
+        check_val_every_n_epoch=10,
+    )
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
 
-    # Check whether pretrained model exists. If yes, load it and skip training
-    pretrained_filename = os.path.join(CHECKPOINT_PATH, save_name + ".ckpt")
-    if os.path.isfile(pretrained_filename):
-        print("Found pretrained model at {pretrained_filename}, loading...")
+    if Resume:
         # Automatically loads the model with the saved hyperparameters
-        model = FaceRecognizer.load_from_checkpoint(pretrained_filename)
-    else:
-        pl.seed_everything(43)  # To be reproducable
-        model = FaceRecognizer(model_name=model_name, **kwargs)
-        trainer.fit(model, train_loader, val_loader)
-        model = FaceRecognizer.load_from_checkpoint(
-            trainer.checkpoint_callback.best_model_path
-        )  # Load best checkpoint after training
+        resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH,  'saved_models')
+        os.makedirs(resume_checkpoint_dir, exist_ok=True)
+        resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
+        print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
+        model = FaceRecognizer()
+        trainer.fit(model, data_module, ckpt_path=resume_checkpoint_path)
 
-    # Test best model on validation and test set
-    val_result = trainer.test(model, dataloaders=val_loader, verbose=False)
-    test_result = trainer.test(model, dataloaders=test_loader, verbose=False)
-    result = {"test": test_result[0]["test_acc"], "val": val_result[0]["test_acc"]}
-    return model, result
+    else:
+        resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
+        os.makedirs(resume_checkpoint_dir, exist_ok=True)
+        resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
+        print('Model will be created')
+        model = FaceRecognizer()
+        trainer.fit(model, data_module)
+        trainer.save_checkpoint(resume_checkpoint_path)
+
+
 
 
 if __name__ == '__main__':
-    x = torch.randn(1, 3, 112,112)
-    net = FaceRecognizer()
-    output, latent = net(x)
-    print(output.shape, latent.shape)
+    main(model_name='face_recognition_resnet50',  Resume = 1, save_name=None)
 
 
 
