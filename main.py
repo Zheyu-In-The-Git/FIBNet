@@ -9,7 +9,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from model import ConstructBottleneckNets
 from data import CelebaInterface
 from utils import load_model_path_by_args
-torch.set_float32_matmul_precision('high')
+#torch.set_float32_matmul_precision('high')
 
 
 def load_callbacks(load_path):
@@ -70,7 +70,6 @@ def main(args):
     trainer.logger._default_hp_metric = True
 
     bottlenecknets = ConstructBottleneckNets(args)
-
 
 
     if args.RESUME:

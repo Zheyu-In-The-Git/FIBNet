@@ -65,6 +65,8 @@ print(acc)
 # print(b.grad)
 #
 # print('-'*60)
+'''
+
 
 a = torch.tensor([1., 2., 3.],requires_grad=True)
 b = a.detach()
@@ -90,5 +92,18 @@ print( 'gpu count: ',torch.cuda.device_count())
 
 
 print(pl.__version__)
+'''
 
+
+
+'''
+# 审查模型参数
+pretrained_filename = 'lightning_logs/bottleneck_test_version_1/checkpoints/saved_models/epoch=0-step=400.ckpt'
+bottlenecknets = ConstructBottleneckNets(args)
+model = bottlenecknets.load_from_checkpoint(pretrained_filename)
+
+x = torch.randn(2, 3, 224, 224)
+z, u_hat, s_hat, u_value, s_value, mu, log_var = model(x)
+print(z, mu, log_var)
+'''
 
