@@ -344,6 +344,7 @@ class BottleneckNets(pl.LightningModule):
         avg_test_u_accuracy = np.stack([x['test_u_accuracy'] for x in outputs]).mean()
         avg_test_loss = torch.stack([x['test_loss_total'] for x in outputs]).mean()
         tensorboard_logs = {'avg_test_u_accuracy': avg_test_u_accuracy, 'avg_test_loss': avg_test_loss}
+        self.log_dict(tensorboard_logs, on_epoch=True, prog_bar=True)
 
 
 
