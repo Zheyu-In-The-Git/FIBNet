@@ -118,7 +118,7 @@ class ResNetEncoder(nn.Module):
 
         self.log_var_fc1 = nn.Linear(512 * ResBlock.expansion, latent_dim)
         self.log_var_fc2 = nn.Linear(latent_dim, latent_dim)
-        self.softplus = nn.Softplus()
+        #self.softplus = nn.Softplus()
 
         # 模型初始化
         for m in self.modules():
@@ -161,7 +161,7 @@ class ResNetEncoder(nn.Module):
         log_var = self.batch_norm1d(log_var)
         log_var = self.act_fn(log_var)
         log_var = self.log_var_fc2(log_var)
-        log_var = self.softplus(log_var)
+        #log_var = self.softplus(log_var)
 
         return mu, log_var
 
