@@ -96,6 +96,7 @@ class ResNetEncoder(nn.Module):
 
         self.conv1 = nn.Conv2d(num_channels, 64, kernel_size = 7, stride = 2, padding = 3, bias = False)
         self.batch_norm1 = nn.BatchNorm2d(64)
+        self.batch_norm1d = nn.BatchNorm1d(latent_dim)
 
         if act_fn == 'ReLU':
             self.act_fn = nn.ReLU()
@@ -112,8 +113,11 @@ class ResNetEncoder(nn.Module):
 
         self.avgpool = nn.AdaptiveAvgPool2d((1,1))
 
-        self.mu_fc = nn.Linear(512 * ResBlock.expansion, latent_dim)
-        self.log_var_fc = nn.Linear(512 * ResBlock.expansion, latent_dim)
+        self.mu_fc1 = nn.Linear(512 * ResBlock.expansion, latent_dim)
+        self.mu_fc2 = nn.Linear(latent_dim, latent_dim)
+
+        self.log_var_fc1 = nn.Linear(512 * ResBlock.expansion, latent_dim)
+        self.log_var_fc2 = nn.Linear(latent_dim, latent_dim)
 
         # 模型初始化
         for m in self.modules():
@@ -142,14 +146,26 @@ class ResNetEncoder(nn.Module):
 
         x = self.avgpool(x)
         x = x.reshape(x.shape[0], -1)
+        x = self.act_fn(x)
 
-        mu = self.mu_fc(x)
-        log_var = self.log_var_fc(x)
+        # mu的网络结构设计
+        mu = self.mu_fc1(x)
+        mu = self.batch_norm1d(mu)
+        mu = self.act_fn(mu)
+        mu = self.mu_fc2(mu)
 
+
+        # log_var的网络结构设计
+        log_var = self.log_var_fc1(x)
+        log_var = self.batch_norm1d(log_var)
+        log_var = self.act_fn(log_var)
+        log_var = self.log_var_fc2(log_var)
+
+        return mu, log_var
 
         # TODO: 这里只输出均值和对数方差，还没做重参数化技巧, 重参数化技巧准备设计总体网络的时候写
         # TODO: 重参数化技巧的网络结构可以参考 https://zhuanlan.zhihu.com/p/452743042
-        return mu, log_var
+
 
     # 4个层用的子网络模块
     def _make_layer(self, ResBlock, blocks, planes, stride = 1):
@@ -224,16 +240,23 @@ def LitEncoder1(latent_dim, channels = 3, act_fn ='PReLU'):
 
 
 if __name__ == '__main__':
-    # net = ResNet18Encoder(latent_dim=512, channels=3, act_fn='PReLU')
-    # x = torch.randn(2, 3, 224, 224)
-    # mu, log_var = net(x)
-    # print( mu.shape, log_var.shape)
+     #net = ResNet18Encoder(latent_dim=512, channels=3, act_fn='PReLU')
+     #x = torch.randn(2, 3, 224, 224)
+     #mu, log_var = net(x)
+     #print( mu.shape, log_var.shape)
 
 
-    net = LitEncoder1(latent_dim=512, act_fn='PReLU')
-    x = torch.randn(2,3,224,224)
-    mu, log_var = net(x)
-    print(mu.shape, log_var.shape)
+     #net = LitEncoder1(latent_dim=512, act_fn='PReLU')
+     #x = torch.randn(2,3,224,224)
+     #mu, log_var = net(x)
+     #print(mu.shape, log_var.shape)
+
+     net = ResNet50Encoder(latent_dim=512, channels = 3, act_fn='PReLU')
+     x = torch.randn(2,3,224,224)
+     mu, log_var = net(x)
+     print(mu.shape, log_var.shape)
+
+
 
 
 
