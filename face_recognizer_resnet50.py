@@ -247,10 +247,11 @@ def main(model_name, Resume, save_name=None):
                  dataset = 'celeba_data',
                  batch_size = 128,
                  dim_img = 224,
-                 data_dir = 'D:\datasets\celeba',
+                 data_dir = 'D:\celeba', # 'D:\datasets\celeba'
                  sensitive_dim = 1,
                  identity_nums = 10177,
-                 sensitive_attr = 'Male',)
+                 sensitive_attr = 'Male',
+                 pin_memory=False)
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_log', name='tensorboard_log', version='face_recognizer_resnet50_logger' )  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
@@ -275,6 +276,7 @@ def main(model_name, Resume, save_name=None):
         precision=32,
         enable_checkpointing=True,
         check_val_every_n_epoch=10,
+        fast_dev_run=1
     )
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
@@ -301,7 +303,7 @@ def main(model_name, Resume, save_name=None):
 
 
 if __name__ == '__main__':
-    main(model_name='face_recognition_resnet50',  Resume = 1, save_name=None)
+    main(model_name='face_recognition_resnet50',  Resume = 0, save_name=None)
 
 
 

@@ -113,7 +113,7 @@ class CelebaInterface(pl.LightningDataModule):
 '''
 
 if __name__ == '__main__':
-    data_dir = 'D:\datasets\celeba'
+    data_dir = 'D:\celeba' # 'D:\datasets\celeba'
     dataloader = CelebaInterface(dim_img=224,dataset='celeba_data', data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', batch_size=10, num_workers=0, pin_memory=False)
     dataloader.setup(stage='fit')
 
