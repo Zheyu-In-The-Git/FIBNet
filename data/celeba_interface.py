@@ -40,6 +40,7 @@ class CelebaInterface(pl.LightningDataModule):
 
         self.prepare_data_per_node = True
         self.save_hyperparameters()
+        self.allow_zero_length_dataloader_with_multiple_devices =True
         #
         # 数据加载
         # self.load_data_module()

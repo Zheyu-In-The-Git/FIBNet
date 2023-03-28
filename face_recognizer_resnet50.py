@@ -190,8 +190,8 @@ class FaceRecognizer(pl.LightningModule):
         z = x
         x = self.BatchNorm1d(x)
         x = self.relu(x)
-        x = self.classifier(x)
-        u = self.softmax(x)
+        u = self.classifier(x)
+        #u = self.softmax(x)
         return u, z
 
     def configure_optimizers(self):
@@ -218,13 +218,19 @@ class FaceRecognizer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, u , _ = batch
 
-        preds = self.foward(x).argmax(dim=-1)
+        u_hat, _ = self(x)
+        preds = self.softmax(u_hat)
+        preds = preds.argmax(dim=-1)
         acc = (u == preds).float().mean()
         self.log("val_acc", acc)
 
     def test_step(self, batch, batch_idx):
         x, u, _ = batch
-        preds = self.forward(x).argmax(dim=-1)
+
+        u_hat, _ = self(x)
+        preds = self.softmax(u_hat)
+        preds = preds.argmax(dim=-1)
+
         acc = (u == preds).float().mean()
         self.log("test_acc", acc)
 
@@ -245,7 +251,7 @@ def main(model_name, Resume, save_name=None):
 
     data_module = CelebaInterface(num_workers =2,
                  dataset = 'celeba_data',
-                 batch_size = 128,
+                 batch_size = 64,
                  dim_img = 224,
                  data_dir = 'D:\celeba', # 'D:\datasets\celeba'
                  sensitive_dim = 1,
@@ -276,7 +282,7 @@ def main(model_name, Resume, save_name=None):
         precision=32,
         enable_checkpointing=True,
         check_val_every_n_epoch=10,
-        fast_dev_run=1
+        fast_dev_run=False
     )
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need

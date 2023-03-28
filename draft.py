@@ -89,6 +89,6 @@ print(b.grad)
 print( 'gpu count: ',torch.cuda.device_count())
 
 
-
+print(pl.__version__)
 
 
