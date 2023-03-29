@@ -64,6 +64,7 @@ class Block(nn.Module):
         self.stride = stride
         self.relu = nn.ReLU()
 
+
     def forward(self, x):
         identity = x.clone()
 
@@ -118,7 +119,9 @@ class ResNetEncoder(nn.Module):
 
         self.log_var_fc1 = nn.Linear(512 * ResBlock.expansion, latent_dim)
         self.log_var_fc2 = nn.Linear(latent_dim, latent_dim)
-        #self.softplus = nn.Softplus()
+
+        self.relu = nn.ReLU()
+        self.leakyrelu = nn.LeakyReLU(0.2, True)
 
         # 模型初始化
         for m in self.modules():
@@ -136,7 +139,7 @@ class ResNetEncoder(nn.Module):
 
 
     def forward(self, x):
-        x = self.act_fn(self.batch_norm1(self.conv1(x)))
+        x = self.relu(self.batch_norm1(self.conv1(x)))
 
         x = self.max_pool(x)
 
@@ -147,22 +150,19 @@ class ResNetEncoder(nn.Module):
 
         x = self.avgpool(x)
         x = x.reshape(x.shape[0], -1)
-        x = self.act_fn(x)
+        x = self.relu(x)
 
         # mu的网络结构设计
         mu = self.mu_fc1(x)
         mu = self.batch_norm1d(mu)
-        mu = self.act_fn(mu)
+        mu = self.leakyrelu(mu)
         mu = self.mu_fc2(mu)
-
 
         # log_var的网络结构设计
         log_var = self.log_var_fc1(x)
         log_var = self.batch_norm1d(log_var)
-        log_var = self.act_fn(log_var)
+        log_var = self.leakyrelu(log_var)
         log_var = self.log_var_fc2(log_var)
-        #log_var = self.softplus(log_var)
-
         return mu, log_var
 
         # TODO: 这里只输出均值和对数方差，还没做重参数化技巧, 重参数化技巧准备设计总体网络的时候写

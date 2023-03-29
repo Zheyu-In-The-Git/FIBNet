@@ -62,13 +62,13 @@ class BottleneckNets(pl.LightningModule):
         # 监督训练结果
 
         # 打开计算图
-        self.example_input_array = torch.randn([self.batch_size, 3, 112, 112])
+        self.example_input_array = torch.randn([self.batch_size, 3, 224, 224])
 
 
     def sample_z(self, mu, log_var):
         std = torch.exp(0.5 * log_var) # 确实变成了标准差
         std = torch.clamp(std, min = 1e-4)
-        jitter = 1e-6
+        jitter = 1e-4
         eps = torch.randn_like(std)
         z = mu + eps * (std+jitter)
 
@@ -108,7 +108,7 @@ class BottleneckNets(pl.LightningModule):
         opt_phi_theta_xi = optim.Adam(itertools.chain(self.encoder.parameters(),
                                                       self.decoder.parameters(),
                                                       self.uncertainty_decoder.parameters()),
-                                                    lr=self.lr, betas=(b1, b2))
+                                                      lr=self.lr, betas=(b1, b2))
 
         opt_omiga = optim.Adam(self.utility_discriminator.parameters(), lr = self.lr, betas=(b1, b2))
 
@@ -128,7 +128,7 @@ class BottleneckNets(pl.LightningModule):
     def get_stats(self, decoded, labels):
         preds = torch.argmax(decoded, 1).cpu().detach().numpy()
         accuracy = batch_accuracy(preds, labels.cpu().detach().numpy())
-        misclass_rate = batch_accuracy(preds, labels.cpu().detach().numpy())
+        misclass_rate = batch_misclass_rate(preds, labels.cpu().detach().numpy())
         return accuracy, misclass_rate
 
 
@@ -153,7 +153,7 @@ class BottleneckNets(pl.LightningModule):
             self.log('KL_divergence', self.loss_fn_KL(mu, log_var), prog_bar=True, logger=True, on_step=True)
             self.log('cross_entropy', self.configure_loss(u_hat, u, 'CE'), prog_bar=True, logger=True, on_step=True)
             self.log('binary_cross_entropy', self.configure_loss(s_hat, s, 'BCE'), prog_bar=True, logger=True, on_step=True)
-            self.log('loss_phi_theta_xi', loss_phi_theta_xi, prog_bar=True, logger=True, on_step=True)
+            self.log('loss_phi_theta_xi', loss_phi_theta_xi, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
             return  {'loss': loss_phi_theta_xi, 'log':tensorboard_log, **tensorboard_log}
 
@@ -181,7 +181,7 @@ class BottleneckNets(pl.LightningModule):
 
             loss_omiga = (loss_real + loss_fake) * self.gamma *0.5
             tensorboard_log = {'loss_omiga':loss_omiga}
-            self.log('loss_omiga',loss_omiga, prog_bar=True, logger=True, on_step=True)
+            self.log('loss_omiga',loss_omiga, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
             return {'loss':loss_omiga, 'log':tensorboard_log, **tensorboard_log}
 
@@ -204,7 +204,7 @@ class BottleneckNets(pl.LightningModule):
 
 
             tensorboard_log = {'loss_tao': loss_tao}
-            self.log('loss_tao', loss_tao, prog_bar=True, logger=True, on_step=True)
+            self.log('loss_tao', loss_tao, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
 
             return {'loss':loss_tao, 'log':tensorboard_log, **tensorboard_log}
@@ -240,27 +240,10 @@ class BottleneckNets(pl.LightningModule):
                                'train_s_accuracy': s_accuracy,
                                'train_s_error_rate': s_misclass_rate, }
 
-            self.log('loss_adversarial_phi_theta_xi', loss_adversarial_phi_theta_xi, prog_bar=True, logger=True, on_step=True)
-            self.log_dict(tensorboard_log, prog_bar=True, logger=True, on_step=True)
+            self.log('loss_adversarial_phi_theta_xi', loss_adversarial_phi_theta_xi, prog_bar=True, logger=True, on_step=True, on_epoch = True)
+            self.log_dict(tensorboard_log, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
             return {'loss':loss_adversarial_phi_theta_xi, 'log': tensorboard_log, **tensorboard_log}
-
-
-
-
-    
-    def training_epoch_end(self, outputs):
-        avg_train_u_accuracy = np.stack([x[3]['train_u_accuracy'] for x in outputs]).mean()
-        loss_adversarial_phi_theta_xi_stack = torch.stack([x[3]['loss_adversarial_phi_theta_xi'].detach() for x in outputs])
-        loss_phi_theta_xi_stack = torch.stack([x[0]['loss_phi_theta_xi'].detach() for x in outputs])
-        avg_train_loss = (loss_adversarial_phi_theta_xi_stack + loss_phi_theta_xi_stack).mean()
-        tensorboard_log = {'avg_train_u_accuracy': avg_train_u_accuracy, 'avg_train_loss': avg_train_loss}
-
-        #self.logger.experiment.add_scale('avg_train_u_accuracy', avg_train_u_accuracy)
-        #self.logger.experiment.add_scale('avg_train_loss', avg_train_loss)
-
-        self.log(name = 'training_epoch_end', value=tensorboard_log, on_epoch=True, prog_bar=True)
-
 
 
 
@@ -295,18 +278,8 @@ class BottleneckNets(pl.LightningModule):
                             'val_s_misclass_rate': s_misclass_rate
                             }
 
-        self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True)
+        self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
-
-
-
-    def validation_end(self, outputs):
-        print('-'*30)
-        print('validation outputs', outputs)
-        avg_val_u_accuracy = np.stack([x['val_u_accuracy'] for x in outputs]).mean()
-        avg_val_loss = torch.stack([x['val_loss_total'] for x in outputs]).mean()
-        tensorboard_logs = {'avg_val_u_accuracy': avg_val_u_accuracy, 'avg_val_loss': avg_val_loss}
-        self.log_dict(tensorboard_logs, on_epoch=True, prog_bar=True)
 
 
     def test_step(self, batch, batch_idx):
@@ -337,15 +310,7 @@ class BottleneckNets(pl.LightningModule):
                             'test_s_accuracy': s_accuracy,
                             'test_s_misclass_rate': s_misclass_rate
                             }
-        self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True)
-
-
-    def test_end(self, outputs):
-        avg_test_u_accuracy = np.stack([x['test_u_accuracy'] for x in outputs]).mean()
-        avg_test_loss = torch.stack([x['test_loss_total'] for x in outputs]).mean()
-        tensorboard_logs = {'avg_test_u_accuracy': avg_test_u_accuracy, 'avg_test_loss': avg_test_loss}
-        self.log_dict(tensorboard_logs, on_epoch=True, prog_bar=True)
-
+        self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
 
 '''

@@ -2,9 +2,6 @@ import pytorch_lightning as pl
 import torch
 
 
-def get_train_images(num):
-    return torch.stack([train_datasets])
-
 class GenerateCallback(pl.callbacks):
     def __init__(self, input_imgs, every_n_epoch = 1):
         super(GenerateCallback, self).__init__()

@@ -9,7 +9,6 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from model import ConstructBottleneckNets
 from data import CelebaInterface
 from utils import load_model_path_by_args
-#torch.set_float32_matmul_precision('high')
 
 
 def load_callbacks(load_path):
@@ -19,7 +18,6 @@ def load_callbacks(load_path):
         mode='min',
         patience=10,
         min_delta=0.001,
-
     ))
 
     callbacks.append(plc.ModelCheckpoint(
@@ -62,9 +60,7 @@ def main(args):
         accelerator='gpu',
         devices=1,
         check_val_every_n_epoch=10,
-
         #val_check_interval=1,
-
     )
     trainer.logger._log_graph = True
     trainer.logger._default_hp_metric = True
@@ -76,12 +72,7 @@ def main(args):
         # 模型重载训练阶段
         resume_checkpoint_dir = os.path.join(load_path, 'saved_models')
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
-        #checkpoint_path = os.listdir(resume_checkpoint_dir)[0]  # 系统找不到指定的路径。: 'lightning_logs\\bottleneck_test_version_1\\checkpoints\\saved_models'
-        #resume_checkpoint_path = os.path.join(resume_checkpoint_dir, checkpoint_path)
-        #pretrained_model_path = resume_checkpoint_path
-
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, args.ckpt_name)
-
         print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
         model = bottlenecknets
         trainer.fit(model, data_module, ckpt_path=resume_checkpoint_path)
@@ -90,22 +81,17 @@ def main(args):
         resume_checkpoint_dir = os.path.join(load_path, 'saved_models')
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, args.ckpt_name)
-
         print('Model will be created')
         model = bottlenecknets
         trainer.fit(model, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
-
-
-
-
 
 if __name__ == '__main__':
     '''
     设置各类系统参数
     '''
     # 设置GPU，使得代码能够复现
-    torch.backends.cudnn.determinstic = False
+    torch.backends.cudnn.determinstic = True
     torch.backends.cudnn.benchmark = False
     # 设置运行芯片
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
