@@ -123,8 +123,8 @@ if __name__ == '__main__':
     parser.add_argument('--load_dir', default = CHECKPOINT_PATH, type=str, help = 'The root directory of checkpoints.')
     parser.add_argument('--load_ver', default='bottleneck_test_version', type=str, help = '训练和加载模型的命名 采用')
     parser.add_argument('--load_v_num', default = 1, type=int)
-    parser.add_argument('--RESUME', default=True, type=bool, help = '是否需要重载模型')
-    parser.add_argument('--ckpt_name', default='epoch=1-step=12800.ckpt', type = str )
+    parser.add_argument('--RESUME', default=False, type=bool, help = '是否需要重载模型')
+    parser.add_argument('--ckpt_name', default='bottleneck_nets_gamma1_lambda1', type = str )
 
 
     #基本超参数，构建小网络的基本参数
