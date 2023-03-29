@@ -75,7 +75,7 @@ class DInterface(pl.LightningDataModule):
         except:
             raise ValueError('Invalid Dataset File Name or Invalid Class Name data.{name}.{camel_name}')
 
-    # TODO:数据集可能不需要实例化的东西吧
+
     def instancialize(self, **other_args):
         """ Instancialize a model using the corresponding parameters
             from self.hparams dictionary. You can also input any args

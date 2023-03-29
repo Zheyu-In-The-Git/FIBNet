@@ -8,7 +8,7 @@ def main(args):
     pl.seed_everything(args.seed)
 
 
-    # 模型加载路径，TODO：正在考察数据集模型接口
+    # 模型加载路径
     load_path = load_model_path_by_args(args) # 测试完成 TODO:会不会需要额外写预训练的路径
     data_module = CelebaInterface(**vars(args)) # 测试完成
 

@@ -279,7 +279,13 @@ class BottleneckNets(pl.LightningModule):
                             }
 
         self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True, on_epoch = True)
+        return {'val_loss_total': loss_total, 'val_u_accuracy': u_accuracy}
 
+    def validation_end(self, outputs):
+        avg_val_u_accuracy = np.stack([x['val_u_accuracy'] for x in outputs]).mean()
+        avg_val_loss = torch.stack([x['val_loss_total'] for x in outputs]).mean()
+        tensorboard_logs = {'avg_val_u_accuracy': avg_val_u_accuracy, 'avg_val_loss': avg_val_loss}
+        self.log_dict(tensorboard_logs, on_epoch=True, prog_bar=True)
 
 
     def test_step(self, batch, batch_idx):
