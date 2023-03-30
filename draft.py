@@ -107,3 +107,5 @@ z, u_hat, s_hat, u_value, s_value, mu, log_var = model(x)
 print(z, mu, log_var)
 '''
 
+print(pl.__version__)
+

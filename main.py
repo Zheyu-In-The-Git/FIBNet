@@ -14,8 +14,8 @@ from utils import load_model_path_by_args
 def load_callbacks(load_path):
     callbacks = []
     callbacks.append(plc.EarlyStopping(
-        monitor='avg_val_loss',
-        mode='min',
+        monitor='val_u_accuracy_epoch',
+        mode='max',
         patience=10,
         min_delta=0.001,
     ))
@@ -47,11 +47,9 @@ def main(args):
     logger = TensorBoardLogger(save_dir=load_path + args.log_dir, name=args.log_name, version='version_1',)  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     trainer = Trainer(
-        #fast_dev_run=20,
         default_root_dir=os.path.join(load_path, 'saved_models'),
-
         max_epochs=args.max_epochs,
-        min_epochs= args.min_epochs,
+        min_epochs=args.min_epochs,
         callbacks=load_callbacks(load_path),
         logger=logger,
         log_every_n_steps=10,
@@ -59,8 +57,7 @@ def main(args):
         enable_checkpointing=True,
         accelerator='gpu',
         devices=1,
-        check_val_every_n_epoch=10,
-        #val_check_interval=1,
+        check_val_every_n_epoch=20,
     )
     trainer.logger._log_graph = True
     trainer.logger._default_hp_metric = True
@@ -102,7 +99,7 @@ if __name__ == '__main__':
     # Create checkpoint path if it doesn't exist yet
 
     # 数据集的路径 CELEBA的位置需要更改
-    DATASET_PATH = 'D:\datasets\celeba'
+    DATASET_PATH = 'D:\datasets\celeba' # D:\datasets\celeba
 
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')

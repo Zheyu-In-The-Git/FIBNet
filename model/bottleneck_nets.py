@@ -214,7 +214,6 @@ class BottleneckNets(pl.LightningModule):
         ## training the utility decoder and uncertainty decoder adversarially##
         ######################################################################
         if optimizer_idx == 3:
-
             u_valid = torch.ones(u.size(0), 1)
             u_valid = u_valid.type_as(u)
             u_valid = u_valid.to(torch.float32)
@@ -252,6 +251,7 @@ class BottleneckNets(pl.LightningModule):
 
         # 数据
         x, u, s = batch
+        print(batch_idx)
 
         z, u_hat, s_hat, u_value, s_value, mu, log_var =self.forward(x)
 
