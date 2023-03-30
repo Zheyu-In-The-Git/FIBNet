@@ -57,7 +57,8 @@ def main(args):
         enable_checkpointing=True,
         accelerator='gpu',
         devices=1,
-        check_val_every_n_epoch=20,
+        check_val_every_n_epoch=30,
+        #fast_dev_run=4
     )
     trainer.logger._log_graph = True
     trainer.logger._default_hp_metric = True
@@ -72,7 +73,7 @@ def main(args):
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, args.ckpt_name)
         print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
         model = bottlenecknets
-        trainer.fit(model, data_module, ckpt_path=resume_checkpoint_path)
+        trainer.fit(model, datamodule=data_module, ckpt_path=resume_checkpoint_path)
     else:
         # 模型创建阶段
         resume_checkpoint_dir = os.path.join(load_path, 'saved_models')
@@ -80,7 +81,7 @@ def main(args):
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, args.ckpt_name)
         print('Model will be created')
         model = bottlenecknets
-        trainer.fit(model, data_module)
+        trainer.fit(model, datamodule=data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
 
 if __name__ == '__main__':
@@ -121,7 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('--load_ver', default='bottleneck_test_version', type=str, help = '训练和加载模型的命名 采用')
     parser.add_argument('--load_v_num', default = 1, type=int)
     parser.add_argument('--RESUME', default=False, type=bool, help = '是否需要重载模型')
-    parser.add_argument('--ckpt_name', default='bottleneck_nets_gamma1_lambda1', type = str )
+    parser.add_argument('--ckpt_name', default='bottleneck_nets_gamma1_lambda1.ckpt', type = str )
 
 
     #基本超参数，构建小网络的基本参数
@@ -146,8 +147,8 @@ if __name__ == '__main__':
     parser.add_argument('--lam', default=1, type = float)
     parser.add_argument('--gamma', default=1, type=float)
     parser.add_argument('--batch_size', default = 64, type=int)
-    parser.add_argument('--max_epochs', default=150, type = int)
-    parser.add_argument('--min_epochs', default=100, type=int)
+    parser.add_argument('--max_epochs', default=50, type = int)
+    parser.add_argument('--min_epochs', default=30, type=int)
     parser.add_argument('--lr', default=1e-3, type=float)
 
     # 日志参数

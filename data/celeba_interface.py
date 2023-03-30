@@ -49,17 +49,15 @@ class CelebaInterface(pl.LightningDataModule):
          CelebaData(dim_img=self.dim_img, data_dir=self.data_dir, sensitive_dim=self.sensitive_dim,identity_nums=self.identity_nums, sensitive_attr=self.sensitive_attr, split='all')
 
     def setup(self, stage=None):
-
-        if self.dataset == 'celeba_data':
-            # Assign train/val datasets for use in dataloaders
-            if stage == 'fit' or stage is None:
-                self.trainset = CelebaData(dim_img=self.dim_img, data_dir=self.data_dir, sensitive_dim=self.sensitive_dim,
+        # Assign train/val datasets for use in dataloaders
+        if stage == 'fit' or stage is None:
+            self.trainset = CelebaData(dim_img=self.dim_img, data_dir=self.data_dir, sensitive_dim=self.sensitive_dim,
                                             identity_nums=self.identity_nums, sensitive_attr=self.sensitive_attr, split='train')
 
-                self.valset = CelebaData(dim_img=self.dim_img, data_dir=self.data_dir, sensitive_dim=self.sensitive_dim,
+            self.valset = CelebaData(dim_img=self.dim_img, data_dir=self.data_dir, sensitive_dim=self.sensitive_dim,
                                             identity_nums=self.identity_nums, sensitive_attr=self.sensitive_attr, split='valid')
-            # Assign test dataset for use in dataloader(s)
-            if stage == 'test' or stage is None:
+        # Assign test dataset for use in dataloader(s)
+        if stage == 'test' or stage is None:
                 self.testset = CelebaData(dim_img=self.dim_img, data_dir=self.data_dir, sensitive_dim=self.sensitive_dim,
                                             identity_nums=self.identity_nums, sensitive_attr=self.sensitive_attr, split='test')
 

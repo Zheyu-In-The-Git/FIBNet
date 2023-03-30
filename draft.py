@@ -1,9 +1,9 @@
-import torch.nn as nn
+
 import torch
 import pytorch_lightning as pl
 pl.seed_everything(43)
-
-
+from model import utility_discriminator
+import torch.nn as nn
 '''
 # 二元交叉熵
 x = torch.Tensor([0.1, 0.5, 0.4])
@@ -107,5 +107,17 @@ z, u_hat, s_hat, u_value, s_value, mu, log_var = model(x)
 print(z, mu, log_var)
 '''
 
-print(pl.__version__)
+sigmoid = nn.Sigmoid()
+def kl_estimate_value(discriminating):
+    discriminated = sigmoid(discriminating)
+    kl_estimate_value = (torch.log(discriminated) - torch.log(1 - discriminated)).sum(1).mean()
+    return kl_estimate_value.detach()
 
+
+net = utility_discriminator.UtilityDiscriminator(utility_dim=10177)
+x = torch.randn(3, 10177)
+out = net(x)
+print(out)
+
+value = kl_estimate_value(out)
+print(value)

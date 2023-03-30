@@ -131,6 +131,10 @@ class BottleneckNets(pl.LightningModule):
         misclass_rate = batch_misclass_rate(preds, labels.cpu().detach().numpy())
         return accuracy, misclass_rate
 
+    def kl_estimate_value(self, discriminating):
+        discriminated = self.sigmoid(discriminating) + 1e-4
+        kl_estimate_value = (torch.log(discriminated) - torch.log(1-discriminated)).sum(1).mean()
+        return kl_estimate_value.detach()
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         ###################
@@ -149,13 +153,13 @@ class BottleneckNets(pl.LightningModule):
 
         if optimizer_idx == 0:
             loss_phi_theta_xi = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u, 'CE') - self.lam * self.configure_loss(s_hat, s, 'BCE')
-            tensorboard_log = {'loss_phi_theta_xi': loss_phi_theta_xi}
+            tensorboard_log = {'loss_phi_theta_xi': loss_phi_theta_xi.detach()}
             self.log('KL_divergence', self.loss_fn_KL(mu, log_var), prog_bar=True, logger=True, on_step=True)
             self.log('cross_entropy', self.configure_loss(u_hat, u, 'CE'), prog_bar=True, logger=True, on_step=True)
             self.log('binary_cross_entropy', self.configure_loss(s_hat, s, 'BCE'), prog_bar=True, logger=True, on_step=True)
             self.log('loss_phi_theta_xi', loss_phi_theta_xi, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
-            return  {'loss': loss_phi_theta_xi, 'log':tensorboard_log, **tensorboard_log}
+            return  {'loss': loss_phi_theta_xi, 'log':tensorboard_log}
 
         #################################
         ## training the u_discriminator##
@@ -180,10 +184,10 @@ class BottleneckNets(pl.LightningModule):
 
 
             loss_omiga = (loss_real + loss_fake) * self.gamma *0.5
-            tensorboard_log = {'loss_omiga':loss_omiga}
+            tensorboard_log = {'loss_omiga':loss_omiga.detach()}
             self.log('loss_omiga',loss_omiga, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
-            return {'loss':loss_omiga, 'log':tensorboard_log, **tensorboard_log}
+            return {'loss':loss_omiga, 'log':tensorboard_log}
 
 
         #################################
@@ -203,11 +207,11 @@ class BottleneckNets(pl.LightningModule):
             loss_tao = - self.gamma * (real_s_loss + fake_s_loss) * 0.5
 
 
-            tensorboard_log = {'loss_tao': loss_tao}
+            tensorboard_log = {'loss_tao': loss_tao.detach()}
             self.log('loss_tao', loss_tao, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
 
-            return {'loss':loss_tao, 'log':tensorboard_log, **tensorboard_log}
+            return {'loss':loss_tao, 'log':tensorboard_log}
 
 
         ######################################################################
@@ -223,7 +227,7 @@ class BottleneckNets(pl.LightningModule):
             s_valid = s_valid.to(torch.float32)
 
 
-
+            #对抗损失
             loss_adversarial_phi_theta_xi = self.gamma * self.loss_adversarially(self.utility_discriminator(self.decoder(z)),u_valid) \
                                                  - self.lam * self.loss_adversarially(self.sensitive_discriminator(self.uncertainty_decoder(z)), s_valid)
 
@@ -233,18 +237,20 @@ class BottleneckNets(pl.LightningModule):
             s_accuracy, s_misclass_rate = self.get_stats(self.sigmoid(self.uncertainty_decoder(z)), s)
 
 
-            tensorboard_log = {'loss_adversarial_phi_theta_xi': loss_adversarial_phi_theta_xi,
+            train_loss_total = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u, 'CE') - self.lam * self.configure_loss(s_hat, s, 'BCE') + \
+                               self.gamma * self.kl_estimate_value(self.utility_discriminator(self.decoder(z))) + self.lam * self.kl_estimate_value(self.sensitive_discriminator(self.uncertainty_decoder(z)))
+
+            tensorboard_log = {'loss_adversarial_phi_theta_xi': loss_adversarial_phi_theta_xi.detach(),
                                'train_u_accuracy': u_accuracy,
                                'train_u_error_rate': u_misclass_rate,
                                'train_s_accuracy': s_accuracy,
-                               'train_s_error_rate': s_misclass_rate, }
+                               'train_s_error_rate': s_misclass_rate,
+                               'train_total_loss': train_loss_total.detach()}
 
             self.log('loss_adversarial_phi_theta_xi', loss_adversarial_phi_theta_xi, prog_bar=True, logger=True, on_step=True, on_epoch = True)
             self.log_dict(tensorboard_log, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
-            return {'loss':loss_adversarial_phi_theta_xi, 'log': tensorboard_log, **tensorboard_log}
-
-
+            return {'loss':loss_adversarial_phi_theta_xi, 'log': tensorboard_log}
 
     # 验证步骤
     def validation_step(self, batch, batch_idx):
@@ -255,23 +261,14 @@ class BottleneckNets(pl.LightningModule):
 
         z, u_hat, s_hat, u_value, s_value, mu, log_var =self.forward(x)
 
-        u_valid = torch.ones(u.size(0), 1)
-        u_valid = u_valid.type_as(u)
-        u_valid = u_valid.to(torch.float32)
 
-
-        s_valid = torch.ones(s.size(0), 1)
-        s_valid = s_valid.type_as(s)
-        s_valid = s_valid.to(torch.float32)
-
-        loss_phi_theta_xi = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u, 'CE') - self.lam * self.configure_loss(s_hat, s, 'BCE')
-        loss_adversarial_phi_theta_xi = self.gamma * self.loss_adversarially(self.utility_discriminator(self.decoder(z)), u_valid) - self.lam * self.loss_adversarially(self.sensitive_discriminator(self.uncertainty_decoder(z)), s_valid)
-        loss_total = loss_phi_theta_xi + loss_adversarial_phi_theta_xi
+        val_loss_total = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u,'CE') - self.lam * self.configure_loss(s_hat, s, 'BCE') + \
+                           self.gamma * self.kl_estimate_value(self.utility_discriminator(self.decoder(z))) + self.lam * self.kl_estimate_value(self.sensitive_discriminator(self.uncertainty_decoder(z)))
 
         u_accuracy, u_misclass_rate = self.get_stats(u_hat, u)
         s_accuracy, s_misclass_rate = self.get_stats(s_hat, s)
 
-        tensorboard_logs = {'val_loss_total': loss_total,
+        tensorboard_logs = {'val_loss_total': val_loss_total,
                             'val_u_accuracy': u_accuracy,
                             'val_u_misclass_rate': u_misclass_rate,
                             'val_s_accuracy':s_accuracy,
@@ -279,13 +276,7 @@ class BottleneckNets(pl.LightningModule):
                             }
 
         self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True, on_epoch = True)
-        return {'val_loss_total': loss_total, 'val_u_accuracy': u_accuracy}
-
-    def validation_end(self, outputs):
-        avg_val_u_accuracy = np.stack([x['val_u_accuracy'] for x in outputs]).mean()
-        avg_val_loss = torch.stack([x['val_loss_total'] for x in outputs]).mean()
-        tensorboard_logs = {'avg_val_u_accuracy': avg_val_u_accuracy, 'avg_val_loss': avg_val_loss}
-        self.log_dict(tensorboard_logs, on_epoch=True, prog_bar=True)
+        return {'val_loss_total': val_loss_total, 'val_u_accuracy': u_accuracy}
 
 
     def test_step(self, batch, batch_idx):
@@ -294,23 +285,13 @@ class BottleneckNets(pl.LightningModule):
 
         z, u_hat, s_hat, u_value, s_value, mu, log_var = self.forward(x)
 
-        u_valid = torch.ones(u.size(0), 1)
-        u_valid = u_valid.type_as(u)
-        u_valid = u_valid.to(torch.float32)
-
-        s_valid = torch.ones(s.size(0), 1)
-        s_valid = s_valid.type_as(s)
-        s_valid = s_valid.to(torch.float32)
-
-        loss_phi_theta_xi = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u, 'CE') - self.lam * self.configure_loss(s_hat, s, 'BCE')
-        loss_adversarial_phi_theta_xi = self.gamma * self.loss_adversarially(self.utility_discriminator(self.decoder(z)), u_valid) \
-                                        - self.lam * self.loss_adversarially(self.sensitive_discriminator(self.uncertainty_decoder(z)), s_valid)
-        loss_total = loss_phi_theta_xi + loss_adversarial_phi_theta_xi
+        test_loss_total = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u,'CE') - self.lam * self.configure_loss(s_hat, s, 'BCE') + \
+                         self.gamma * self.kl_estimate_value(self.utility_discriminator(self.decoder(z))) + self.lam * self.kl_estimate_value(self.sensitive_discriminator(self.uncertainty_decoder(z)))
 
         u_accuracy, u_misclass_rate = self.get_stats(u_hat, u)
         s_accuracy, s_misclass_rate = self.get_stats(s_hat, s)
 
-        tensorboard_logs = {'test_loss_total': loss_total,
+        tensorboard_logs = {'test_loss_total': test_loss_total,
                             'test_u_accuracy': u_accuracy,
                             'test_u_misclass_rate': u_misclass_rate,
                             'test_s_accuracy': s_accuracy,

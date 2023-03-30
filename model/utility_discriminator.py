@@ -7,7 +7,11 @@ class UtilityDiscriminator(nn.Module):
         super(UtilityDiscriminator, self).__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(utility_dim,1),
+            nn.Linear(utility_dim, 1000),
+            nn.BatchNorm1d(1000),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            nn.Linear(1000, 1),
             #nn.Sigmoid() #TODO：在UtilityDiscriminator模型中，因为在模型训练阶段，要求用nn.BCEWithLogitsLoss()
         )
         for m in self.modules():

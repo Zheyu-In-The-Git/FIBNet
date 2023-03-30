@@ -10,7 +10,7 @@ class SensitiveDiscriminator(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(sensitive_dim, 4*sensitive_dim),
             nn.BatchNorm1d(4*sensitive_dim),
-            nn.LeakyReLU(0.2),
+            nn.LeakyReLU(0.2, inplace=True),
 
             nn.Linear(4*sensitive_dim, 1),
             #nn.Sigmoid() #TODO：在SensitiveDiscriminator模型中，因为在模型训练阶段，要求用nn.BCEWithLogitsLoss()
