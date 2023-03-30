@@ -11,11 +11,7 @@ class UtilityDiscriminator(nn.Module):
             nn.BatchNorm1d(3000),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Linear(3000, 500),
-            nn.BatchNorm1d(500),
-            nn.LeakyReLU(0.2, inplace=True),
-
-            nn.Linear(500, 1),
+            nn.Linear(3000, 1),
             #nn.Sigmoid() #TODO：在UtilityDiscriminator模型中，因为在模型训练阶段，要求用nn.BCEWithLogitsLoss()
         )
         for m in self.modules():

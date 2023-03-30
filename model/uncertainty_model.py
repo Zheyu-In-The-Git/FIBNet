@@ -8,11 +8,15 @@ class UncertaintyModel(nn.Module):
     def __init__(self, latent_dim, sensitive_dim):
         super(UncertaintyModel, self).__init__()
         self.net = nn.Sequential(
-            nn.Linear(latent_dim, 4*latent_dim),
-            nn.BatchNorm1d(4*latent_dim),
-            nn.LeakyReLU(),
+            nn.Linear(latent_dim, latent_dim),
+            nn.BatchNorm1d(latent_dim),
+            nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Linear(4*latent_dim, sensitive_dim),
+            nn.Linear(latent_dim, 100),
+            nn.BatchNorm1d(100),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            nn.Linear(100, sensitive_dim),
             #nn.Sigmoid() #TODO：在UncertaintyModel模型中，因为在模型训练阶段，要求用nn.BCEWithLogitsLoss()
         )
         for m in self.modules():
