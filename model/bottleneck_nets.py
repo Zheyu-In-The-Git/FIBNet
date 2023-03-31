@@ -152,7 +152,7 @@ class BottleneckNets(pl.LightningModule):
         ################################################################
 
         if optimizer_idx == 0:
-            loss_phi_theta_xi = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u, 'CE') - self.lam * self.configure_loss(s_hat, s, 'MSE')
+            loss_phi_theta_xi = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u, 'CE') - self.lam * self.configure_loss(self.sigmoid(s_hat), s, 'MSE')
             tensorboard_log = {'loss_phi_theta_xi': loss_phi_theta_xi.detach()}
             self.log('KL_divergence', self.loss_fn_KL(mu, log_var), prog_bar=True, logger=True, on_step=True)
             self.log('cross_entropy', self.configure_loss(u_hat, u, 'CE'), prog_bar=True, logger=True, on_step=True)
@@ -237,7 +237,7 @@ class BottleneckNets(pl.LightningModule):
             s_accuracy, s_misclass_rate = self.get_stats(self.sigmoid(self.uncertainty_decoder(z)), s)
 
 
-            train_loss_total = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u, 'CE') - self.lam * self.configure_loss(s_hat, s, 'MSE') + \
+            train_loss_total = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u, 'CE') - self.lam * self.configure_loss(self.sigmoid(s_hat), s, 'MSE') + \
                                self.gamma * self.kl_estimate_value(self.utility_discriminator(self.decoder(z))) - self.lam * self.kl_estimate_value(self.sensitive_discriminator(self.uncertainty_decoder(z)))
 
             tensorboard_log = {'loss_adversarial_phi_theta_xi': loss_adversarial_phi_theta_xi.detach(),
@@ -262,7 +262,7 @@ class BottleneckNets(pl.LightningModule):
         z, u_hat, s_hat, u_value, s_value, mu, log_var =self.forward(x)
 
 
-        val_loss_total = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u,'CE') - self.lam * self.configure_loss(s_hat, s, 'MSE') + \
+        val_loss_total = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u,'CE') - self.lam * self.configure_loss(self.sigmoid(s_hat), s, 'MSE') + \
                            self.gamma * self.kl_estimate_value(self.utility_discriminator(self.decoder(z))) - self.lam * self.kl_estimate_value(self.sensitive_discriminator(self.uncertainty_decoder(z)))
 
         u_accuracy, u_misclass_rate = self.get_stats(u_hat, u)
@@ -285,7 +285,7 @@ class BottleneckNets(pl.LightningModule):
 
         z, u_hat, s_hat, u_value, s_value, mu, log_var = self.forward(x)
 
-        test_loss_total = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u,'CE') - self.lam * self.configure_loss(s_hat, s, 'MSE') + \
+        test_loss_total = self.loss_fn_KL(mu, log_var) + self.gamma * self.configure_loss(u_hat, u,'CE') - self.lam * self.configure_loss(self.sigmoid(s_hat), s, 'MSE') + \
                          self.gamma * self.kl_estimate_value(self.utility_discriminator(self.decoder(z))) - self.lam * self.kl_estimate_value(self.sensitive_discriminator(self.uncertainty_decoder(z)))
 
         u_accuracy, u_misclass_rate = self.get_stats(u_hat, u)

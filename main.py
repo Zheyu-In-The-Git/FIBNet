@@ -58,7 +58,7 @@ def main(args):
         accelerator='gpu',
         devices=1,
         check_val_every_n_epoch=30,
-        fast_dev_run=50
+        #fast_dev_run=100
     )
     trainer.logger._log_graph = True
     trainer.logger._default_hp_metric = True
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_lam1_gamma1', type=str, help = '训练和加载模型的命名 采用')
     parser.add_argument('--load_v_num', default = 1, type=int)
     parser.add_argument('--RESUME', default=False, type=bool, help = '是否需要重载模型')
-    parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_lam00001_gamma1000.ckpt', type = str )
+    parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_lam1_gamma1.ckpt', type = str )
 
 
     #基本超参数，构建小网络的基本参数
@@ -143,7 +143,7 @@ if __name__ == '__main__':
 
     # bottleneck_nets的参数
     parser.add_argument('--encoder_model', default='ResNet50',type = str)
-    parser.add_argument('--model_name', default='bottleneck_test_version', type = str)
+    parser.add_argument('--model_name', default='bottleneck_experiment_version', type = str)
     parser.add_argument('--lam', default=1, type = float)
     parser.add_argument('--gamma', default=1, type=float)
     parser.add_argument('--batch_size', default = 64, type=int)
