@@ -144,7 +144,7 @@ if __name__ == '__main__':
     # bottleneck_nets的参数
     parser.add_argument('--encoder_model', default='ResNet50',type = str)
     parser.add_argument('--model_name', default='bottleneck_test_version', type = str)
-    parser.add_argument('--lam', default=1, type = float)
+    parser.add_argument('--lam', default=0.5, type = float)
     parser.add_argument('--gamma', default=1, type=float)
     parser.add_argument('--batch_size', default = 64, type=int)
     parser.add_argument('--max_epochs', default=50, type = int)
