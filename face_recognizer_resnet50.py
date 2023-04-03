@@ -177,10 +177,10 @@ def batch_accuracy(y_pred, y_true):
 class FaceRecognizer(pl.LightningModule):
     def __init__(self):
         super(FaceRecognizer, self).__init__()
-        self.resnet50 = ResNet50Encoder(512, channels=3, act_fn='PReLU')
-        self.BatchNorm1d = nn.BatchNorm1d(512)
+        self.resnet50 = ResNet50Encoder(1024, channels=3, act_fn='PReLU')
+        self.BatchNorm1d = nn.BatchNorm1d(1024)
         self.relu = nn.ReLU()
-        self.classifier = nn.Linear(512, 10177)
+        self.classifier = nn.Linear(1024, 10177)
         self.softmax = nn.Softmax()
 
         self.save_hyperparameters()
@@ -237,7 +237,7 @@ class FaceRecognizer(pl.LightningModule):
 
 
 
-CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/face_recognizer_resnet50/checkpoints/')
+CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/face_recognizer_resnet50_latent1024/checkpoints/')
 os.makedirs(CHECKPOINT_PATH, exist_ok=True)
 
 def main(model_name, Resume, save_name=None):
