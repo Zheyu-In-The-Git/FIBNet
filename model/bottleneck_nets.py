@@ -34,7 +34,9 @@ def batch_accuracy(y_pred, y_true):
 
 
 class BottleneckNets(pl.LightningModule):
-    def __init__(self, model_name, encoder, decoder, uncertainty_model, sensitive_discriminator, utility_discriminator, lam = 0.0001, gamma = 0.0001, lr = 0.0001, **kwargs):
+    def __init__(self, model_name, encoder, decoder,  utility_discriminator, latent_discriminator, beta = 1.0, lr = 0.0001, **kwargs):
+
+
         super(BottleneckNets, self).__init__()
 
         self.save_hyperparameters()
@@ -43,13 +45,11 @@ class BottleneckNets(pl.LightningModule):
         # 小网络
         self.encoder = encoder # x->z
         self.decoder = decoder # z->u 向量
-        self.uncertainty_decoder = uncertainty_model # z->s 向量 要选最大的一个
-        self.sensitive_discriminator = sensitive_discriminator # s->0/1
         self.utility_discriminator = utility_discriminator # u->0/1
+        self.latent_dicriminator = latent_discriminator
 
         # 超参数设置
-        self.lam = lam
-        self.gamma = gamma
+        self.bata = beta
         self.lr = lr
         self.batch_size = kwargs['batch_size']
         self.identity_nums = kwargs['identity_nums']
@@ -75,16 +75,15 @@ class BottleneckNets(pl.LightningModule):
         return z
 
     def forward(self, x):
-
         mu, log_var = self.encoder(x)
         z = self.sample_z(mu, log_var)
         u_hat = self.softmax(self.decoder(z))
-        s_hat = self.sigmoid(self.uncertainty_decoder(z))
 
         u_value = self.sigmoid(self.utility_discriminator(u_hat))
-        s_value = self.sigmoid(self.sensitive_discriminator(s_hat))
+        z_value = self.sigmoid(self.latent_dicriminator(z_hat))
 
-        return z, u_hat, s_hat, u_value, s_value, mu, log_var
+
+        return z, u_hat, mu, log_var, u_value, z_value
 
     def configure_loss(self, pred, true, loss_type):
         if loss_type == 'MSE':
@@ -105,17 +104,16 @@ class BottleneckNets(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
 
-        opt_phi_theta_xi = optim.Adam(itertools.chain(self.encoder.parameters(),
-                                                      self.decoder.parameters(),
-                                                      self.uncertainty_decoder.parameters()),
+        opt_phi_theta = optim.Adam(itertools.chain(self.encoder.parameters(),
+                                                      self.decoder.parameters()),
                                                       lr=self.lr, betas=(b1, b2))
 
-        opt_omiga = optim.Adam(self.utility_discriminator.parameters(), lr = self.lr, betas=(b1, b2))
+        opt_eta = optim.Adam(self.latent_dicriminator.parameters(), lr = self.lr, betas=(b1, b2))
 
-        opt_tao = optim.Adam(self.sensitive_discriminator.parameters(), lr=self.lr, betas=(b1, b2))
+        opt_tau = optim.Adam(self.utility_discriminator.parameters(), lr=self.lr, betas=(b1, b2))
 
 
-        return [opt_phi_theta_xi, opt_omiga, opt_tao, opt_phi_theta_xi], []
+        return [opt_phi_theta, opt_eta, opt_tau, opt_phi_theta], []
 
     def loss_fn_KL(self, mu, log_var):
         loss = 0.5 * (torch.pow(mu, 2) + torch.exp(log_var) - log_var - 1).sum(1).mean()
@@ -299,39 +297,6 @@ class BottleneckNets(pl.LightningModule):
                             }
         self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
-
-'''
-
-    def load_model(self):
-        name = self.hparams.model_name
-        # Change the `snake_case.py` file name to `CamelCase` class name.
-        # Please always name your model file name as `snake_case.py` and
-        # class name corresponding `CamelCase`.
-        camel_name = ''.join([i.capitalize() for i in name.split('_')])
-        try:
-            Model = getattr(importlib.import_module(
-                '.'+name, package=__package__), camel_name)
-            print('Model', Model)
-        except:
-            raise ValueError('Invalid Module File Name or Invalid Class Name {name}.{camel_name}!')
-        # self.model = self.instancialize(Model) # TODO:需要重新思考一下，到底是实例化什么？可能是实例化模型的不同参数，可能做实验可以用
-
-
-    # TODO：这里可能是工厂模型
-    def instancialize(self, Model, **other_args):
-        """ Instancialize a model using the corresponding parameters
-            from self.hparams dictionary. You can also input any args
-            to overwrite the corresponding value in self.hparams.
-        """
-        class_args = inspect.getargspec(Model.__init__).args[1:]
-        inkeys = self.hparams.keys()
-        args1 = {}
-        for arg in class_args:
-            if arg in inkeys:
-                args1[arg] = getattr(self.hparams, arg)
-        args1.update(other_args)
-        return Model(**args1)
-'''
 
 
 

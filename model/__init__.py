@@ -7,4 +7,4 @@ from .uncertainty_model import UncertaintyModel
 from .utility_discriminator import UtilityDiscriminator
 from .sensitive_discriminator import SensitiveDiscriminator
 from .construct_bottleneck_nets import ConstructBottleneckNets
-
+from .latent_discriminator import LatentDiscriminator
