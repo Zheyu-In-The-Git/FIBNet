@@ -175,7 +175,7 @@ class BottleneckNets(pl.LightningModule):
             z_fake = z_fake.type_as(z)
             z_fake = z_fake.to(torch.float32)
 
-            fake_z_discriminator_value = self.latent_disriminator(q_z.detach())
+            fake_z_discriminator_value = self.latent_discriminator(q_z.detach())
             fake_loss = self.configure_loss(fake_z_discriminator_value, z_fake, 'BCE')
 
 
@@ -193,7 +193,7 @@ class BottleneckNets(pl.LightningModule):
             z_valid = z_valid.type_as(z)
             z_valid = z_valid.to(torch.float32)
 
-            real_z_discriminator_value = self.latent_disriminator(z)
+            real_z_discriminator_value = self.latent_discriminator(z)
             loss_phi = - self.configure_loss(real_z_discriminator_value, z_valid, 'BCE') * self.beta
 
             self.log('loss_phi', loss_phi, prog_bar=True, logger=True, on_step=True, on_epoch=True)

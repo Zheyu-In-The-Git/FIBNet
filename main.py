@@ -58,7 +58,7 @@ def main(args):
         accelerator='gpu',
         devices=1,
         check_val_every_n_epoch=30,
-        fast_dev_run=10
+        #fast_dev_run=10
     )
     trainer.logger._log_graph = True
     trainer.logger._default_hp_metric = True
