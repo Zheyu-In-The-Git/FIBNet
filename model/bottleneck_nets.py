@@ -150,7 +150,7 @@ class BottleneckNets(pl.LightningModule):
         # training the encoder, utility decoder #
         #########################################
         if optimizer_idx == 0:
-            loss_phi_theta = self.configure_loss(u_hat, u, 'CE') - self.beta * self.loss_fn_KL(mu, log_var)
+            loss_phi_theta = self.configure_loss(u_hat, u, 'CE') + self.beta * self.loss_fn_KL(mu, log_var)
             self.log('KL_divergence', self.loss_fn_KL(mu, log_var), prog_bar=True, logger=True, on_step=True)
             self.log('cross_entropy', self.configure_loss(u_hat, u, 'CE'), prog_bar=True, logger=True, on_step=True)
             self.log('loss_phi_theta', loss_phi_theta, prog_bar=True, logger=True, on_step=True, on_epoch=True)
