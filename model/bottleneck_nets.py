@@ -46,7 +46,7 @@ class BottleneckNets(pl.LightningModule):
         self.encoder = encoder # x->z
         self.decoder = decoder # z->u 向量
         self.utility_discriminator = utility_discriminator # u->0/1
-        self.latent_dicriminator = latent_discriminator
+        self.latent_discriminator = latent_discriminator
 
         # 超参数设置
         self.beta = beta
@@ -102,7 +102,7 @@ class BottleneckNets(pl.LightningModule):
 
         opt_phi_theta = optim.Adam(itertools.chain(self.encoder.parameters(),self.decoder.parameters()),lr=self.lr, betas=(b1, b2))
 
-        opt_eta = optim.Adam(self.latent_dicriminator.parameters(), lr = self.lr, betas=(b1, b2))
+        opt_eta = optim.Adam(self.latent_discriminator.parameters(), lr = self.lr, betas=(b1, b2))
 
         opt_phi = optim.Adam(self.encoder.parameters(), lr=self.lr, betas=(b1, b2))
 
@@ -170,7 +170,7 @@ class BottleneckNets(pl.LightningModule):
             z_valid = z_valid.type_as(z_valid)
             z_valid = z_valid.to(torch.float32)
 
-            real_z_discriminator_value = self.latent_dicriminator(z.detach())
+            real_z_discriminator_value = self.latent_discriminator(z.detach())
             real_loss = self.configure_loss(real_z_discriminator_value, z_valid, 'BCE')
 
             # 负样本
@@ -178,7 +178,7 @@ class BottleneckNets(pl.LightningModule):
             z_fake = z_fake.type_as(z)
             z_fake = z_fake.to(torch.float32)
 
-            fake_z_discriminator_value = self.latent_dicriminator(q_z.detach())
+            fake_z_discriminator_value = self.latent_disriminator(q_z.detach())
             fake_loss = self.configure_loss(fake_z_discriminator_value, z_fake, 'BCE')
 
 
@@ -196,7 +196,7 @@ class BottleneckNets(pl.LightningModule):
             z_valid = z_valid.type_as(z_valid)
             z_valid = z_valid.to(torch.float32)
 
-            real_z_discriminator_value = self.latent_dicriminator(z)
+            real_z_discriminator_value = self.latent_disriminator(z)
             loss_phi = - self.configure_loss(real_z_discriminator_value, z_valid, 'BCE') * self.beta
 
             self.log('loss_phi', loss_phi, prog_bar=True, logger=True, on_step=True, on_epoch=True)
@@ -245,7 +245,7 @@ class BottleneckNets(pl.LightningModule):
             u_one_hot = F.one_hot(u, num_classes=self.identity_nums)
             train_loss_total = (self.configure_loss(u_hat.detach(), u.detach(), 'CE') - self.beta * self.loss_fn_KL(mu.detach(), log_var.detach()) + \
                                self.kl_estimate_value(self.utility_discriminator(u_one_hot.to(torch.float32).detach()), 'Softmax') -\
-                               self.beta * self.kl_estimate_value(self.latent_dicriminator(z.detach()), 'Sigmoid')).detach()
+                               self.beta * self.kl_estimate_value(self.latent_discriminator(z.detach()), 'Sigmoid')).detach()
 
             # 识别准确率
             u_accuracy, u_misclass_rate = self.get_stats(self.softmax(self.decoder(z)), u)
@@ -289,7 +289,7 @@ class BottleneckNets(pl.LightningModule):
 
         test_loss_total = self.configure_loss(u_hat.detach(), u.detach(), 'CE') - self.beta * self.loss_fn_KL(mu.detach(), log_var.detach()) + \
                          self.kl_estimate_value(self.utility_discriminator(u_one_hot.detach()), 'Softmax') - \
-                         self.beta * self.kl_estimate_value(self.latent_dicriminator(z.detach()), 'Sigmoid')
+                         self.beta * self.kl_estimate_value(self.latent_discriminator(z.detach()), 'Sigmoid')
 
         u_accuracy, u_misclass_rate = self.get_stats(u_hat, u)
 
