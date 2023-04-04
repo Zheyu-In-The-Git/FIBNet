@@ -265,7 +265,7 @@ class BottleneckNets(pl.LightningModule):
 
         val_loss_total = self.configure_loss(u_hat.detach(), u.detach(), 'CE') - self.beta * self.loss_fn_KL(mu.detach(), log_var.detach()) + \
                                self.kl_estimate_value(self.utility_discriminator(u_one_hot.to(torch.float32).detach()), 'Softmax') -\
-                               self.beta * self.kl_estimate_value(self.latent_dicriminator(z.detach()), 'Sigmoid')
+                               self.beta * self.kl_estimate_value(self.latent_discriminator(z.detach()), 'Sigmoid')
 
         u_accuracy, u_misclass_rate = self.get_stats(u_hat, u)
 
