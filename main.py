@@ -55,10 +55,10 @@ def main(args):
         log_every_n_steps=10,
         precision=32,
         enable_checkpointing=True,
-        accelerator='gpu',
-        devices=1,
+        #accelerator='gpu',
+        #devices=1,
         check_val_every_n_epoch=30,
-        #fast_dev_run=100
+        fast_dev_run=10
     )
     trainer.logger._log_graph = True
     trainer.logger._default_hp_metric = True
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
     # 模型加载与命名
-    VERSION = 'bottleneck_experiment_latent512_lam00001_gamma1000'
+    VERSION = 'bottleneck_experiment_latent512_beta0.0001'
     VERSION_NUM = '_1/'
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + VERSION_NUM + 'checkpoints/')
 
@@ -119,10 +119,10 @@ if __name__ == '__main__':
     # Restart Control
     parser.add_argument('--load_best', action='store_true')
     parser.add_argument('--load_dir', default = CHECKPOINT_PATH, type=str, help = 'The root directory of checkpoints.')
-    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_lam00001_gamma1000', type=str, help = '训练和加载模型的命名 采用')
+    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.0001', type=str, help = '训练和加载模型的命名 采用')
     parser.add_argument('--load_v_num', default = 1, type=int)
     parser.add_argument('--RESUME', default=False, type=bool, help = '是否需要重载模型')
-    parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_lam00001_gamma1000.ckpt', type = str )
+    parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_beta0.0001.ckpt', type = str )
 
 
     #基本超参数，构建小网络的基本参数
@@ -144,8 +144,9 @@ if __name__ == '__main__':
     # bottleneck_nets的参数
     parser.add_argument('--encoder_model', default='ResNet50',type = str)
     parser.add_argument('--model_name', default='bottleneck_experiment_version', type = str)
-    parser.add_argument('--lam', default=0.0001, type = float)
-    parser.add_argument('--gamma', default=1000, type=float)
+    #parser.add_argument('--lam', default=0.0001, type = float)
+    #parser.add_argument('--gamma', default=1000, type=float)
+    parser.add_argument('--beta', default=0.0001, type=float)
     parser.add_argument('--batch_size', default = 64, type=int)
     parser.add_argument('--max_epochs', default=50, type = int)
     parser.add_argument('--min_epochs', default=30, type=int)

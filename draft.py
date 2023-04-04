@@ -106,7 +106,7 @@ x = torch.randn(2, 3, 224, 224)
 z, u_hat, s_hat, u_value, s_value, mu, log_var = model(x)
 print(z, mu, log_var)
 '''
-
+'''
 sigmoid = nn.Sigmoid()
 def kl_estimate_value(discriminating):
     discriminated = sigmoid(discriminating)
@@ -121,3 +121,9 @@ print(out)
 
 value = kl_estimate_value(out)
 print(value)
+'''
+if __name__ == '__main__':
+
+    mu = torch.randn(3, 10)
+    z_valid = torch.randn_like(mu)
+    print(z_valid.shape)
