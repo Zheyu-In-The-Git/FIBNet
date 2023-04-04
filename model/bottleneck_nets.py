@@ -59,11 +59,8 @@ class BottleneckNets(pl.LightningModule):
         self.sigmoid = nn.Sigmoid()
 
 
-        # 监督训练结果
-
         # 打开计算图
         self.example_input_array = torch.randn([self.batch_size, 3, 224, 224])
-
 
     def sample_z(self, mu, log_var):
         std = torch.exp(0.5 * log_var) # 确实变成了标准差
@@ -167,7 +164,7 @@ class BottleneckNets(pl.LightningModule):
             # 正样本是来自编码器的；负样本来自标准正太分布
             # 正样本
             z_valid = torch.ones(z.size(0), 1)
-            z_valid = z_valid.type_as(z_valid)
+            z_valid = z_valid.type_as(z)
             z_valid = z_valid.to(torch.float32)
 
             real_z_discriminator_value = self.latent_discriminator(z.detach())
@@ -193,7 +190,7 @@ class BottleneckNets(pl.LightningModule):
         ##########################################
         if optimizer_idx == 2:
             z_valid = torch.ones(z.size(0), 1)
-            z_valid = z_valid.type_as(z_valid)
+            z_valid = z_valid.type_as(z)
             z_valid = z_valid.to(torch.float32)
 
             real_z_discriminator_value = self.latent_disriminator(z)
