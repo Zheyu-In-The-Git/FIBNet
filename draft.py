@@ -123,4 +123,5 @@ value = kl_estimate_value(out)
 print(value)
 '''
 
+from torchmetrics.classification import ConfusionMatrix # 混淆矩阵
 
