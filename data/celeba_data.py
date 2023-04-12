@@ -131,17 +131,30 @@ class CelebaData(data.Dataset):
         return x, u, s
 
 
+class CelebaRecognitionValidationSet(data.Dataset):
+    def __init__(self, dim_img : int,
+                 data_dir : str,
+                 identity_nums : int,
+                 split: str,):
+        # Set all input args as attributes
+        self.__dict__.update(locals())
+        self.identity_nums = identity_nums
+
+        pass
+
+
+
 if __name__ == '__main__':
 
     #data_dir = '/Users/xiaozhe/PycharmProjects/representation_soft_biometric_enhancement/data/celeba'
     data_dir = 'D:\datasets\celeba'
-    loader = CelebaData(dim_img=224, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='test')
-    train_loader = DataLoader(loader, batch_size=6, shuffle = False)
+    loader = CelebaData(dim_img=224, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train')
+    train_loader = DataLoader(loader, batch_size=2, shuffle = False)
 
     for i, item in enumerate(train_loader):
         print('i', i)
         x, u, s = item
-        print(s)
+        print(u , s)
         break
 
 
