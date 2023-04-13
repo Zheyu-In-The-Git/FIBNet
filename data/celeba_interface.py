@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torch.utils.data.sampler import WeightedRandomSampler
-from data.celeba_data import CelebaData
+from data.celeba_data import CelebaData, CelebaRecognitionValidationDataSet, CelebaRecognitionTestDataSet
 import pickle
 import copyreg
 import io
@@ -47,6 +47,8 @@ class CelebaInterface(pl.LightningDataModule):
     #
     def prepare_data(self):
          CelebaData(dim_img=self.dim_img, data_dir=self.data_dir, sensitive_dim=self.sensitive_dim,identity_nums=self.identity_nums, sensitive_attr=self.sensitive_attr, split='all')
+         CelebaRecognitionTestDataSet(dim_img=self.dim_img, data_dir=self.data_dir)
+         CelebaRecognitionValidationDataSet(dim_img=self.dim_img, data_dir=self.data_dir)
 
     def setup(self, stage=None):
         # Assign train/val datasets for use in dataloaders
@@ -54,12 +56,10 @@ class CelebaInterface(pl.LightningDataModule):
             self.trainset = CelebaData(dim_img=self.dim_img, data_dir=self.data_dir, sensitive_dim=self.sensitive_dim,
                                             identity_nums=self.identity_nums, sensitive_attr=self.sensitive_attr, split='train')
 
-            self.valset = CelebaData(dim_img=self.dim_img, data_dir=self.data_dir, sensitive_dim=self.sensitive_dim,
-                                            identity_nums=self.identity_nums, sensitive_attr=self.sensitive_attr, split='valid')
+            self.valset = CelebaRecognitionValidationDataSet(dim_img=self.dim_img, data_dir=self.data_dir)
         # Assign test dataset for use in dataloader(s)
         if stage == 'test' or stage is None:
-                self.testset = CelebaData(dim_img=self.dim_img, data_dir=self.data_dir, sensitive_dim=self.sensitive_dim,
-                                            identity_nums=self.identity_nums, sensitive_attr=self.sensitive_attr, split='test')
+                self.testset = CelebaRecognitionTestDataSet(dim_img=self.dim_img, data_dir=self.data_dir)
 
             # # If you need to balance your data using Pytorch Sampler,
             # # please uncomment the following lines.
@@ -77,49 +77,19 @@ class CelebaInterface(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(self.testset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, pin_memory=self.pin_memory)
 
-'''
-
-
-
-    def load_data_module(self):
-        name = self.dataset
-        # Change the `snake_case.py` file name to `CamelCase` class name.
-        # Please always name your model file name as `snake_case.py` and
-        # class name corresponding `CamelCase`.
-        camel_name = ''.join([i.capitalize() for i in name.split('_')])
-        try:
-            self.data_module = getattr(importlib.import_module(
-                '.'+name, package=__package__), camel_name)
-            print(self.data_module)
-        except:
-            raise ValueError('Invalid Dataset File Name or Invalid Class Name data.{name}.{camel_name}')
-
-
-    def instancialize(self, **other_args):
-        """ Instancialize a model using the corresponding parameters
-            from self.hparams dictionary. You can also input any args
-            to overwrite the corresponding value in self.kwargs.
-        """
-        class_args = inspect.getargspec(self.data_module.__init__).args[1:]
-        inkeys = self.kwargs.keys()
-        args1 = {}
-        for arg in class_args:
-            if arg in inkeys:
-                args1[arg] = self.kwargs[arg]
-        args1.update(other_args)
-        return self.data_module(**args1)
-
-'''
 
 if __name__ == '__main__':
-    data_dir = 'D:\celeba' # 'D:\datasets\celeba'
-    dataloader = CelebaInterface(dim_img=224,dataset='celeba_data', data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', batch_size=10, num_workers=0, pin_memory=False)
-    dataloader.setup(stage='fit')
+    # data_dir = 'D:\celeba' # 'D:\datasets\celeba'
+    data_dir = '/Volumes/xiaozhe_SSD/datasets/celeba'
+    dataloader = CelebaInterface(dim_img=224,dataset='celeba_data', data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', batch_size=2, num_workers=0, pin_memory=False)
+    dataloader.setup(stage='test')
 
-    for i, item in enumerate(dataloader.val_dataloader()):
+    for i, item in enumerate(dataloader.test_dataloader()):
         print('i', i )
-        x, u, s = item
-        print('u', u)
+        img_x, img_y, match = item
+        print(img_x)
+        print(img_y)
+        print(match)
         break
 
 
