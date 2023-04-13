@@ -2,6 +2,7 @@ import os
 import time
 
 import numpy as np
+import numpy.random
 import pandas as pd
 
 import torch
@@ -18,6 +19,8 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 from functools import partial
+
+numpy.random.seed(83)
 
 celeba_ssd_path = '/Volumes/xiaozhe_SSD/datasets/celeba'
 
@@ -43,7 +46,10 @@ train_data_img_identity = train_data_img_partition_identity.drop(labels = 'parti
 
 # 删除重复出现 id 项目
 train_data_img_identity_independence = train_data_img_identity.drop_duplicates('id', keep='first')
-print(train_data_img_identity_independence)
+# print(train_data_img_identity_independence)
+
+identity_CelebA_drop_duplicates = identity_CelebA.drop_duplicates('id', keep = 'first')
+# print(identity_CelebA_drop_duplicates)
 
 
 '''--验证集效果---'''
@@ -54,11 +60,44 @@ validation_data_img_partition = list_eval_partition_data.loc[list_eval_partition
 validation_data_img_partition_identity = pd.merge(validation_data_img_partition, identity_CelebA, on='img')
 # print(validation_data_img_partition_identity)
 
-validation_data_img_partition_identity_independent = validation_data_img_partition_identity.drop_duplicates('id', keep='last')
-# print(validation_data_img_partition_identity_independent)
 
-validation_data_img_partition_identity_sameimg = pd.merge(validation_data_img_partition_identity, train_data_img_identity_independence, on='id')
+# 验证集匹配的部分
+validation_data_img_partition_identity_sameimg = pd.merge(validation_data_img_partition_identity, identity_CelebA_drop_duplicates, on='id')
 # print(validation_data_img_partition_identity_sameimg)
+
+validation_data_img_partition_identity_sameimg.insert(loc = 4, column='match', value=np.ones(validation_data_img_partition_identity_sameimg.shape[0]))
+
+validation_data_img_partition_identity_sameimg_match = validation_data_img_partition_identity_sameimg.copy()
+# print('验证集匹配的部分')
+# print(validation_data_img_partition_identity_sameimg_match)
+
+
+# print(validation_data_img_partition_identity['img'].sample(n=validation_data_img_partition_identity.shape[0]))
+
+# 验证集不匹配的部分
+
+temp = validation_data_img_partition_identity.copy()
+random_img = validation_data_img_partition_identity['img'].sample(n=validation_data_img_partition_identity.shape[0]).values
+temp.insert(loc = 3, column='img_y', value = random_img)
+validation_data_img_partition_identity_differentimg = temp.copy()
+# print(validation_Data_img_partition_identity_differentimg)
+
+validation_data_img_partition_identity_differentimg_nonmatch = validation_data_img_partition_identity_differentimg.copy()
+validation_data_img_partition_identity_differentimg_nonmatch.insert(loc = 4, column='match', value=np.zeros(validation_data_img_partition_identity_sameimg.shape[0]))
+validation_data_img_partition_identity_differentimg_nonmatch.rename(columns={'img':'img_x'}, inplace=True)
+
+# 显示两个匹配和不匹配表结果
+# print(validation_data_img_partition_identity_sameimg_match)
+# print(validation_data_img_partition_identity_differentimg_nonmatch)
+
+# 合并两个表
+celeba_facerecognition_validation_dataset = pd.concat([validation_data_img_partition_identity_sameimg_match, validation_data_img_partition_identity_differentimg_nonmatch])
+col_list = ['img_x', 'img_y', 'match', 'id', 'partition']
+celeba_facerecognition_validation_dataset = celeba_facerecognition_validation_dataset[col_list]
+print(celeba_facerecognition_validation_dataset)
+# celeba_facerecognition_validation_dataset.to_json('celeba_facerecognition_validation_dataset.txt', orient='records')
+# celeba_facerecognition_validation_dataset.to_csv("celeba_facerecognition_validation_dataset.csv", encoding="utf_8_sig")
+# 用csv吧
 
 
 '''--测试集效果---'''
