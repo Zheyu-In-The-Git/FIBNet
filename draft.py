@@ -125,3 +125,15 @@ print(value)
 
 from torchmetrics.classification import ConfusionMatrix # 混淆矩阵
 
+import platform
+
+
+def get_platform():
+    sys_platform = platform.platform().lower()
+    print(sys_platform)
+    if "darwin-22.1.0-x86_64-i386-64bit" in sys_platform:
+        print('Mac os')
+    else:
+        print('Windows')
+get_platform()
+

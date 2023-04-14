@@ -143,9 +143,12 @@ print(celeba_facerecognition_test_dataset)
 
 '''
 
+
+'''
 lfw_ssd_path = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
 fn_lfw = partial(os.path.join, lfw_ssd_path)
-'''
+
+
 
 lfw_dataset_load_att_mat = mat73.loadmat(fn_lfw('lfw_att_40.mat'))
 
@@ -182,7 +185,7 @@ print(lfw_dataset_load_indices_train_test_imgtrain.shape)
 #print(lfw_dataset_load_indices_train_test_pandas)
 '''
 
-
+# 要做Adience 数据集吗
 
 
 
