@@ -163,8 +163,11 @@ print(lfw_dataset_pandas)
 
 # lfw_dataset_pandas.to_csv('lfw_att_40.csv',encoding="utf_8_sig")
 '''
+
 '''
 
+lfw_ssd_path = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
+fn_lfw = partial(os.path.join, lfw_ssd_path)
 
 lfw_dataset_load_indices_train_test = mat73.loadmat(fn_lfw('indices_train_test.mat'))
 print(lfw_dataset_load_indices_train_test)
@@ -181,12 +184,28 @@ print(lfw_dataset_load_indices_train_test_imgtest.shape)
 lfw_dataset_load_indices_train_test_imgtrain = lfw_dataset_load_indices_train_test['indices_img_train']
 print(lfw_dataset_load_indices_train_test_imgtrain.shape)
 
+print(np.where(lfw_dataset_load_indices_train_test_imgtrain == 0))
+
+
+lfw_attr_data = pd.read_csv(fn_lfw('lfw_att_40.csv'))
+print(lfw_attr_data.shape)
+
 #lfw_dataset_load_indices_train_test_pandas = pd.DataFrame([lfw_dataset_load_indices_train_test])
 #print(lfw_dataset_load_indices_train_test_pandas)
 '''
 
 # 要做Adience 数据集吗
 
+adience_ssd_path = '/Volumes/xiaozhe_SSD/datasets/Adience'
+fn_adience = partial(os.path.join, adience_ssd_path)
+
+adience_dataset_fold_0 = pd.read_table(fn_adience('fold_0_data.txt'),  index_col=False)
+adience_dataset_fold_1 = pd.read_table(fn_adience('fold_1_data.txt'),  index_col=False)
+print(adience_dataset_fold_0)
+adience_dataset = pd.concat([adience_dataset_fold_0, adience_dataset_fold_1])
+print(adience_dataset['user_id'])
+print(adience_dataset['face_id'])
+print(adience_dataset['gender'])
 
 
 
