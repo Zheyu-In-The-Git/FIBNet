@@ -122,7 +122,6 @@ class CelebaData(data.Dataset):
         # 所有属性信息
         s = self.s[index, :]
         # s = self.to_one_hot(s, self.sensitive_dim)
-        s = s.to(torch.float32)
 
 
         return x, u, s
@@ -205,7 +204,7 @@ if __name__ == '__main__':
     #data_dir = 'D:\datasets\celeba'
     data_dir = '/Volumes/xiaozhe_SSD/datasets/celeba'
 
-    '''
+
     loader = CelebaData(dim_img=224, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train')
     train_loader = DataLoader(loader, batch_size=2, shuffle = False)
 
@@ -225,7 +224,7 @@ if __name__ == '__main__':
         print(img_y.shape)
         print(match.shape)
         break
-
+    '''
 
 
 

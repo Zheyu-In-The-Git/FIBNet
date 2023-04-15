@@ -201,11 +201,19 @@ fn_adience = partial(os.path.join, adience_ssd_path)
 
 adience_dataset_fold_0 = pd.read_table(fn_adience('fold_0_data.txt'),  index_col=False)
 adience_dataset_fold_1 = pd.read_table(fn_adience('fold_1_data.txt'),  index_col=False)
-print(adience_dataset_fold_0)
-adience_dataset = pd.concat([adience_dataset_fold_0, adience_dataset_fold_1])
-print(adience_dataset['user_id'])
-print(adience_dataset['face_id'])
-print(adience_dataset['gender'])
+adience_dataset_fold_2 = pd.read_table(fn_adience('fold_2_data.txt'),  index_col=False)
+adience_dataset_fold_3 = pd.read_table(fn_adience('fold_3_data.txt'),  index_col=False)
+adience_dataset_fold_4 = pd.read_table(fn_adience('fold_4_data.txt'),  index_col=False)
+# print(adience_dataset_fold_0)
+adience_dataset = pd.concat([adience_dataset_fold_0, adience_dataset_fold_1, adience_dataset_fold_2,
+                             adience_dataset_fold_3, adience_dataset_fold_4], ignore_index=True)
+a = adience_dataset.dropna(subset=['gender'])
+
+print(a['user_id'][0])
+print(a['original_image'][0])
+print(a['face_id'][0])
+print(a['gender'][0])
+print(a[['user_id', 'original_image', 'face_id', 'gender']])
 
 
 
