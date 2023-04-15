@@ -11,6 +11,8 @@ from torchvision import transforms
 
 from torch.utils.data import DataLoader
 
+# 要做训练集和测试集吗
+
 
 class AdienceData(data.Dataset):
     def __init__(self,
