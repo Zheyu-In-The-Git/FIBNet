@@ -32,6 +32,8 @@ class LFWData(data.Dataset):
 
         lfw_dataset_load_indices_train_test = mat73.loadmat(fn('indices_train_test.mat'))
 
+        self.lfw_dataset_id = pandas.read_csv(fn('lfw_train_test_id.csv'), index_col='name')
+
         if split == 'train':
             self.lfw_dataset_indices = lfw_dataset_load_indices_train_test['indices_img_train']
         elif split == 'test':
@@ -58,6 +60,15 @@ class LFWData(data.Dataset):
 
         img_path_name = self.lfw_dataset_img_path[indices]
 
+        # print(img_path_name)
+
+        img_name = img_path_name.split('\\')
+        img_name = img_name[0]
+        u = self.lfw_dataset_id.loc[img_name]['face_id'] - 1
+        u = torch.tensor(u)
+        u = u.long()
+
+
         if self.img_path_replace:
             img_path_name = img_path_name.replace('\\', '/')
         else:
@@ -66,7 +77,7 @@ class LFWData(data.Dataset):
         x = PIL.Image.open(os.path.join(self.data_dir, "img/", img_path_name))
         x = self.trans(x)
 
-        u = 0 # 身份需要后面再做
+        # u = 0 # 身份需要后面再做
 
         s = self.lfw_dataset[self.sensitive_attr][indices]
         s = torch.tensor(s).to(torch.float32)
@@ -129,7 +140,7 @@ class LFWRecognitionTestPairs(data.Dataset):
 
 if __name__ == '__main__':
     data_dir = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
-    loader = LFWData(dim_img=224, data_dir=data_dir, identity_nums=5749, sensitive_attr='Male', img_path_replace=True, split='train')
+    loader = LFWData(dim_img=224, data_dir=data_dir, identity_nums=5749, sensitive_attr='Male', img_path_replace=True, split='test')
     train_loader = DataLoader(loader, batch_size=2, shuffle=False)
 
     for i, item in enumerate(train_loader):

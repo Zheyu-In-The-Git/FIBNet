@@ -81,6 +81,48 @@ class AdienceData(data.Dataset):
 
         return x, u, s
 
+class AdienceRecognitionTestPairs(data.Dataset):
+    def __init__(self, dim_img : int, data_dir : str):
+        # Set all input args as attributes
+        self.__dict__.update(locals())
+
+        self.data_dir = data_dir
+        self.dim_img = dim_img
+
+        fn = partial(os.path.join, self.data_dir)
+        self.adience_dataset_pairs = pandas.read_csv(fn('adience_dataset_facerecognition.csv'), header = 0)
+        # print(self.adience_dataset_pairs['img_x'])
+
+
+        # 图像变换成张量
+        self.trans = transforms.Compose([
+                                    transforms.CenterCrop((178, 178)),
+                                    transforms.Resize(self.dim_img),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                                    ])
+
+    def __len__(self):
+        return self.adience_dataset_pairs.shape[0]
+
+    def __getitem__(self, index):
+
+
+        img_x = PIL.Image.open(os.path.join(self.data_dir, 'faces', self.adience_dataset_pairs['img_x'][index]))
+
+        img_x = self.trans(img_x)
+
+        img_y = PIL.Image.open(os.path.join(self.data_dir, 'faces', self.adience_dataset_pairs['img_y'][index]))
+
+        img_y = self.trans(img_y)
+
+        match = torch.tensor(self.adience_dataset_pairs['match'][index])
+
+        return img_x, img_y, match
+
+
+
+
 
 if __name__ == '__main__':
     data_dir = '/Volumes/xiaozhe_SSD/datasets/Adience'
@@ -88,6 +130,8 @@ if __name__ == '__main__':
     train_loader = DataLoader(loader, batch_size=2, shuffle=False)
 
 
+    '''
+    
     for i, item in enumerate(train_loader):
         print('i', i)
         x, u, s = item
@@ -95,6 +139,17 @@ if __name__ == '__main__':
         print(u)
         print(s)
         break
+    '''
+    loader_face_recogntion = AdienceRecognitionTestPairs(dim_img=224, data_dir=data_dir)
+    test_pairs = DataLoader(loader_face_recogntion, batch_size=2, shuffle=False)
+    for i, item in enumerate(train_loader):
+        print('i', i)
+        img_x, img_y, match = item
+        print(img_x)
+        print(img_y)
+        print(match)
+        break
+
 
 
 

@@ -53,7 +53,7 @@ class CelebaInterface(pl.LightningDataModule):
             self.valset = CelebaRecognitionValidationDataSet(dim_img=self.dim_img, data_dir=self.data_dir)
         # Assign test dataset for use in dataloader(s)
         if stage == 'test' or stage is None:
-                self.testset = CelebaRecognitionTestDataSet(dim_img=self.dim_img, data_dir=self.data_dir)
+            self.testset = CelebaRecognitionTestDataSet(dim_img=self.dim_img, data_dir=self.data_dir)
 
             # # If you need to balance your data using Pytorch Sampler,
             # # please uncomment the following lines.

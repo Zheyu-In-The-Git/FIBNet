@@ -211,7 +211,7 @@ if __name__ == '__main__':
     for i, item in enumerate(train_loader):
         print('i', i)
         x, u, s = item
-        print(u , s)
+        print(u, s)
         break
     '''
 

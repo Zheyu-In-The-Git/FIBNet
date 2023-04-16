@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
-from data.adience_data import AdienceData
+from data.adience_data import AdienceData, AdienceRecognitionTestPairs
 
 import platform
 
@@ -43,10 +43,15 @@ class AdienceInterface(pl.LightningDataModule):
                                     sensitive_attr=self.sensitive_attr)
             self.testset = AdienceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity,
                                     sensitive_attr=self.sensitive_attr)
+        elif purpose == 'face_recognition':
+            self.trainset = AdienceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity,
+                                    sensitive_attr=self.sensitive_attr)
+            self.testset = AdienceRecognitionTestPairs(dim_img=self.dim_img, data_dir=self.data_dir)
 
 
     def prepare_data(self):
         AdienceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity, sensitive_attr=self.sensitive_attr)
+        AdienceRecognitionTestPairs(dim_img=self.dim_img, data_dir=data_dir)
 
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
@@ -62,8 +67,9 @@ class AdienceInterface(pl.LightningDataModule):
 
 if __name__ == '__main__':
     data_dir = '/Volumes/xiaozhe_SSD/datasets/Adience'
-    dataloader = AdienceInterface(dim_img=224, dataset='Adience', data_dir=data_dir, sensitive_attr='Male', batch_size=2, num_workers=0, pin_memory=False, identity_nums=5749, sensitive_dim=1, purpose='attr_extract')
+    dataloader = AdienceInterface(dim_img=224, dataset='Adience', data_dir=data_dir, sensitive_attr='Male', batch_size=2, num_workers=0, pin_memory=False, identity_nums=5749, sensitive_dim=1, purpose='face_recognition')
     dataloader.setup(stage='test')
+
 
     for i, item in enumerate(dataloader.test_dataloader()):
         print('i', i)

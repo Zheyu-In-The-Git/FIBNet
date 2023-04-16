@@ -81,7 +81,7 @@ class LFWInterface(pl.LightningDataModule):
 
 if __name__ == '__main__':
     data_dir = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
-    dataloader = LFWInterface(dim_img=224, dataset='LFW_data', data_dir=data_dir, sensitive_attr='Male', batch_size=2, num_workers=0, pin_memory=False, identity_nums=5749, sensitive_dim=1, purpose='attr_extract')
+    dataloader = LFWInterface(dim_img=224, dataset='LFW_data', data_dir=data_dir, sensitive_attr='Male', batch_size=2, num_workers=0, pin_memory=False, identity_nums=5749, sensitive_dim=1, purpose='face_recognition')
     dataloader.setup(stage='test')
 
     for i, item in enumerate(dataloader.test_dataloader()):

@@ -164,7 +164,7 @@ print(lfw_dataset_pandas)
 # lfw_dataset_pandas.to_csv('lfw_att_40.csv',encoding="utf_8_sig")
 '''
 
-'''
+
 
 lfw_ssd_path = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
 fn_lfw = partial(os.path.join, lfw_ssd_path)
@@ -174,6 +174,7 @@ print(lfw_dataset_load_indices_train_test)
 
 lfw_dataset_load_indices_train_test_identitytest = lfw_dataset_load_indices_train_test['indices_identity_test']
 print(lfw_dataset_load_indices_train_test_identitytest.shape)
+
 
 lfw_dataset_load_indices_train_test_identitytrain = lfw_dataset_load_indices_train_test['indices_identity_train']
 print(lfw_dataset_load_indices_train_test_identitytrain.shape)
@@ -186,13 +187,32 @@ print(lfw_dataset_load_indices_train_test_imgtrain.shape)
 
 print(np.where(lfw_dataset_load_indices_train_test_imgtrain == 0))
 
+# 查看lfw的姓名
+lfw_dataset_facename = pd.read_table(fn_lfw('lfw-names.txt'),delim_whitespace=True, header=None, index_col=None, names = ['name','number'])
+#print(lfw_dataset_facename)
 
-lfw_attr_data = pd.read_csv(fn_lfw('lfw_att_40.csv'))
-print(lfw_attr_data.shape)
+lfw_train_test_indices = np.concatenate((lfw_dataset_load_indices_train_test_identitytrain, lfw_dataset_load_indices_train_test_identitytest))
+print(lfw_train_test_indices.shape)
+
+lfw_dataset_facename.insert(2, column='face_id', value=lfw_train_test_indices)
+#print(lfw_dataset_facename)
+
+partition_train = np.ones(len(lfw_dataset_load_indices_train_test_identitytrain))
+partition_test = np.zeros(len(lfw_dataset_load_indices_train_test_identitytest))
+partition = np.concatenate((partition_train, partition_test))
+lfw_dataset_facename.insert(3, column='partition', value=partition)
+# print(lfw_dataset_facename['face_id'].shape)
+# print(lfw_dataset_facename['face_id'].where(lfw_dataset_facename['face_id'] == 0.0).any()) # 是从1开始的
+print(lfw_dataset_facename)
+
+# lfw_dataset_facename.to_csv('lfw_train_test_id.csv',encoding="utf_8_sig")
+
+#lfw_attr_data = pd.read_csv(fn_lfw('lfw_att_40.csv'))
+#print(lfw_attr_data.shape)
 
 #lfw_dataset_load_indices_train_test_pandas = pd.DataFrame([lfw_dataset_load_indices_train_test])
 #print(lfw_dataset_load_indices_train_test_pandas)
-'''
+
 
 
 
