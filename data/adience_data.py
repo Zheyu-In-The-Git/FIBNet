@@ -18,7 +18,7 @@ class AdienceData(data.Dataset):
     def __init__(self,
                  dim_img:int,
                  data_dir:str,
-                 identity_nums:int,
+                 identity_nums:int, # 2284?
                  sensitive_attr:str,
                  ):
 
@@ -39,6 +39,7 @@ class AdienceData(data.Dataset):
                                           adience_dataset_fold_4],  ignore_index=True)
 
         adience_dataset = adience_dataset.dropna(subset=['gender'])
+        adience_dataset = adience_dataset.reset_index()
 
         self.adience_dataset = adience_dataset[['user_id', 'original_image', 'face_id', 'gender']]
 

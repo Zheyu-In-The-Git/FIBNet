@@ -194,6 +194,10 @@ print(lfw_attr_data.shape)
 #print(lfw_dataset_load_indices_train_test_pandas)
 '''
 
+
+
+'''
+
 # 要做Adience 数据集吗
 
 adience_ssd_path = '/Volumes/xiaozhe_SSD/datasets/Adience'
@@ -209,11 +213,80 @@ adience_dataset = pd.concat([adience_dataset_fold_0, adience_dataset_fold_1, adi
                              adience_dataset_fold_3, adience_dataset_fold_4], ignore_index=True)
 a = adience_dataset.dropna(subset=['gender'])
 
-print(a['user_id'][0])
-print(a['original_image'][0])
-print(a['face_id'][0])
-print(a['gender'][0])
-print(a[['user_id', 'original_image', 'face_id', 'gender']])
+# print(a['user_id'][0])
+# print(a['original_image'][0])
+# print(a['face_id'][0])
+# print(a['gender'][0])
+# print(a[['user_id', 'original_image', 'face_id', 'gender']])
+a = a[['user_id', 'original_image', 'face_id', 'gender']]
+a = a.sort_values(by='face_id')
+Adience_Dataset = a.reset_index()
+
+Adience_Dataset_first_split = Adience_Dataset.drop_duplicates('face_id', keep='first')
+Adience_Dataset_last_split = Adience_Dataset.drop_duplicates('face_id', keep='last')
+# print(Adience_Dataset_first_split)
+# print(Adience_Dataset_last_split)
+
+adience_merge = pd.merge(Adience_Dataset_first_split, Adience_Dataset_last_split, on='face_id')
+adience_merge = adience_merge.drop(labels=['index_x', 'index_y', 'gender_x', 'gender_y'], axis=1)
+
+
+# print(adience_merge.keys()) # ['user_id_x', 'original_image_x', 'face_id', 'user_id_y', 'original_image_y']
+
+# adience_merge['img_x'] = adience_merge[]
+
+# 图像是匹配的部分
+
+adience_dataset_match_faceverify = pd.DataFrame(columns=['img_x', 'img_y', 'match'])
+
+adience_dataset_match_faceverify['img_x'] = adience_merge['user_id_x'] + '/' + 'coarse_tilt_aligned_face' + '.' + \
+                                      adience_merge['face_id'].astype('string') + '.' + adience_merge['original_image_x']
+adience_dataset_match_faceverify['img_y'] = adience_merge['user_id_y'] + '/' + 'coarse_tilt_aligned_face' + '.' + \
+                                      adience_merge['face_id'].astype('string') + '.' + adience_merge['original_image_y']
+adience_dataset_match_faceverify['match'] = np.ones(adience_dataset_match_faceverify.shape[0])
 
 
 
+
+# ______________________________
+Adience_Dataset_last_split_random = Adience_Dataset_last_split.take(np.random.permutation(Adience_Dataset_last_split.shape[0]))
+
+temp_first_split = Adience_Dataset_first_split.drop(labels = ['index','gender'], axis=1)
+temp_last_split_random = Adience_Dataset_last_split_random.drop(labels = ['index', 'gender'], axis=1)
+
+mapper = {'user_id': 'user_id_x', 'original_image': 'original_image_x', 'face_id':'face_id_x'}
+temp_first_split = temp_first_split.rename(mapper, axis='columns')
+temp_first_split = temp_first_split.reset_index()
+temp_first_split = temp_first_split.drop(labels = ['index'], axis=1)
+#print(temp_first_split)
+
+
+mapper_y = {'user_id': 'user_id_y', 'original_image': 'original_image_y', 'face_id':'face_id_y'}
+temp_last_split_random = temp_last_split_random.rename(mapper_y, axis='columns')
+temp_last_split_random = temp_last_split_random.reset_index()
+temp_last_split_random = temp_last_split_random.drop(labels=['index'], axis=1)
+#print(temp_last_split_random)
+
+Adience_Dataset_non_match_merge = pd.concat([temp_first_split, temp_last_split_random], axis=1)
+print(Adience_Dataset_non_match_merge['face_id_x'][6])
+print(Adience_Dataset_non_match_merge['face_id_y'][6])
+
+adience_dataset_non_match_faceverify = pd.DataFrame(columns=['img_x', 'img_y', 'match'])
+
+adience_dataset_non_match_faceverify['img_x'] = Adience_Dataset_non_match_merge['user_id_x'] + '/' + 'coarse_tilt_aligned_face' + '.' + \
+                                      Adience_Dataset_non_match_merge['face_id_x'].astype('string') + '.' + Adience_Dataset_non_match_merge['original_image_x']
+
+adience_dataset_non_match_faceverify['img_y'] = Adience_Dataset_non_match_merge['user_id_y'] + '/' + 'coarse_tilt_aligned_face' + '.' + \
+                                      Adience_Dataset_non_match_merge['face_id_y'].astype('string') + '.' + Adience_Dataset_non_match_merge['original_image_y']
+
+adience_dataset_non_match_faceverify['match'] = np.zeros(adience_dataset_non_match_faceverify.shape[0])
+
+print(adience_dataset_non_match_faceverify['img_y'][0])
+print(adience_dataset_non_match_faceverify['img_x'][0])
+print(adience_dataset_non_match_faceverify['match'])
+
+adience_dataset_faceverify = pd.concat([adience_dataset_match_faceverify,adience_dataset_non_match_faceverify]).reset_index()
+adience_dataset_faceverify = adience_dataset_faceverify.drop(labels=['index'], axis=1)
+print(adience_dataset_faceverify)
+adience_dataset_faceverify.to_csv("adience_dataset_facerecognition.csv", encoding="utf_8_sig")
+'''
