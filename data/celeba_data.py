@@ -64,11 +64,15 @@ class CelebaData(data.Dataset):
             'train':0,
             'valid':1,
             'test':2,
-            'all':None
+            'all':None,
+            'train_valid_70%': 'train_valid_70%',
+            'test_30%':'test_30%'
         }
 
         split_ =  split_map[verify_str_arg(split.lower(), "split",
-                                          ("train", "valid", "test", "all"))]
+                                          ("train", "valid", "test", "all", 'train_valid_70%', 'test_30%'))]
+        print('split_', split_)
+
 
         fn = partial(os.path.join, self.data_dir) # csv检索用的
         splits = pandas.read_csv(fn("list_eval_partition.txt"), delim_whitespace=True, header=None, index_col=0)
@@ -77,10 +81,21 @@ class CelebaData(data.Dataset):
         sensitive_attr = attr[self.sensitive_attr]
 
 
-        mask = slice(None) if split_ is None else (splits[1] == split_)
+        # mask = slice(None) if split_ is None else (splits[1] == split_)
+        # mask = slice(0, 182637, 1) if split_ == 'train_valid' else (splits[1] == split_) # 将train数据集和val数据集合并成一块
+
+        if split_ == 'train_valid_70%':
+            mask = slice(0, 141819, 1)
+        elif split_ == 'test_30%':
+            mask = slice(141819, 202599, 1)
+        elif split_ is None:
+            mask = slice(None)
+        else:
+            mask = (splits[1] == split_)
+
 
         self.filename = splits[mask].index.values
-
+        print(len(self.filename))
 
         self.u = torch.as_tensor(identity[mask].values)
 
@@ -205,7 +220,7 @@ if __name__ == '__main__':
     data_dir = '/Volumes/xiaozhe_SSD/datasets/celeba'
 
 
-    loader = CelebaData(dim_img=224, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train')
+    loader = CelebaData(dim_img=224, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train_valid_70%')
     train_loader = DataLoader(loader, batch_size=2, shuffle = False)
 
     for i, item in enumerate(train_loader):

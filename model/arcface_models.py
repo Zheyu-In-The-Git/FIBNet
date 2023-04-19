@@ -1,12 +1,25 @@
+
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# from ResNet import Bottleneck
+import numpy as np
+from torch.utils.data import DataLoader
+from torchvision.datasets import ImageFolder
+from torchvision.transforms import transforms
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+import torch.optim as optim
+import os
 import math
+from data import CelebaInterface
+from pytorch_lightning.loggers import TensorBoardLogger
+from argparse import ArgumentParser
+
 
 class Bottleneck(nn.Module):
     expansion = 4
-    def __init__(self, in_channels, out_channels, i_downsample = None, stride = 1, act_fn = 'ReLU'):
+    def __init__(self, in_channels, out_channels, i_downsample = None, stride = 1):
         super(Bottleneck, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size = 1, stride = 1, padding = 0)
@@ -21,11 +34,8 @@ class Bottleneck(nn.Module):
         self.i_downsample = i_downsample
         self.stride = stride
 
-        if act_fn == 'ReLU':
-            self.act_fn = nn.ReLU()
+        self.act_fn = nn.ReLU()
 
-        if act_fn == 'PReLU':
-            self.act_fn = nn.PReLU()
 
     def forward(self, x):
         identity = x.clone()
@@ -48,7 +58,6 @@ class Bottleneck(nn.Module):
         return x
 
 
-
 class Block(nn.Module):
     expansion = 1
 
@@ -64,7 +73,6 @@ class Block(nn.Module):
         self.stride = stride
         self.relu = nn.ReLU()
 
-
     def forward(self, x):
         identity = x.clone()
 
@@ -77,27 +85,16 @@ class Block(nn.Module):
         x = self.relu(x)
         return x
 
-
-
-
-class ResNetEncoder(nn.Module):
+class ResNet(nn.Module):
     def __init__(self, ResBlock, layer_list, latent_dim, num_channels):
-        '''
-        ResNet的基本结构
-        :param ResBlock:
-        :param layer_list: 可以参照何恺明的论文 表1
-        :param num_classes: 最终分类的数量，Celeb的个体数量
-        :param num_channels: 3 RGB
-        :param act_fn: 激活函数，后面可能换成PReLU函数
-        '''
 
-        super(ResNetEncoder, self).__init__()
-        # 这些都是开辟的网络结构，真正的运算过程在forward函数里面
+        super(ResNet, self).__init__()
         self.in_channels = 64
 
         self.conv1 = nn.Conv2d(num_channels, 64, kernel_size = 7, stride = 2, padding = 3, bias = False)
         self.batch_norm1 = nn.BatchNorm2d(64)
-        self.batch_norm1d = nn.BatchNorm1d(latent_dim)
+
+        self.act_fn = nn.ReLU()
 
         self.max_pool = nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1)
 
@@ -108,14 +105,7 @@ class ResNetEncoder(nn.Module):
 
         self.avgpool = nn.AdaptiveAvgPool2d((1,1))
 
-        self.mu_fc1 = nn.Linear(512 * ResBlock.expansion, latent_dim)
-        self.mu_fc2 = nn.Linear(latent_dim, latent_dim)
-
-        self.log_var_fc1 = nn.Linear(512 * ResBlock.expansion, latent_dim)
-        self.log_var_fc2 = nn.Linear(latent_dim, latent_dim)
-
-        self.relu = nn.ReLU()
-        self.leakyrelu = nn.LeakyReLU(0.2, True)
+        self.fc = nn.Linear(512* ResBlock.expansion, latent_dim)
 
         # 模型初始化
         for m in self.modules():
@@ -133,7 +123,7 @@ class ResNetEncoder(nn.Module):
 
 
     def forward(self, x):
-        x = self.relu(self.batch_norm1(self.conv1(x)))
+        x = self.act_fn(self.batch_norm1(self.conv1(x)))
 
         x = self.max_pool(x)
 
@@ -144,24 +134,9 @@ class ResNetEncoder(nn.Module):
 
         x = self.avgpool(x)
         x = x.reshape(x.shape[0], -1)
-        x = self.relu(x)
 
-        # mu的网络结构设计
-        mu = self.mu_fc1(x)
-        mu = self.batch_norm1d(mu)
-        mu = self.leakyrelu(mu)
-        mu = self.mu_fc2(mu)
-
-        # log_var的网络结构设计
-        log_var = self.log_var_fc1(x)
-        log_var = self.batch_norm1d(log_var)
-        log_var = self.leakyrelu(log_var)
-        log_var = self.log_var_fc2(log_var)
-        return mu, log_var
-
-        # TODO: 这里只输出均值和对数方差，还没做重参数化技巧, 重参数化技巧准备设计总体网络的时候写
-        # TODO: 重参数化技巧的网络结构可以参考 https://zhuanlan.zhihu.com/p/452743042
-
+        x = self.fc(x)
+        return x
 
     # 4个层用的子网络模块
     def _make_layer(self, ResBlock, blocks, planes, stride = 1):
@@ -184,83 +159,67 @@ class ResNetEncoder(nn.Module):
         return nn.Sequential(*layers) # 建立Conv1_; Conv2_; Conv3_; Conv4..
 
 
-
-class LitEncoder(nn.Module):
-    def __init__(self, latent_dim, num_channels):
-        super(LitEncoder, self).__init__()
-        self.latent_dim = latent_dim
+def ResNet50(latent_dim, channels=3):
+    return ResNet(Bottleneck, [3, 4, 6, 3], latent_dim, channels)
 
 
+class ArcMarginProduct(nn.Module):
+    r"""Implement of large margin arc distance: :
+        Args:
+            in_features: size of each input sample
+            out_features: size of each output sample
+            s: norm of input feature
+            m: margin
+            cos(theta + m)
+        """
+    def __init__(self, in_features, out_features, s=30.0, m=0.50, easy_margin=False):
+        super(ArcMarginProduct, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.s = s
+        self.m = m
+        self.weight = nn.Parameter(torch.FloatTensor(out_features, in_features))
+        nn.init.xavier_uniform_(self.weight)
 
-        c_hid = 10
-        self.net = nn.Sequential(
-            nn.Conv2d(num_channels, c_hid, kernel_size=3, padding = 1, stride = 2),
-            self.act_fn,
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding = 1),
-            self.act_fn,
-            nn.Conv2d(c_hid, 2*c_hid, kernel_size=3, padding=1, stride=2),
-            self.act_fn,
-            nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
-            self.act_fn,
-            nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1, stride =2),
-            self.act_fn,
-            nn.Flatten(),
-        )
+        self.easy_margin = easy_margin
+        self.cos_m = math.cos(m)
+        self.sin_m = math.sin(m)
+        self.th = math.cos(math.pi - m)
+        self.mm = math.sin(math.pi - m) * m
 
-        self.fc_mu = nn.Linear(15680, self.latent_dim)
-        self.fc_log_var = nn.Linear(15680, self.latent_dim)
+    def forward(self, input, label):
+        # --------------------------- cos(theta) & phi(theta) ---------------------------
+        cosine = F.linear(F.normalize(input), F.normalize(self.weight))
+        sine = torch.sqrt((1.0 - torch.pow(cosine, 2)).clamp(0, 1))
+        phi = cosine * self.cos_m - sine * self.sin_m
+        if self.easy_margin:
+            phi = torch.where(cosine > 0, phi, cosine)
+        else:
+            phi = torch.where(cosine > self.th, phi, cosine - self.mm)
+        # --------------------------- convert label to one-hot ---------------------------
+        # one_hot = torch.zeros(cosine.size(), requires_grad=True, device='cuda')
+        one_hot = torch.zeros(cosine.size())
+        one_hot.scatter_(1, label.view(-1, 1).long(), 1)
+        # print('one-hot',one_hot)
+        # -------------torch.where(out_i = {x_i if condition_i else y_i) -------------
 
+        output = (one_hot * phi) + ((1.0 - one_hot) * cosine)  # you can use torch.where if your torch.__version__ is 0.4
+        output *= self.s
 
-
-    def forward(self, x):
-        x = self.net(x)
-        mu = self.fc_mu(x)
-        log_var = self.fc_log_var(x)
-        return mu, log_var
-
-
-
-def ResNet50Encoder(latent_dim, channels=3):
-    return ResNetEncoder(Bottleneck, [3, 4, 6, 3], latent_dim, channels)
-
-def ResNet101Encoder(latent_dim, channels = 3):
-    return ResNetEncoder(Bottleneck, [3, 4, 23, 3], latent_dim, channels)
-
-def ResNet18Encoder(latent_dim, channels = 3):
-    return ResNetEncoder(Bottleneck, [2,2,2,2], latent_dim,  channels)
-
-def LitEncoder1(latent_dim, channels = 3):
-    return LitEncoder(latent_dim, channels)
-
-
+        return output
 
 if __name__ == '__main__':
-     #net = ResNet18Encoder(latent_dim=512, channels=3, act_fn='PReLU')
-     #x = torch.randn(2, 3, 224, 224)
-     #mu, log_var = net(x)
-     #print( mu.shape, log_var.shape)
+    encoder = ResNet50(latent_dim=512, channels=3)
+    decoder = ArcMarginProduct(in_features=512,  out_features= 2622)
+    label = torch.arange(2)
 
 
-     #net = LitEncoder1(latent_dim=512, act_fn='PReLU')
-     #x = torch.randn(2,3,224,224)
-     #mu, log_var = net(x)
-     #print(mu.shape, log_var.shape)
+    x = torch.randn(2, 3, 224, 224)
+    z = encoder(x)
+    out = decoder(z, label)
 
-     net = ResNet50Encoder(latent_dim=512, channels = 3)
-     x = torch.randn(2,3,224,224)
-     mu, log_var = net(x)
-     print(mu.shape, log_var.shape)
+    softmax = nn.Softmax(dim=1)
+    soft_max_out = softmax(out)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+    print('z', z.shape)
+    print('soft_max_out', soft_max_out.shape)
