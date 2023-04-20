@@ -45,7 +45,7 @@ class AdienceData(data.Dataset):
 
         self.trans = transforms.Compose([
             transforms.Resize(self.dim_img),
-            transforms.CenterCrop((178, 178)),
+            transforms.CenterCrop((125, 125)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
         ])
@@ -96,7 +96,7 @@ class AdienceRecognitionTestPairs(data.Dataset):
 
         # 图像变换成张量
         self.trans = transforms.Compose([
-                                    transforms.CenterCrop((178, 178)),
+                                    transforms.CenterCrop((125, 125)),
                                     transforms.Resize(self.dim_img),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
@@ -127,7 +127,7 @@ class AdienceRecognitionTestPairs(data.Dataset):
 if __name__ == '__main__':
     data_dir = '/Volumes/xiaozhe_SSD/datasets/Adience'
     loader = AdienceData(dim_img=224, data_dir=data_dir, identity_nums=10177, sensitive_attr='Male')
-    train_loader = DataLoader(loader, batch_size=2, shuffle=False)
+    train_loader = DataLoader(loader, batch_size=2, shuffle=True)
 
 
     '''

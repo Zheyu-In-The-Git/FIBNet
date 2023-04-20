@@ -637,4 +637,13 @@ class ArcMarginProduct(nn.Module):
         output *= self.s
 
         return output
+        
 '''
+'''
+图像tensor 转 图像
+unloader = transforms.ToPILImage()
+image = x.clone()
+image = unloader(image)
+image.show()
+'''
+

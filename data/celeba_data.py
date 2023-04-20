@@ -71,7 +71,7 @@ class CelebaData(data.Dataset):
 
         split_ =  split_map[verify_str_arg(split.lower(), "split",
                                           ("train", "valid", "test", "all", 'train_valid_70%', 'test_30%'))]
-        print('split_', split_)
+        # print('split_', split_)
 
 
         fn = partial(os.path.join, self.data_dir) # csv检索用的
@@ -95,7 +95,7 @@ class CelebaData(data.Dataset):
 
 
         self.filename = splits[mask].index.values
-        print(len(self.filename))
+        # print(len(self.filename))
 
         self.u = torch.as_tensor(identity[mask].values)
 
@@ -120,7 +120,7 @@ class CelebaData(data.Dataset):
         # 图像
         X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba", self.filename[index]))
 
-        trans = transforms.Compose([transforms.CenterCrop((178, 178)),
+        trans = transforms.Compose([transforms.CenterCrop((130, 130)),
                                     transforms.Resize(self.dim_img),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[0.5,0.5,0.5], std=[0.5,0.5,0.5]),
@@ -142,52 +142,21 @@ class CelebaData(data.Dataset):
         return x, u, s
 
 
-class CelebaRecognitionValidationDataSet(data.Dataset):
-    def __init__(self, dim_img : int,
-                 data_dir : str):
-        # Set all input args as attributes
-        self.__dict__.update(locals())
-        self.celeba_validation_dataset = pandas.read_csv('./csv_file/celeba_facerecognition_validation_dataset.csv', sep=',')
-        # print(self.celeba_validation_dataset.shape[0])
-        self.dim_img = dim_img
-        self.data_dir = data_dir
-
-        # 图像变换成张量
-        self.trans = transforms.Compose([transforms.CenterCrop((178, 178)),
-                                    transforms.Resize(self.dim_img),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-                                    ])
-
-    def __len__(self):
-        return self.celeba_validation_dataset.shape[0]
-
-    def __getitem__(self, index):
-        img_x = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba",
-                                            self.celeba_validation_dataset['img_x'][index]))
-
-        img_x = self.trans(img_x)
-
-        img_y = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba",
-                                            self.celeba_validation_dataset['img_y'][index]))
-
-        img_y = self.trans(img_y)
-
-        match = torch.tensor(self.celeba_validation_dataset['match'][index])
-
-        return img_x, img_y, match
-
 class CelebaRecognitionTestDataSet(data.Dataset):
     def __init__(self, dim_img : int, data_dir : str):
         # Set all input args as attributes
         self.__dict__.update(locals())
-        self.celeba_test_dataset = pandas.read_csv('./csv_file/celeba_facerecognition_test_dataset.csv', sep=',')
+
 
         self.dim_img = dim_img
         self.data_dir = data_dir
 
+        fn = partial(os.path.join, self.data_dir)
+        self.celeba_test_dataset = pandas.read_csv(fn('celeba_face_verify_test_dataset.csv'), sep=',')
+        print(self.celeba_test_dataset)
+
         # 图像变换成张量
-        self.trans = transforms.Compose([transforms.CenterCrop((178, 178)),
+        self.trans = transforms.Compose([transforms.CenterCrop((125, 125)),
                                     transforms.Resize(self.dim_img),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
@@ -201,6 +170,9 @@ class CelebaRecognitionTestDataSet(data.Dataset):
                                             self.celeba_test_dataset['img_x'][index]))
 
         img_x = self.trans(img_x)
+
+
+
 
         img_y = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba",
                                             self.celeba_test_dataset['img_y'][index]))
@@ -221,7 +193,7 @@ if __name__ == '__main__':
 
 
     loader = CelebaData(dim_img=224, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train_valid_70%')
-    train_loader = DataLoader(loader, batch_size=2, shuffle = False)
+    train_loader = DataLoader(loader, batch_size=2, shuffle = True)
 
     for i, item in enumerate(train_loader):
         print('i', i)
@@ -230,14 +202,14 @@ if __name__ == '__main__':
         break
     '''
 
-    loader = CelebaRecognitionValidationDataSet(dim_img=224, data_dir = data_dir)
+    loader = CelebaRecognitionTestDataSet(dim_img=224, data_dir = data_dir)
     validation_loader = DataLoader(loader, batch_size=2, shuffle=False)
     for i, item in enumerate(validation_loader):
         print('i', i)
         img_x, img_y, match = item
-        print(img_x.shape)
-        print(img_y.shape)
-        print(match.shape)
+        print(img_x)
+        print(img_y)
+        print(match)
         break
     '''
 

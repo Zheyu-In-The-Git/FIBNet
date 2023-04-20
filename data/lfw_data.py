@@ -77,6 +77,7 @@ class LFWData(data.Dataset):
         x = PIL.Image.open(os.path.join(self.data_dir, "img/", img_path_name))
         x = self.trans(x)
 
+
         # u = 0 # 身份需要后面再做
 
         s = self.lfw_dataset[self.sensitive_attr][indices]

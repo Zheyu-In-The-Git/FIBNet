@@ -143,7 +143,6 @@ print(celeba_facerecognition_test_dataset)
 
 '''
 
-
 '''
 lfw_ssd_path = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
 fn_lfw = partial(os.path.join, lfw_ssd_path)
@@ -165,6 +164,7 @@ print(lfw_dataset_pandas)
 '''
 
 
+'''
 
 lfw_ssd_path = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
 fn_lfw = partial(os.path.join, lfw_ssd_path)
@@ -212,8 +212,7 @@ print(lfw_dataset_facename)
 
 #lfw_dataset_load_indices_train_test_pandas = pd.DataFrame([lfw_dataset_load_indices_train_test])
 #print(lfw_dataset_load_indices_train_test_pandas)
-
-
+'''
 
 
 '''
@@ -310,3 +309,44 @@ adience_dataset_faceverify = adience_dataset_faceverify.drop(labels=['index'], a
 print(adience_dataset_faceverify)
 adience_dataset_faceverify.to_csv("adience_dataset_facerecognition.csv", encoding="utf_8_sig")
 '''
+
+
+celeba_ssd_path = '/Volumes/xiaozhe_SSD/datasets/celeba'
+
+fn = partial(os.path.join, celeba_ssd_path) # csv检索用的
+
+# 导入数据集的划分
+list_eval_partition_data = pd.read_table(fn('list_eval_partition.txt'), delim_whitespace=True, header=None, index_col=None, names = ['img','partition'])
+
+# 身份信息对应的图片信息
+identity_CelebA = pd.read_table(fn('identity_CelebA.txt'), delim_whitespace=True, header=None, index_col=None, names = ['img','id'])
+print(identity_CelebA)
+
+mask = slice(141819, 202599, 1)
+print(identity_CelebA[mask])
+
+test_data_img_id = identity_CelebA[mask]
+
+test_Data_imgx_id_imgy_match = pd.merge(test_data_img_id,test_data_img_id,on='id', how='left')
+test_Data_imgx_id_imgy_match = test_Data_imgx_id_imgy_match.drop_duplicates(['img_x'], keep='last')
+test_Data_imgx_id_imgy_match = test_Data_imgx_id_imgy_match.reset_index()
+test_Data_imgx_id_imgy_match = test_Data_imgx_id_imgy_match.drop(labels='index', axis=1)
+test_Data_imgx_id_imgy_match.insert(loc = 3, column='match', value=np.ones(test_Data_imgx_id_imgy_match.shape[0]))
+test_Data_imgx_id_imgy_match = test_Data_imgx_id_imgy_match.drop(labels='id', axis=1)
+print(test_Data_imgx_id_imgy_match)
+
+
+img_random_sample = test_data_img_id['img'].sample(n=test_data_img_id.shape[0]).values
+test_Data_imgx_id_imgy_non_match = test_data_img_id.reset_index()
+test_Data_imgx_id_imgy_non_match = test_Data_imgx_id_imgy_non_match.drop(labels='index', axis=1)
+test_Data_imgx_id_imgy_non_match.insert(loc = 2, column='img_y', value = img_random_sample)
+test_Data_imgx_id_imgy_non_match = test_Data_imgx_id_imgy_non_match.drop(labels='id', axis=1)
+test_Data_imgx_id_imgy_non_match.rename(columns={'img':'img_x'}, inplace=True)
+test_Data_imgx_id_imgy_non_match.insert(loc = 2, column='match', value=np.zeros(test_Data_imgx_id_imgy_non_match.shape[0]))
+print(test_Data_imgx_id_imgy_non_match)
+
+celeba_facerecognition_test_dataset = pd.concat([test_Data_imgx_id_imgy_match, test_Data_imgx_id_imgy_non_match])
+celeba_facerecognition_test_dataset = celeba_facerecognition_test_dataset.reset_index()
+celeba_facerecognition_test_dataset = celeba_facerecognition_test_dataset.drop(labels='index', axis=1)
+print(celeba_facerecognition_test_dataset)
+# celeba_facerecognition_test_dataset.to_csv("celeba_face_verify_test_dataset.csv", encoding="utf_8_sig")
