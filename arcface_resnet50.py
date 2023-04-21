@@ -14,7 +14,7 @@ from torchmetrics.functional import pairwise_cosine_similarity
 from torchmetrics.functional import mean_squared_error
 
 pl.seed_everything(83)
-
+import torch.nn.functional as F
 
 
 class ArcfaceResnet50(pl.LightningModule):
@@ -27,6 +27,9 @@ class ArcfaceResnet50(pl.LightningModule):
         self.criterion = nn.CrossEntropyLoss()
 
         # 使用一些度量
+        # 欧几里得距离
+        self.pdist = nn.PairwiseDistance(p=2)
+
         # 预测准确度
         self.train_acc = torchmetrics.Accuracy(task='multiclass', num_classes=10177)
         self.valid_acc = torchmetrics.Accuracy(task='multiclass', num_classes=10177)
@@ -68,7 +71,6 @@ class ArcfaceResnet50(pl.LightningModule):
         output, _ = self.forward(x, u)
         self.valid_acc(output, u)
         self.log('valid_acc', self.valid_acc, on_step=True, on_epoch=True)
-
         loss = self.criterion(output, u)
         self.log('valid_loss', loss, on_step=True, on_epoch=True)
 
@@ -76,32 +78,24 @@ class ArcfaceResnet50(pl.LightningModule):
         img_1, img_2, match = batch
         z_1 = self.resnet50(img_1)
         z_2 = self.resnet50(img_2)
-        cos = pairwise_cosine_similarity(z_1, z_2)
-        mse = mean_squared_error(z_1, z_2)
-        return {'cos':cos, 'mse':mse, 'match':match}
+        return {'z_1':z_1, 'z_2':z_2, 'match':match}
 
     def test_epoch_end(self, outputs):
-        cos = torch.cat([x['cos'] for x in outputs], dim=0)
-        mse = torch.cat([x['mse'] for x in outputs], dim=0)
         match = torch.cat([x['match'] for x in outputs], dim=0)
+        z_1 = torch.cat([x['z_1'] for x in outputs], dim=0)
+        z_2 = torch.cat([x['z_2'] for x in outputs], dim=0)
+        cos = F.cosine_similarity(z_1, z_2, dim=1)
+        dist = self.pdist(z_1, z_2)
+        match = match.long()
 
         fpr_cos, tpr_cos, thresholds_cos, eer_cos = self.calculate_eer(cos, match)
-        fpr_mse, tpr_mse, thresholds_mse, eer_mse = self.calculate_eer(mse, match)
+        fpr_dist, tpr_dist, thresholds_dist, eer_dist = self.calculate_eer(dist, match)
 
-        tensorboard_cos = {'fpr_cos':fpr_cos,
-                           'tpr_cos':tpr_cos,
-                           'thresholds_coss':thresholds_cos,
-                           'eer_cos':eer_cos}
-        tensorboard_mse = {
-            'fpr_mse':fpr_mse,
-            'tpr_mse':tpr_mse,
-            'thresholds_mse':thresholds_mse,
-            'eer_mse':eer_mse
-        }
+        arcface_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_coss':thresholds_cos,'eer_cos':eer_cos}
+        torch.save( arcface_confusion_cos, r"C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_confusion_cos.pt")
 
-        self.log_dict(tensorboard_cos)
-        self.log_dict(tensorboard_mse)
-
+        arcface_confusion_dist = {'fpr_dist':fpr_dist,'tpr_mse':tpr_dist,'thresholds_dist':thresholds_dist,'eer_mse':eer_dist}
+        torch.save(arcface_confusion_dist, r"C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_confusion_dist.pt")
 
 
 
@@ -164,6 +158,7 @@ def main(model_name, Resume, save_name=None):
         print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
         model = ArcfaceResnet50(in_features=512, out_features=10177, s=30.0, m=0.50)
         trainer.fit(model, data_module, ckpt_path=resume_checkpoint_path)
+        trainer.test(model, data_module)
 
     else:
         resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
@@ -172,6 +167,7 @@ def main(model_name, Resume, save_name=None):
         print('Model will be created')
         model = ArcfaceResnet50(in_features=512, out_features=10177, s=30.0, m=0.50)
         trainer.fit(model, data_module)
+        trainer.test(model, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
 
 

@@ -122,6 +122,7 @@ print(out)
 value = kl_estimate_value(out)
 print(value)
 '''
+'''
 
 from torchmetrics.classification import ConfusionMatrix # 混淆矩阵
 
@@ -136,4 +137,10 @@ def get_platform():
     else:
         print('Windows')
 get_platform()
+
+'''
+
+# torch.save()
+list = torch.load('lightning_logs/test_result.pt')
+print(list.keys())
 

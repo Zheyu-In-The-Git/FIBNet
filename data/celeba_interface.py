@@ -65,7 +65,7 @@ class CelebaInterface(pl.LightningDataModule):
         return DataLoader(self.Valid_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, pin_memory=self.pin_memory)
 
     def test_dataloader(self):
-        return DataLoader(self.Test_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, pin_memory=self.pin_memory)
+        return DataLoader(self.Test_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, pin_memory=self.pin_memory)
 
 
 if __name__ == '__main__':
