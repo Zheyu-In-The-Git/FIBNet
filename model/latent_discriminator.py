@@ -12,15 +12,11 @@ class LatentDiscriminator(nn.Module):
             nn.BatchNorm1d(latent_dim//2),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Linear(latent_dim//2, 100),
-            nn.BatchNorm1d(100),
+            nn.Linear(latent_dim//2, latent_dim//2),
+            nn.BatchNorm1d(latent_dim//2),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Linear(100, 10),
-            nn.BatchNorm1d(10),
-            nn.LeakyReLU(0.2, inplace=True),
-
-            nn.Linear(10, 1),
+            nn.Linear(latent_dim//2, 1),
 
             #nn.Sigmoid()
         )

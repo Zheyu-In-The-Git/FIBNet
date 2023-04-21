@@ -5,17 +5,11 @@ import inspect
 
 
 import pytorch_lightning as pl
-from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import LearningRateMonitor, model_checkpoint
-
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchmetrics
-import torch.utils.data as data
-import torchvision
-from torch.utils.tensorboard import SummaryWriter
 
 
 import pandas as pd
@@ -58,25 +52,28 @@ class BottleneckNets(pl.LightningModule):
         self.softmax = nn.Softmax(dim=1)
         self.sigmoid = nn.Sigmoid()
 
+        # roc的一些参数
+        self.roc = torchmetrics.ROC(task='binary')
+
+        # 欧几里得距离
+        self.dist = nn.PairwiseDistance(p=2)
 
         # 打开计算图
         self.example_input_array = torch.randn([self.batch_size, 3, 224, 224])
 
     def sample_z(self, mu, log_var):
         std = torch.exp(0.5 * log_var) # 确实变成了标准差
-        std = torch.clamp(std, min = 1e-4)
+        std = torch.clamp(std, min=1e-4)
         jitter = 1e-4
         eps = torch.randn_like(std)
         z = mu + eps * (std+jitter)
-
         return z
 
-    def forward(self, x):
+    def forward(self, x, u):
         mu, log_var = self.encoder(x)
         z = self.sample_z(mu, log_var)
-        u_hat = self.softmax(self.decoder(z))
+        u_hat = self.softmax(self.decoder(z, u))
         u_value = self.sigmoid(self.utility_discriminator(u_hat))
-
         return z, u_hat, mu, log_var, u_value
 
     def configure_loss(self, pred, true, loss_type):
@@ -133,6 +130,17 @@ class BottleneckNets(pl.LightningModule):
             raise ValueError("Invalid Loss Type!")
 
 
+    def calculate_eer(self, metrics, match):
+        fpr, tpr, thresholds = self.roc(metrics, match)
+        eer = 1.0
+        min_dist = 1.0
+        for i in range(len(fpr)):
+            dist = abs(fpr[i] - (1-tpr[i]))
+            if dist < min_dist:
+                min_dist = dist
+                eer = (fpr[i] + (1-tpr[i])) / 2
+        return fpr, tpr, thresholds, eer
+
     def training_step(self, batch, batch_idx, optimizer_idx):
         ###################
         # data processing #
@@ -141,7 +149,7 @@ class BottleneckNets(pl.LightningModule):
 
         mu, log_var = self.encoder(x)
         z = self.sample_z(mu, log_var)
-        u_hat = self.decoder(z)
+        u_hat = self.decoder(z, u)
 
         # 从Qz分布中采样的标准正太分布
         q_z = torch.randn_like(mu)
@@ -261,7 +269,7 @@ class BottleneckNets(pl.LightningModule):
         x, u, s = batch
         u_one_hot = F.one_hot(u, num_classes=self.identity_nums)
 
-        z, u_hat, mu, log_var, u_value = self.forward(x)
+        z, u_hat, mu, log_var, u_value = self.forward(x, u)
 
         val_loss_total = self.configure_loss(u_hat.detach(), u.detach(), 'CE') - self.beta * self.loss_fn_KL(mu.detach(), log_var.detach()) + \
                                self.kl_estimate_value(self.utility_discriminator(u_one_hot.to(torch.float32).detach()), 'Softmax') -\
@@ -279,23 +287,26 @@ class BottleneckNets(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         # 数据
-        x, u, s = batch
-        u_one_hot = F.one_hot(u, num_classes=self.identity_nums)
+        img_1, img_2, match = batch
+        z_1 = self.encoder(img_1)
+        z_2 = self.encoder(img_2)
+        return {'z_1':z_1, 'z_2':z_2, 'match':match}
 
-        z, u_hat, mu, log_var, u_value = self.forward(x)
+    def test_epoch_end(self, outputs):
+        match = torch.cat([x['match'] for x in outputs], dim=0)
+        z_1 = torch.cat([x['z_1'] for x in outputs], dim=0)
+        z_2 = torch.cat([x['z_2'] for x in outputs], dim=0)
+        cos = F.cosine_similarity(z_1, z_2, dim=1)
+        dist = self.pdist(z_1, z_2)
+        match = match.long()
 
-        test_loss_total = self.configure_loss(u_hat.detach(), u.detach(), 'CE') - self.beta * self.loss_fn_KL(mu.detach(), log_var.detach()) + \
-                         self.kl_estimate_value(self.utility_discriminator(u_one_hot.detach()), 'Softmax') - \
-                         self.beta * self.kl_estimate_value(self.latent_discriminator(z.detach()), 'Sigmoid')
+        fpr_cos, tpr_cos, thresholds_cos, eer_cos = self.calculate_eer(cos, match)
+        fpr_dist, tpr_dist, thresholds_dist, eer_dist = self.calculate_eer(dist, match)
 
-        u_accuracy, u_misclass_rate = self.get_stats(u_hat, u)
+        arcface_confusion_cos = {'fpr_cos': fpr_cos, 'tpr_cos': tpr_cos, 'thresholds_coss': thresholds_cos,'eer_cos': eer_cos}
+        torch.save(arcface_confusion_cos, r"C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottlenecknets_confusion_cos.pt")
 
-        tensorboard_logs = {'test_loss_total': test_loss_total,
-                            'test_u_accuracy': u_accuracy,
-                            'test_u_misclass_rate': u_misclass_rate}
-
-        self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-
-
+        arcface_confusion_dist = {'fpr_dist': fpr_dist, 'tpr_mse': tpr_dist, 'thresholds_dist': thresholds_dist,'eer_mse': eer_dist}
+        torch.save(arcface_confusion_dist, r"C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottlenecknets_confusion_dist.pt")
 
 
