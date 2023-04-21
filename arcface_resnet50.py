@@ -18,18 +18,18 @@ pl.seed_everything(83)
 
 
 class ArcfaceResnet50(pl.LightningModule):
-    def __init__(self):
+    def __init__(self, in_features=512, out_features=10177, s=30.0, m=0.50):
         super(ArcfaceResnet50, self).__init__()
         self.resnet50 = ResNet50(512, channels=3)
-        self.arc_margin_product = ArcMarginProduct(in_features=512, out_features=10177, s=30.0, m=0.50, easy_margin=False)
+        self.arc_margin_product = ArcMarginProduct(in_features=in_features, out_features=out_features, s=s, m=m, easy_margin=False)
         self.softmax = nn.Softmax()
         self.save_hyperparameters()
         self.criterion = nn.CrossEntropyLoss()
 
         # 使用一些度量
         # 预测准确度
-        self.train_acc = torchmetrics.Accuracy(task='Multiclass', num_classes=10177)
-        self.valid_acc = torchmetrics.Accuracy(task='Multiclass', num_classes=10177)
+        self.train_acc = torchmetrics.Accuracy(task='multiclass', num_classes=10177)
+        self.valid_acc = torchmetrics.Accuracy(task='multiclass', num_classes=10177)
         self.roc = torchmetrics.ROC(task='binary')
 
     def forward(self, x, u):
@@ -121,7 +121,7 @@ def main(model_name, Resume, save_name=None):
                  dataset = 'celeba_data',
                  batch_size = 64,
                  dim_img = 224,
-                 data_dir = 'D:\datasets\celeba', # 'D:\datasets\celeba'
+                 data_dir = 'D:\celeba', # 'D:\datasets\celeba'
                  sensitive_dim = 1,
                  identity_nums = 10177,
                  sensitive_attr = 'Male',
@@ -162,7 +162,7 @@ def main(model_name, Resume, save_name=None):
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
         print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
-        model = ArcfaceResnet50()
+        model = ArcfaceResnet50(in_features=512, out_features=10177, s=30.0, m=0.50)
         trainer.fit(model, data_module, ckpt_path=resume_checkpoint_path)
 
     else:
@@ -170,7 +170,7 @@ def main(model_name, Resume, save_name=None):
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
         print('Model will be created')
-        model = ArcfaceResnet50()
+        model = ArcfaceResnet50(in_features=512, out_features=10177, s=30.0, m=0.50)
         trainer.fit(model, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
 
