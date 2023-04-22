@@ -18,7 +18,7 @@ import torch.nn.functional as F
 
 
 class ArcfaceResnet50(pl.LightningModule):
-    def __init__(self, in_features=512, out_features=10177, s=30.0, m=0.50):
+    def __init__(self, in_features=512, out_features=10177, s=64.0, m=0.50):
         super(ArcfaceResnet50, self).__init__()
         self.resnet50 = ResNet50(512, channels=3)
         self.arc_margin_product = ArcMarginProduct(in_features=in_features, out_features=out_features, s=s, m=m, easy_margin=False)
@@ -61,18 +61,23 @@ class ArcfaceResnet50(pl.LightningModule):
         x, u, _ = batch
         output, _ = self.forward(x, u)
         loss = self.criterion(output, u)
-        self.log('train_loss', loss, on_step=True, on_epoch=True)
-        self.train_acc(output, u)
-        self.log('train_acc', self.train_acc, on_step=True, on_epoch=True)
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
+
+        preds = torch.argmax(output, dim=1)
+        self.train_acc.update(preds, u)
+        self.log('train_acc', self.train_acc, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, u, _ = batch
         output, _ = self.forward(x, u)
-        self.valid_acc(output, u)
-        self.log('valid_acc', self.valid_acc, on_step=True, on_epoch=True)
         loss = self.criterion(output, u)
         self.log('valid_loss', loss, on_step=True, on_epoch=True)
+
+        preds = torch.argmax(output, dim=1)
+        self.valid_acc.update(preds, u)
+        self.log('valid_acc', self.valid_acc, on_step=True, on_epoch=True)
+
 
     def test_step(self, batch, batch_idx):
         img_1, img_2, match = batch
@@ -151,21 +156,15 @@ def main(model_name, Resume, save_name=None):
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
 
     if Resume:
-        # Automatically loads the model with the saved hyperparameters
-        #resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH,  'saved_models')
-        #os.makedirs(resume_checkpoint_dir, exist_ok=True)
-        #resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
-        #print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
-        model = ArcfaceResnet50(in_features=512, out_features=10177, s=30.0, m=0.50)
+        model = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
         trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=19-step=39900.ckpt')
         trainer.test(model, data_module)
-
     else:
         resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
         print('Model will be created')
-        model = ArcfaceResnet50(in_features=512, out_features=10177, s=30.0, m=0.50)
+        model = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
         trainer.fit(model, data_module)
         trainer.test(model, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
