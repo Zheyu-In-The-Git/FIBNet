@@ -5,6 +5,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 import torch.optim as optim
 import os
+import numpy as np
 import math
 from data import CelebaInterface
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -15,6 +16,14 @@ from torchmetrics.functional import mean_squared_error
 
 pl.seed_everything(83)
 import torch.nn.functional as F
+
+
+def batch_misclass_rate(y_pred, y_true):
+    return np.sum(y_pred != y_true) / len(y_true)
+
+
+def batch_accuracy(y_pred, y_true):
+    return np.sum(y_pred == y_true) / len(y_true)
 
 
 class ArcfaceResnet50(pl.LightningModule):
@@ -30,9 +39,7 @@ class ArcfaceResnet50(pl.LightningModule):
         # 欧几里得距离
         self.pdist = nn.PairwiseDistance(p=2)
 
-        # 预测准确度
-        self.train_acc = torchmetrics.Accuracy(task='multiclass', num_classes=10177)
-        self.valid_acc = torchmetrics.Accuracy(task='multiclass', num_classes=10177)
+        # roc
         self.roc = torchmetrics.ROC(task='binary')
 
     def forward(self, x, u):
@@ -57,15 +64,21 @@ class ArcfaceResnet50(pl.LightningModule):
                 eer = (fpr[i] + (1 - tpr[i])) / 2
         return fpr, tpr, thresholds, eer
 
+    def get_stats(self, decoded, labels):
+        preds = torch.argmax(decoded, 1).cpu().detach().numpy()
+        accuracy = batch_accuracy(preds, labels.cpu().detach().numpy())
+        misclass_rate = batch_misclass_rate(preds, labels.cpu().detach().numpy())
+        return accuracy, misclass_rate
+
     def training_step(self, batch, batch_idx):
         x, u, _ = batch
         output, _ = self.forward(x, u)
         loss = self.criterion(output, u)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
 
-        preds = torch.argmax(output, dim=1)
-        self.train_acc.update(preds, u)
-        self.log('train_acc', self.train_acc, on_step=True, on_epoch=True, prog_bar=True)
+        train_acc, train_misclass = self.get_stats(output, u)
+        self.log('train_acc', train_acc, on_step=True, on_epoch=True, prog_bar=True)
+        self.log('train_misclass', train_misclass, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -74,9 +87,9 @@ class ArcfaceResnet50(pl.LightningModule):
         loss = self.criterion(output, u)
         self.log('valid_loss', loss, on_step=True, on_epoch=True)
 
-        preds = torch.argmax(output, dim=1)
-        self.valid_acc.update(preds, u)
-        self.log('valid_acc', self.valid_acc, on_step=True, on_epoch=True)
+        valid_acc, valid_misclass = self.get_stats(output, u)
+        self.log('valid_acc', valid_acc, on_step=True, on_epoch=True, prog_bar=True)
+        self.log('valid_misclass', valid_misclass, on_step=True, on_epoch=True, prog_bar=True)
 
 
     def test_step(self, batch, batch_idx):
@@ -134,7 +147,9 @@ def main(model_name, Resume, save_name=None):
             ModelCheckpoint(
                 mode="min",
                 monitor="valid_loss_epoch",
-                dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name)
+                dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),
+                save_last = True,
+                every_n_train_steps=50
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
             LearningRateMonitor("epoch"),
         ],  # Log learning rate every epoch
@@ -158,6 +173,7 @@ def main(model_name, Resume, save_name=None):
     if Resume:
         model = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
         trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=19-step=39900.ckpt')
+        trainer.save_checkpoint('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50')
         trainer.test(model, data_module)
     else:
         resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
@@ -173,7 +189,7 @@ def main(model_name, Resume, save_name=None):
 
 
 if __name__ == '__main__':
-    main(model_name='face_recognition_resnet50',  Resume = 1, save_name=None)
+    main(model_name='face_recognition_resnet50',  Resume = 0, save_name=None)
 
 
 
