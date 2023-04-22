@@ -152,12 +152,12 @@ def main(model_name, Resume, save_name=None):
 
     if Resume:
         # Automatically loads the model with the saved hyperparameters
-        resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH,  'saved_models')
-        os.makedirs(resume_checkpoint_dir, exist_ok=True)
-        resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
-        print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
+        #resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH,  'saved_models')
+        #os.makedirs(resume_checkpoint_dir, exist_ok=True)
+        #resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
+        #print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
         model = ArcfaceResnet50(in_features=512, out_features=10177, s=30.0, m=0.50)
-        trainer.fit(model, data_module, ckpt_path=resume_checkpoint_path)
+        trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=19-step=39900.ckpt')
         trainer.test(model, data_module)
 
     else:
@@ -174,7 +174,7 @@ def main(model_name, Resume, save_name=None):
 
 
 if __name__ == '__main__':
-    main(model_name='face_recognition_resnet50',  Resume = 0, save_name=None)
+    main(model_name='face_recognition_resnet50',  Resume = 1, save_name=None)
 
 
 

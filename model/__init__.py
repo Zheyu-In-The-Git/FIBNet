@@ -1,5 +1,4 @@
 
-from .model_interface import MInterface
 from .bottleneck_nets import BottleneckNets
 from .resnet_encoder import ResNetEncoder, ResNet101Encoder, ResNet50Encoder, ResNet18Encoder, LitEncoder1
 from .resnet_decoder import ResNetDecoder
