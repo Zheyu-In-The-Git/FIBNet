@@ -141,6 +141,6 @@ get_platform()
 '''
 
 # torch.save()
-list = torch.load('lightning_logs/test_result.pt')
-print(list.keys())
+list = torch.load('lightning_logs/arcface_confusion_cos.pt')
+print(list)
 
