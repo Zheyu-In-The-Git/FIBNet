@@ -1,5 +1,5 @@
-from model import BottleneckNets, ResNet18Encoder,ResNet50Encoder, ResNet101Encoder, UncertaintyModel, \
-    UtilityDiscriminator, SensitiveDiscriminator, ResNetDecoder
+from model import BottleneckNets, ResNet18Encoder,ResNet50Encoder, ResNet101Encoder, \
+    UtilityDiscriminator, ResNetDecoder
 from model import LitEncoder1, LatentDiscriminator
 
 def ConstructBottleneckNets(args, **kwargs):

@@ -10,9 +10,10 @@ import math
 from data import CelebaInterface
 from pytorch_lightning.loggers import TensorBoardLogger
 from argparse import ArgumentParser
-from model import ResNet50, ArcMarginProduct
+from model import ResNet50, ArcMarginProduct, FocalLoss
 from torchmetrics.functional import pairwise_cosine_similarity
 from torchmetrics.functional import mean_squared_error
+
 
 pl.seed_everything(83)
 import torch.nn.functional as F
@@ -33,7 +34,7 @@ class ArcfaceResnet50(pl.LightningModule):
         self.arc_margin_product = ArcMarginProduct(in_features=in_features, out_features=out_features, s=s, m=m, easy_margin=False)
         self.softmax = nn.Softmax()
         self.save_hyperparameters()
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = FocalLoss(gamma=2)
 
         # 使用一些度量
         # 欧几里得距离
@@ -51,7 +52,9 @@ class ArcfaceResnet50(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
         optim_train = optim.Adam(self.parameters(), lr=0.001, betas=(b1, b2))
-        return optim_train
+        scheduler = optim.lr_scheduler.StepLR(optim_train, step_size=30, gamma=0.1)
+        lr_logger = LearningRateMonitor(logging_interval='step')
+        return [optim_train], [scheduler, lr_logger]
 
     def calculate_eer(self, metrics, match):
         fpr, tpr, thresholds = self.roc(metrics, match)
@@ -103,18 +106,12 @@ class ArcfaceResnet50(pl.LightningModule):
         z_1 = torch.cat([x['z_1'] for x in outputs], dim=0)
         z_2 = torch.cat([x['z_2'] for x in outputs], dim=0)
         cos = F.cosine_similarity(z_1, z_2, dim=1)
-        dist = self.pdist(z_1, z_2)
         match = match.long()
 
         fpr_cos, tpr_cos, thresholds_cos, eer_cos = self.calculate_eer(cos, match)
-        fpr_dist, tpr_dist, thresholds_dist, eer_dist = self.calculate_eer(dist, match)
 
-        arcface_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_coss':thresholds_cos,'eer_cos':eer_cos}
+        arcface_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_cos':thresholds_cos,'eer_cos':eer_cos}
         torch.save( arcface_confusion_cos, r"C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_confusion_cos.pt")
-
-        arcface_confusion_dist = {'fpr_dist':fpr_dist,'tpr_mse':tpr_dist,'thresholds_dist':thresholds_dist,'eer_mse':eer_dist}
-        torch.save(arcface_confusion_dist, r"C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_confusion_dist.pt")
-
 
 
 CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/')
@@ -148,7 +145,7 @@ def main(model_name, Resume, save_name=None):
                 mode="min",
                 monitor="valid_loss_epoch",
                 dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),
-                save_last = True,
+                save_last=True,
                 every_n_train_steps=50
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
             LearningRateMonitor("epoch"),
@@ -157,7 +154,7 @@ def main(model_name, Resume, save_name=None):
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=100,
+        max_epochs=200,
         min_epochs=50,
         logger=logger,
         log_every_n_steps=10,

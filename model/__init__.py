@@ -7,5 +7,5 @@ from .utility_discriminator import UtilityDiscriminator
 from .sensitive_discriminator import SensitiveDiscriminator
 from .latent_discriminator import LatentDiscriminator
 from .construct_bottleneck_nets import ConstructBottleneckNets
-from .arcface_models import ResNet50, ArcMarginProduct
+from .arcface_models import ResNet50, ArcMarginProduct, FocalLoss
 

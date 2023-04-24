@@ -4,6 +4,8 @@ import pytorch_lightning as pl
 pl.seed_everything(43)
 from model import utility_discriminator
 import torch.nn as nn
+from matplotlib import pyplot as plt
+from torchvision import transforms
 '''
 # 二元交叉熵
 x = torch.Tensor([0.1, 0.5, 0.4])
@@ -141,6 +143,36 @@ get_platform()
 '''
 
 # torch.save()
-list = torch.load('lightning_logs/arcface_confusion_cos.pt')
-print(list)
+list = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/data/arcface_confusion_cos.pt', map_location=torch.device('cpu'))
+print(list.keys()) # fpr_cos, tpr_cos, thresholds_coss, eer_cos
+print(list['fpr_cos'])
+fpr_cos = list['fpr_cos'].numpy()
+tpr_cos = list['tpr_cos'].numpy()
+thresholds_cos = list['thresholds_coss'].numpy()
+
+plt.plot(fpr_cos, tpr_cos)
+plt.xlabel("FPR",fontsize=15)
+plt.ylabel("TPR",fontsize=15)
+
+plt.title("ROC")
+plt.legend(loc="lower right")
+# plt.show()
+
+
+trans = transforms.Compose([transforms.CenterCrop((130, 130)),
+                                    transforms.Resize(224),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize(mean=[0.5,0.5,0.5], std=[0.5,0.5,0.5]),
+                                    ])
+
+from collections import OrderedDict
+new_state_dict = OrderedDict()
+
+load_path = torch.load('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_models/face_recognition_resnet50', map_location=torch.device('cpu'))
+print(load_path['state_dict'])
+model = load_path['state_dict']
+
+#x = torch.randn( 3, 224, 224)
+#output = model(x)
+#print(output)
 

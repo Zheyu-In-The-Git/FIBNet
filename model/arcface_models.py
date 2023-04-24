@@ -200,6 +200,20 @@ class ArcMarginProduct(nn.Module):
 
         return output
 
+
+class FocalLoss(nn.Module):
+    def __init__(self, gamma=2):
+        super().__init__()
+        self.gamma = gamma
+        self.ce = torch.nn.CrossEntropyLoss()
+
+    def forward(self, input, target):
+        logp = self.ce(input, target)
+        p = torch.exp(-logp)
+        loss = (1-p) ** self.gamma * logp
+        return loss.mean()
+
+
 if __name__ == '__main__':
     encoder = ResNet50(latent_dim=512, channels=3)
     decoder = ArcMarginProduct(in_features=512,  out_features= 2622)
