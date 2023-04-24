@@ -14,7 +14,7 @@ import pandas as pd
 import numpy as np
 import torch.nn.functional as F
 
-
+from model.arcface_models import FocalLoss
 
 # 一些准确率，错误率的方法
 def batch_misclass_rate(y_pred, y_true):
@@ -77,7 +77,7 @@ class BottleneckNets(pl.LightningModule):
             bce = nn.BCEWithLogitsLoss()
             return bce(pred, true)
         elif loss_type == 'CE':
-            ce = nn.CrossEntropyLoss()
+            ce = FocalLoss(gamma=2)
             return ce(pred, true)
         else:
             raise ValueError("Invalid Loss Type!")
@@ -273,8 +273,12 @@ class BottleneckNets(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         # 数据
         img_1, img_2, match = batch
-        z_1 = self.encoder(img_1)
-        z_2 = self.encoder(img_2)
+        z_1_mu, z_1_sigma = self.encoder(img_1)
+        z_2_mu, z_2_sigma = self.encoder(img_2)
+
+        z_1 = self.sample_z(z_1_mu, z_1_sigma)
+        z_2 = self.sample_z(z_2_mu, z_2_sigma)
+
         return {'z_1':z_1, 'z_2':z_2, 'match':match}
 
     def test_epoch_end(self, outputs):
