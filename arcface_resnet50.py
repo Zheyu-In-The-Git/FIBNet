@@ -53,8 +53,7 @@ class ArcfaceResnet50(pl.LightningModule):
         b2 = 0.999
         optim_train = optim.Adam(self.parameters(), lr=0.001, betas=(b1, b2))
         scheduler = optim.lr_scheduler.StepLR(optim_train, step_size=30, gamma=0.1)
-        lr_logger = LearningRateMonitor(logging_interval='step')
-        return [optim_train], [scheduler, lr_logger]
+        return [optim_train], [scheduler]
 
     def calculate_eer(self, metrics, match):
         fpr, tpr, thresholds = self.roc(metrics, match)
