@@ -95,17 +95,21 @@ class BottleneckNets(pl.LightningModule):
         b2 = 0.999
 
         opt_phi_theta = optim.Adam(itertools.chain(self.encoder.parameters(),self.decoder.parameters()),lr=self.lr, betas=(b1, b2))
+        scheduler_phi_theta = optim.lr_scheduler.StepLR(opt_phi_theta, step_size=20, gamma=0.1)
 
         opt_eta = optim.Adam(self.latent_discriminator.parameters(), lr = self.lr, betas=(b1, b2))
+        scheduler_eta = optim.lr_scheduler.StepLR(opt_eta, step_size=20, gamma=0.1)
 
         opt_phi = optim.Adam(self.encoder.parameters(), lr=self.lr, betas=(b1, b2))
+        scheduler_phi = optim.lr_scheduler.StepLR(opt_phi, step_size=20, gamma=0.1)
 
         opt_tau = optim.Adam(self.utility_discriminator.parameters(), lr=self.lr, betas=(b1, b2))
+        scheduler_tau = optim.lr_scheduler.StepLR(opt_tau, step_size=20, gamma=0.1)
 
         opt_theta = optim.Adam(self.decoder.parameters(), lr=self.lr, betas=(b1, b2))
+        scheduler_theta = optim.lr_scheduler.StepLR(opt_theta, step_size=20, gamma=0.1)
 
-
-        return [opt_phi_theta, opt_eta, opt_phi, opt_tau, opt_theta], []
+        return [opt_phi_theta, opt_eta, opt_phi, opt_tau, opt_theta], [scheduler_phi_theta, scheduler_eta, scheduler_phi,scheduler_tau, scheduler_theta]
 
     def loss_fn_KL(self, mu, log_var):
         loss = 0.5 * (torch.pow(mu, 2) + torch.exp(log_var) - log_var - 1).sum(1).mean()
@@ -245,20 +249,12 @@ class BottleneckNets(pl.LightningModule):
             loss_theta = self.configure_loss(fake_u_discrimination_value, u_fake, 'BCE')
             self.log('loss_theta', loss_theta, prog_bar=True, logger=True, on_step=True, on_epoch=True)
 
-
-            # 总损失
-            u_one_hot = F.one_hot(u, num_classes=self.identity_nums)
-            train_loss_total = (self.configure_loss(u_hat.detach(), u.detach(), 'CE') - self.beta * self.loss_fn_KL(mu.detach(), log_var.detach()) + \
-                               self.kl_estimate_value(self.utility_discriminator(u_one_hot.to(torch.float32).detach()), 'Softmax') -\
-                               self.beta * self.kl_estimate_value(self.latent_discriminator(z.detach()), 'Sigmoid')).detach()
-
             # 识别准确率
             u_accuracy, u_misclass_rate = self.get_stats(self.softmax(self.decoder(z)), u)
 
             # 记录
             tensorboard_log = {'train_u_accuracy': u_accuracy,
-                               'train_u_error_rate': u_misclass_rate,
-                               'train_total_loss': train_loss_total}
+                               'train_u_error_rate': u_misclass_rate}
             self.log_dict(tensorboard_log, prog_bar=True, logger=True, on_step=True, on_epoch = True)
 
             return {'loss':loss_theta}
@@ -267,22 +263,19 @@ class BottleneckNets(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         # 数据
         x, u, s = batch
-        u_one_hot = F.one_hot(u, num_classes=self.identity_nums)
 
         z, u_hat, mu, log_var, u_value = self.forward(x, u)
 
-        val_loss_total = self.configure_loss(u_hat.detach(), u.detach(), 'CE') - self.beta * self.loss_fn_KL(mu.detach(), log_var.detach()) + \
-                               self.kl_estimate_value(self.utility_discriminator(u_one_hot.to(torch.float32).detach()), 'Softmax') -\
-                               self.beta * self.kl_estimate_value(self.latent_discriminator(z.detach()), 'Sigmoid')
+        val_loss_phi_theta = self.configure_loss(u_hat, u, 'CE') + self.beta * self.loss_fn_KL(mu, log_var)
 
         u_accuracy, u_misclass_rate = self.get_stats(u_hat, u)
 
-        tensorboard_logs = {'val_loss_total': val_loss_total,
-                            'val_u_accuracy': u_accuracy,
-                            'val_u_misclass_rate': u_misclass_rate}
+        tensorboard_logs = {'val_u_accuracy': u_accuracy,
+                            'val_u_misclass_rate': u_misclass_rate,
+                            'val_loss_phi_theta': val_loss_phi_theta}
 
         self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True, on_epoch = True)
-        return {'val_loss_total': val_loss_total, 'val_u_accuracy': u_accuracy}
+        return {'val_loss_phi_theta': val_loss_phi_theta,'val_u_accuracy': u_accuracy}
 
 
     def test_step(self, batch, batch_idx):
@@ -297,16 +290,11 @@ class BottleneckNets(pl.LightningModule):
         z_1 = torch.cat([x['z_1'] for x in outputs], dim=0)
         z_2 = torch.cat([x['z_2'] for x in outputs], dim=0)
         cos = F.cosine_similarity(z_1, z_2, dim=1)
-        dist = self.pdist(z_1, z_2)
         match = match.long()
 
         fpr_cos, tpr_cos, thresholds_cos, eer_cos = self.calculate_eer(cos, match)
-        fpr_dist, tpr_dist, thresholds_dist, eer_dist = self.calculate_eer(dist, match)
 
-        arcface_confusion_cos = {'fpr_cos': fpr_cos, 'tpr_cos': tpr_cos, 'thresholds_coss': thresholds_cos,'eer_cos': eer_cos}
-        torch.save(arcface_confusion_cos, r"C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottlenecknets_confusion_cos.pt")
-
-        arcface_confusion_dist = {'fpr_dist': fpr_dist, 'tpr_mse': tpr_dist, 'thresholds_dist': thresholds_dist,'eer_mse': eer_dist}
-        torch.save(arcface_confusion_dist, r"C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottlenecknets_confusion_dist.pt")
+        bottleneck_net_confusion_cos = {'fpr_cos': fpr_cos, 'tpr_cos': tpr_cos, 'thresholds_coss': thresholds_cos,'eer_cos': eer_cos}
+        torch.save(bottleneck_net_confusion_cos, r"C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottlenecknets_confusion_cos.pt")
 
 

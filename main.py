@@ -14,9 +14,9 @@ from utils import load_model_path_by_args
 def load_callbacks(load_path):
     callbacks = []
     callbacks.append(plc.EarlyStopping(
-        monitor='val_u_accuracy_epoch',
-        mode='max',
-        patience=10,
+        monitor='val_loss_phi_theta',
+        mode='min',
+        patience=3,
         min_delta=0.001,
     ))
 
@@ -74,6 +74,9 @@ def main(args):
         print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
         model = bottlenecknets
         trainer.fit(model, datamodule=data_module, ckpt_path=resume_checkpoint_path)
+        trainer.test(model, data_module)
+        trainer.save_checkpoint(resume_checkpoint_path)
+
     else:
         # 模型创建阶段
         resume_checkpoint_dir = os.path.join(load_path, 'saved_models')
@@ -82,6 +85,7 @@ def main(args):
         print('Model will be created')
         model = bottlenecknets
         trainer.fit(model, datamodule=data_module)
+        trainer.test(model, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
 
 if __name__ == '__main__':
