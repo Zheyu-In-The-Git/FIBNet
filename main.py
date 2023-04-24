@@ -55,16 +55,13 @@ def main(args):
         log_every_n_steps=10,
         precision=32,
         enable_checkpointing=True,
-        accelerator='gpu',
-        devices=1,
-        check_val_every_n_epoch=30,
-        #fast_dev_run=10
+        #accelerator='gpu',
+        #devices=1,
+        check_val_every_n_epoch=10,
+        fast_dev_run=10
     )
     trainer.logger._log_graph = True
     trainer.logger._default_hp_metric = True
-
-    bottlenecknets = ConstructBottleneckNets(args)
-
 
     if args.RESUME:
         # 模型重载训练阶段
@@ -72,7 +69,7 @@ def main(args):
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, args.ckpt_name)
         print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
-        model = bottlenecknets
+        model = ConstructBottleneckNets(args)
         trainer.fit(model, datamodule=data_module, ckpt_path=resume_checkpoint_path)
         trainer.test(model, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
@@ -83,7 +80,7 @@ def main(args):
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, args.ckpt_name)
         print('Model will be created')
-        model = bottlenecknets
+        model = ConstructBottleneckNets(args)
         trainer.fit(model, datamodule=data_module)
         trainer.test(model, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
@@ -104,12 +101,12 @@ if __name__ == '__main__':
     # Create checkpoint path if it doesn't exist yet
 
     # 数据集的路径 CELEBA的位置需要更改
-    DATASET_PATH = 'D:\datasets\celeba' # D:\datasets\celeba
+    DATASET_PATH = 'D:\celeba' # D:\datasets\celeba
 
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
     # 模型加载与命名
-    VERSION = 'bottleneck_experiment_latent512_beta0.0001'
+    VERSION = 'bottleneck_experiment_latent512_beta1.0'
     VERSION_NUM = '_1/'
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + VERSION_NUM + 'checkpoints/')
 
@@ -150,8 +147,8 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', default='bottleneck_experiment_version', type=str)
     parser.add_argument('--beta', default=1.0, type=float)
     parser.add_argument('--batch_size', default = 64, type=int)
-    parser.add_argument('--max_epochs', default=50, type = int)
-    parser.add_argument('--min_epochs', default=30, type=int)
+    parser.add_argument('--max_epochs', default=150, type = int)
+    parser.add_argument('--min_epochs', default=50, type=int)
     parser.add_argument('--lr', default=1e-3, type=float)
 
     # arcface的参数

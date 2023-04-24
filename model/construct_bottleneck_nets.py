@@ -59,7 +59,7 @@ def ConstructBottleneckNets(args, **kwargs):
     return BottleneckNets(model_name= args.model_name,
                           encoder=get_encoder,
                           decoder=get_decoder,
-                          utility_discriminato=get_utility_discriminator,
+                          utility_discriminator=get_utility_discriminator,
                           latent_discriminator=get_latent_discriminator,
                           batch_size=args.batch_size,
                           beta = args.beta,

@@ -1,7 +1,5 @@
 
 import itertools
-import importlib
-import inspect
 
 
 import pytorch_lightning as pl
@@ -28,7 +26,7 @@ def batch_accuracy(y_pred, y_true):
 
 
 class BottleneckNets(pl.LightningModule):
-    def __init__(self, model_name, encoder, decoder,  utility_discriminator, latent_discriminator, beta = 1.0, lr = 0.0001, **kwargs):
+    def __init__(self, model_name, encoder, decoder,  utility_discriminator, latent_discriminator, beta = 1.0, lr = 0.001, **kwargs):
 
 
         super(BottleneckNets, self).__init__()
@@ -37,9 +35,9 @@ class BottleneckNets(pl.LightningModule):
         self.model_name = model_name
 
         # 小网络
-        self.encoder = encoder # x->z
-        self.decoder = decoder # z->u 向量
-        self.utility_discriminator = utility_discriminator # u->0/1
+        self.encoder = encoder
+        self.decoder = decoder
+        self.utility_discriminator = utility_discriminator
         self.latent_discriminator = latent_discriminator
 
         # 超参数设置
@@ -55,11 +53,6 @@ class BottleneckNets(pl.LightningModule):
         # roc的一些参数
         self.roc = torchmetrics.ROC(task='binary')
 
-        # 欧几里得距离
-        self.dist = nn.PairwiseDistance(p=2)
-
-        # 打开计算图
-        self.example_input_array = torch.randn([self.batch_size, 3, 224, 224])
 
     def sample_z(self, mu, log_var):
         std = torch.exp(0.5 * log_var) # 确实变成了标准差
@@ -72,8 +65,8 @@ class BottleneckNets(pl.LightningModule):
     def forward(self, x, u):
         mu, log_var = self.encoder(x)
         z = self.sample_z(mu, log_var)
-        u_hat = self.softmax(self.decoder(z, u))
-        u_value = self.sigmoid(self.utility_discriminator(u_hat))
+        u_hat = self.decoder(z, u)
+        u_value = self.utility_discriminator(u_hat)
         return z, u_hat, mu, log_var, u_value
 
     def configure_loss(self, pred, true, loss_type):
@@ -120,7 +113,8 @@ class BottleneckNets(pl.LightningModule):
         accuracy = batch_accuracy(preds, labels.cpu().detach().numpy())
         misclass_rate = batch_misclass_rate(preds, labels.cpu().detach().numpy())
         return accuracy, misclass_rate
-
+    '''
+    
     def kl_estimate_value(self, discriminating, act_fn):
         if act_fn == 'Softmax':
             discriminated = self.softmax(discriminating)
@@ -132,7 +126,7 @@ class BottleneckNets(pl.LightningModule):
             return kl_estimate_value.detach()
         else:
             raise ValueError("Invalid Loss Type!")
-
+    '''
 
     def calculate_eer(self, metrics, match):
         fpr, tpr, thresholds = self.roc(metrics, match)
@@ -151,9 +145,7 @@ class BottleneckNets(pl.LightningModule):
         ###################
         x, u, _ = batch
 
-        mu, log_var = self.encoder(x)
-        z = self.sample_z(mu, log_var)
-        u_hat = self.decoder(z, u)
+        z, u_hat, mu, log_var, u_value = self.forward(x, u)
 
         # 从Qz分布中采样的标准正太分布
         q_z = torch.randn_like(mu)
@@ -250,7 +242,7 @@ class BottleneckNets(pl.LightningModule):
             self.log('loss_theta', loss_theta, prog_bar=True, logger=True, on_step=True, on_epoch=True)
 
             # 识别准确率
-            u_accuracy, u_misclass_rate = self.get_stats(self.softmax(self.decoder(z)), u)
+            u_accuracy, u_misclass_rate = self.get_stats(self.decoder(z, u),u)
 
             # 记录
             tensorboard_log = {'train_u_accuracy': u_accuracy,
