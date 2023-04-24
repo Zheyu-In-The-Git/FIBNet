@@ -129,7 +129,7 @@ def main(model_name, Resume, save_name=None):
                  dataset = 'celeba_data',
                  batch_size = 64,
                  dim_img = 224,
-                 data_dir = 'D:\celeba', # 'D:\datasets\celeba'
+                 data_dir = 'D:\datasets\celeba', # 'D:\datasets\celeba'
                  sensitive_dim = 1,
                  identity_nums = 10177,
                  sensitive_attr = 'Male',
@@ -151,8 +151,8 @@ def main(model_name, Resume, save_name=None):
         ],  # Log learning rate every epoch
 
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
-        #accelerator="auto",
-        #devices=1,
+        accelerator="auto",
+        devices=1,
         max_epochs=100,
         min_epochs=50,
         logger=logger,
@@ -160,7 +160,7 @@ def main(model_name, Resume, save_name=None):
         precision=32,
         enable_checkpointing=True,
         check_val_every_n_epoch=10,
-        fast_dev_run=2,
+        fast_dev_run=False,
         reload_dataloaders_every_n_epochs=1
     )
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
