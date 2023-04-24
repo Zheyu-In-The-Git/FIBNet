@@ -9,12 +9,15 @@ from model import ConstructBottleneckNets
 from matplotlib import pyplot as plt
 from torchvision import transforms
 from arcface_resnet50 import ArcfaceResnet50
+from sklearn.manifold import TSNE
 import torch.nn.functional as F
 
-
+# 预备测试的超参数beta 为 0.0001， 0.1， 0.3， 0.5， 0.8， 0.95
+'''
 
 # 4月23日 celeba数据集训练arcface_resnet50
-# 画
+# -----------------ROC实验----------------------
+#
 list = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/data/arcface_confusion_cos.pt', map_location=torch.device('cpu'))
 print(list.keys()) # fpr_cos, tpr_cos, thresholds_coss, eer_cos
 print(list['fpr_cos'])
@@ -63,6 +66,26 @@ y_latent = y_latent.squeeze(dim=0)
 cos_value = F.cosine_similarity(x_latent, y_latent)
 print(cos_value)
 
+'''
+
+
+# -----------------t-SNE实验----------------------
+
+'''
+
+X = model(data) # 这里应该是表征 z
+tsne = TSNE(n_components=2, perplexity=30.0, early_exaggeration=12.0, learning_rate=200.0, n_iter=1000,
+            n_iter_without_progress=300, min_grad_norm=1e-7, metric='euclidean', init='random', verbose=1,
+            random_state=None, method='barnes_hut', angle=0.5) # 这里metric可以换成cosine 到时候试一下
+X_tsne = tsne.fit_transform(X)
+plt.scatter(X_tsne[:, 0], X_tsne[:,1])
+#plt.show()
+
+'''
+
+
+
+# ---------------互信息估计器实验--------------------
 
 
 
