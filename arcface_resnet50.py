@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torchmetrics
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
 import torch.optim as optim
 import os
 import numpy as np
@@ -51,7 +51,7 @@ class ArcfaceResnet50(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.parameters(), lr=0.001, betas=(b1, b2))
+        optim_train = optim.Adam(self.parameters(), lr=0.001, betas=(b1, b2), weight_decay=5e-4)
         scheduler = optim.lr_scheduler.StepLR(optim_train, step_size=20, gamma=0.1)
         return [optim_train], [scheduler]
 
@@ -148,6 +148,11 @@ def main(model_name, Resume, save_name=None):
                 every_n_train_steps=50
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
             LearningRateMonitor("epoch"),
+            EarlyStopping(
+                monitor='val_loss_epoch',
+                patience = 5,
+                mode='min'
+            )
         ],  # Log learning rate every epoch
 
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
