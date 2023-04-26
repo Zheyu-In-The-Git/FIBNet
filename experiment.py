@@ -13,18 +13,18 @@ from sklearn.manifold import TSNE
 import torch.nn.functional as F
 
 # 预备测试的超参数beta 为 0.0001， 0.1， 0.3， 0.5， 0.8， 0.95
-'''
+
 
 # 4月23日 celeba数据集训练arcface_resnet50
 # -----------------ROC实验----------------------
 #
-list = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/data/arcface_confusion_cos.pt', map_location=torch.device('cpu'))
+list = torch.load('lightning_logs/arcface_confusion_cos.pt', map_location=torch.device('cpu'))
 print(list.keys()) # fpr_cos, tpr_cos, thresholds_coss, eer_cos
 print(list['fpr_cos'])
 print('eer_cos:',list['eer_cos'])
 fpr_cos = list['fpr_cos'].numpy()
 tpr_cos = list['tpr_cos'].numpy()
-thresholds_cos = list['thresholds_coss'].numpy()
+thresholds_cos = list['thresholds_cos'].numpy()
 
 plt.plot(fpr_cos, tpr_cos)
 plt.xlabel("FPR",fontsize=15)
@@ -32,9 +32,9 @@ plt.ylabel("TPR",fontsize=15)
 
 plt.title("ROC")
 plt.legend(loc="lower right")
-# plt.show()
+#plt.show()
 
-
+'''
 
 # ------ 测人脸# ----
 trans = transforms.Compose([transforms.CenterCrop((130, 130)),
