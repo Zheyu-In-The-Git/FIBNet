@@ -52,7 +52,7 @@ class ArcfaceResnet50(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
         optim_train = optim.Adam(self.parameters(), lr=0.0001, betas=(b1, b2), weight_decay=5e-4)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.5, patience=5, min_lr=1e-6)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.5, patience=3, min_lr=1e-6)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
     def calculate_eer(self, metrics, match):
@@ -111,7 +111,8 @@ class ArcfaceResnet50(pl.LightningModule):
 
         arcface_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_cos':thresholds_cos,'eer_cos':eer_cos}
         torch.save(arcface_confusion_cos,
-                   r"/lightning_logs/arcface_recognizer_resnet50_latent512/arcface_confusion_cos.pt")
+                   r"/lightning_logs/arcface_recognizer_resnet50_latent512")
+        self.log('eer_cos', eer_cos, on_step=True, on_epoch=True, prog_bar=True)
 
 
 CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/')
@@ -136,31 +137,31 @@ def main(model_name, Resume, save_name=None):
                  sensitive_attr = 'Male',
                  pin_memory=False)
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_log', name='tensorboard_log', version='face_recognizer_resnet50_logger' )  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_log', name='tensorboard_log', version='face_recognizer_resnet50_logger2' )  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     # Create a PyTorch Lightning trainer with the generation callback
     trainer = pl.Trainer(
         callbacks=[
             ModelCheckpoint(
-                mode="min",
-                monitor="valid_loss_epoch",
+                mode="max",#最大
+                monitor="valid_acc_epoch",#用valid_acc比较好
                 dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),
                 save_last=True,
                 every_n_train_steps=50
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
             LearningRateMonitor("epoch"),
             EarlyStopping(
-                monitor='valid_loss_epoch',
-                patience = 3,
-                mode='min'
+                monitor='valid_acc_epoch',#用valid_acc比较好
+                patience = 5,#用valid_acc比较好5吧 间隔为3个epoch为一周期
+                mode='max'#用valid_acc比较好 保存top_k 3个比较好把
             )
         ],  # Log learning rate every epoch
 
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=100,
-        min_epochs=50,
+        max_epochs=200,
+        min_epochs=100,
         logger=logger,
         log_every_n_steps=10,
         precision=32,
@@ -191,7 +192,7 @@ def main(model_name, Resume, save_name=None):
 
 
 if __name__ == '__main__':
-    main(model_name='face_recognition_resnet50',  Resume = 0, save_name=None)
+    main(model_name='face_recognition_resnet50',  Resume = 1, save_name=None)
 
 
 
