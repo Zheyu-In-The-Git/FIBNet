@@ -51,9 +51,9 @@ class ArcfaceResnet50(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.parameters(), lr=0.0001, betas=(b1, b2), weight_decay=5e-4)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.5, patience=3, min_lr=1e-7)
-        return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "valid_loss"}
+        optim_train = optim.Adam(self.parameters(), lr=0.05, betas=(b1, b2), weight_decay=5e-4)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=3, min_lr=1e-7, threshold=1e-2)
+        return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
     def calculate_eer(self, metrics, match):
         fpr, tpr, thresholds = self.roc(metrics, match)
@@ -138,7 +138,7 @@ def main(model_name, Resume, save_name=None):
                  sensitive_attr = 'Male',
                  pin_memory=False)
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_log', name='tensorboard_log', version='face_recognizer_resnet50_logger4' )  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_log', name='tensorboard_log')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     # Create a PyTorch Lightning trainer with the generation callback
     trainer = pl.Trainer(
@@ -176,8 +176,8 @@ def main(model_name, Resume, save_name=None):
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
 
     if Resume:
-        model = ArcfaceResnet50(in_features=512, out_features=10177, s=5.0, m=0.30)
-        trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last-v1.ckpt')
+        model = ArcfaceResnet50(in_features=512, out_features=10177, s=32.0, m=0.50)
+        trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt')
         trainer.test(model, data_module)
         trainer.save_checkpoint('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50')
     else:
@@ -185,7 +185,7 @@ def main(model_name, Resume, save_name=None):
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
         print('Model will be created')
-        model = ArcfaceResnet50(in_features=512, out_features=10177, s=5.0, m=0.30)
+        model = ArcfaceResnet50(in_features=512, out_features=10177, s=32.0, m=0.50)
         trainer.fit(model, data_module)
         trainer.test(model, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
