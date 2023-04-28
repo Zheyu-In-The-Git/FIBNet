@@ -141,6 +141,8 @@ def get_platform():
 get_platform()
 
 '''
+'''
+
 
 # torch.save()
 list = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/data/arcface_confusion_cos.pt', map_location=torch.device('cpu'))
@@ -176,3 +178,8 @@ model = load_path['state_dict']
 #output = model(x)
 #print(output)
 
+'''
+
+import numpy as np
+s = np.sqrt(2) * np.log(10177-1)
+print(s)

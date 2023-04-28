@@ -26,7 +26,7 @@ def batch_accuracy(y_pred, y_true):
 
 
 class BottleneckNets(pl.LightningModule):
-    def __init__(self, model_name, encoder, decoder,  utility_discriminator, latent_discriminator, beta = 1.0, lr = 0.001, **kwargs):
+    def __init__(self, model_name, encoder, decoder,  utility_discriminator, latent_discriminator, beta, lr, **kwargs):
 
 
         super(BottleneckNets, self).__init__()
@@ -35,7 +35,7 @@ class BottleneckNets(pl.LightningModule):
         self.model_name = model_name
 
         # 小网络
-        self.encoder = encoder
+        self.encoder = encoder # 用预训练 直接就是Resnet50,
         self.decoder = decoder
         self.utility_discriminator = utility_discriminator
         self.latent_discriminator = latent_discriminator
@@ -87,22 +87,47 @@ class BottleneckNets(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
 
-        opt_phi_theta = optim.Adam(itertools.chain(self.encoder.parameters(),self.decoder.parameters()),lr=self.lr, betas=(b1, b2))
-        scheduler_phi_theta = optim.lr_scheduler.StepLR(opt_phi_theta, step_size=20, gamma=0.1)
+        opt_phi_theta = optim.Adam(itertools.chain(self.encoder.parameters(),self.decoder.parameters()),lr=self.lr, betas=(b1, b2)) # 可能学习率需要重新设置
+        scheduler_phi_theta = optim.lr_scheduler.ReduceLROnPlateau(opt_phi_theta, mode='min', factor=0.5, patience=3, min_lr=1e-6, threshold=1e-1)
 
         opt_eta = optim.Adam(self.latent_discriminator.parameters(), lr = self.lr, betas=(b1, b2))
-        scheduler_eta = optim.lr_scheduler.StepLR(opt_eta, step_size=20, gamma=0.1)
+        scheduler_eta = optim.lr_scheduler.ReduceLROnPlateau(opt_eta, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
 
         opt_phi = optim.Adam(self.encoder.parameters(), lr=self.lr, betas=(b1, b2))
-        scheduler_phi = optim.lr_scheduler.StepLR(opt_phi, step_size=20, gamma=0.1)
+        scheduler_phi = optim.lr_scheduler.ReduceLROnPlateau(opt_phi, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
 
         opt_tau = optim.Adam(self.utility_discriminator.parameters(), lr=self.lr, betas=(b1, b2))
-        scheduler_tau = optim.lr_scheduler.StepLR(opt_tau, step_size=20, gamma=0.1)
+        scheduler_tau = optim.lr_scheduler.ReduceLROnPlateau(opt_tau, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
 
         opt_theta = optim.Adam(self.decoder.parameters(), lr=self.lr, betas=(b1, b2))
-        scheduler_theta = optim.lr_scheduler.StepLR(opt_theta, step_size=20, gamma=0.1)
+        scheduler_theta = optim.lr_scheduler.ReduceLROnPlateau(opt_theta, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
 
-        return [opt_phi_theta, opt_eta, opt_phi, opt_tau, opt_theta], [scheduler_phi_theta, scheduler_eta, scheduler_phi,scheduler_tau, scheduler_theta]
+        return_list = ({'optimizer':opt_phi_theta,
+                        'lr_scheduler':{
+                            'scheduler':scheduler_phi_theta,
+                            'monitor':'loss_phi_theta'
+                        }},
+                       {'optimizer':opt_eta,
+                        'lr_scheduler':{
+                            'scheduler':scheduler_eta,
+                            'monitor':'loss_eta'
+                        }},
+                       {'optimizer':opt_phi,
+                        'lr_scheduler':{
+                            'scheduler':scheduler_phi,
+                            'monitor':'loss_phi'
+                        }},
+                       {'optimizer':opt_tau,
+                        'lr_scheduler':{
+                            'scheduler':scheduler_tau,
+                            'monitor':'loss_tau'
+                        }},
+                       {'optimizer':opt_theta,
+                        'lr_scheduler':{
+                            'scheduler':scheduler_theta,
+                            'monitor':'loss_theta'
+                        }})
+        return return_list
 
     def loss_fn_KL(self, mu, log_var):
         loss = 0.5 * (torch.pow(mu, 2) + torch.exp(log_var) - log_var - 1).sum(1).mean()
@@ -113,20 +138,6 @@ class BottleneckNets(pl.LightningModule):
         accuracy = batch_accuracy(preds, labels.cpu().detach().numpy())
         misclass_rate = batch_misclass_rate(preds, labels.cpu().detach().numpy())
         return accuracy, misclass_rate
-    '''
-    
-    def kl_estimate_value(self, discriminating, act_fn):
-        if act_fn == 'Softmax':
-            discriminated = self.softmax(discriminating)
-            kl_estimate_value = (torch.log(discriminated) - torch.log(1 - discriminated)).sum(1).mean()
-            return kl_estimate_value.detach()
-        elif act_fn == 'Sigmoid':
-            discriminated = self.sigmoid(discriminating)
-            kl_estimate_value = (torch.log(discriminated) - torch.log(1-discriminated)).sum(1).mean()
-            return kl_estimate_value.detach()
-        else:
-            raise ValueError("Invalid Loss Type!")
-    '''
 
     def calculate_eer(self, metrics, match):
         fpr, tpr, thresholds = self.roc(metrics, match)
@@ -289,8 +300,9 @@ class BottleneckNets(pl.LightningModule):
         match = match.long()
 
         fpr_cos, tpr_cos, thresholds_cos, eer_cos = self.calculate_eer(cos, match)
-
+        self.log('eer_cos', eer_cos, on_epoch=True)
         bottleneck_net_confusion_cos = {'fpr_cos': fpr_cos, 'tpr_cos': tpr_cos, 'thresholds_coss': thresholds_cos,'eer_cos': eer_cos}
+
         torch.save(bottleneck_net_confusion_cos, r"C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottlenecknets_confusion_cos.pt")
 
 
