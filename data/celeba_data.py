@@ -1,5 +1,4 @@
-
-
+import pandas as pd
 import torch
 import os
 import numpy as np
@@ -184,22 +183,118 @@ class CelebaRecognitionTestDataSet(data.Dataset):
         return img_x, img_y, match
 
 
+class CelebaTSNEExperiment(data.Dataset):
+    def __init__(self, dim_img:int, data_dir:str, sensitive_attr:str, split:str):
+        self.dim_img = dim_img
+        self.data_dir = data_dir
+        self.split = split
+        self.sensitive_attr = sensitive_attr
+
+        split_map = {
+            'train': 0,
+            'valid': 1,
+            'test': 2,
+            'all': None,
+            'train_valid_70%': 'train_valid_70%',
+            'test_30%': 'test_30%'
+        }
+
+        split_ = split_map[verify_str_arg(split.lower(), "split",
+                                          ("train", "valid", "test", "all", 'train_valid_70%', 'test_30%'))]
+
+        # 确认传入敏感属性类型
+        if isinstance(sensitive_attr, list):
+            self.sensitive_attr = sensitive_attr
+        else:
+            self.sensitive_attr = [sensitive_attr]
+
+        fn = partial(os.path.join, self.data_dir)  # csv检索用的
+        splits = pandas.read_csv(fn("list_eval_partition.txt"), delim_whitespace=True, header=None, index_col=0)
+        identity = pandas.read_csv(fn("identity_CelebA.txt"), delim_whitespace=True, header=None, index_col=0)
+        attr = pandas.read_csv(fn("list_attr_celeba.txt"), delim_whitespace=True, header=1)
+        sensitive_attr = attr[self.sensitive_attr]
+
+        if split_ == 'train_valid_70%':
+            mask = slice(0, 141819, 1)
+        elif split_ == 'test_30%':
+            mask = slice(141819, 202599, 1)
+        elif split_ is None:
+            mask = slice(None)
+        else:
+            mask = (splits[1] == split_)
+
+        male_select_condition = self.sensitive_attr[0] + ' == 1'
+        male_dataset = sensitive_attr[mask].query(male_select_condition).head(500)
+
+        female_select_condition = self.sensitive_attr[0] + ' == -1'
+        female_dataset = sensitive_attr[mask].query(female_select_condition).head(500)
+
+        self.dataset = pd.concat([male_dataset, female_dataset])
+        #print(self.dataset.values[0])
+
+        self.id = identity
+
+
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index):
+
+        img_path = self.dataset.index.values[index]
+        # 图像
+        X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba", img_path))
+
+        trans = transforms.Compose([transforms.CenterCrop((130, 130)),
+                                    transforms.Resize(self.dim_img),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize(mean=[0.5,0.5,0.5], std=[0.5,0.5,0.5]),
+                                    ])
+
+        x = trans(X)
+
+        # 身份信息
+
+        u = self.id.loc[img_path].values
+        u = torch.as_tensor(u)-1.0
+        u = u.long()
+        #print(u)
+
+
+        #敏感属性
+        # self.s = torch.as_tensor(sensitive_attr[mask].values) # 敏感信息的索引
+        # self.s = torch.div(self.s + 1, 2, rounding_mode='floor')
+        # self.s = self.s.to(torch.float32)
+        s = torch.as_tensor(self.dataset.values[index])
+        s = torch.div(s + 1, 2, rounding_mode='floor')
+        s = s.to(torch.float32)
+
+        return x, u, s
+
+
+
 
 if __name__ == '__main__':
 
-    #data_dir = '/Users/xiaozhe/PycharmProjects/representation_soft_biometric_enhancement/data/celeba'
     #data_dir = 'D:\datasets\celeba'
-    data_dir = '/Volumes/xiaozhe_SSD/datasets/celeba'
+    data_dir = '/Users/xiaozhe/datasets/celeba'
 
 
-    loader = CelebaData(dim_img=224, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train_valid_70%')
-    train_loader = DataLoader(loader, batch_size=2, shuffle = True)
+    # loader = CelebaDataset(dim_img=224, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train_valid_70%')
+    dataset = CelebaTSNEExperiment(dim_img=224, data_dir=data_dir, sensitive_attr='Male', split='test_30%')
+    train_loader = DataLoader(dataset, batch_size=1)
+    #print(sampler)
+
 
     for i, item in enumerate(train_loader):
         print('i', i)
         x, u, s = item
-        print(u, s)
+        print(u.type(), s.type())
         break
+
+
+
+
     '''
 
     loader = CelebaRecognitionTestDataSet(dim_img=224, data_dir = data_dir)
