@@ -243,7 +243,7 @@ class CelebaTSNEExperiment(data.Dataset):
 
         img_path = self.dataset.index.values[index]
         # 图像
-        X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba", img_path))
+        X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba", img_path))
 
         trans = transforms.Compose([transforms.CenterCrop((130, 130)),
                                     transforms.Resize(self.dim_img),

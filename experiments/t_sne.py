@@ -17,33 +17,43 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+device = torch.device('cuda' if torch.cuda.is_available() else "cpu") #******#
+
 # Celeba数据集的准备
-celeba_dir = '/Users/xiaozhe/datasets/celeba'
+celeba_dir = 'D:\datasets\celeba'
 celeba_dataset = CelebaTSNEExperiment(dim_img=224, data_dir=celeba_dir, sensitive_attr='Male', split='test_30%')
-dataloader = DataLoader(celeba_dataset, batch_size=550, shuffle=True)
+dataloader = DataLoader(celeba_dataset, batch_size=50, shuffle=True)
 
 
 
 # 导入模型
-arcface_resnet50_net = arcface_resnet50.ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
-model = arcface_resnet50_net.load_from_checkpoint('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
+arcface_resnet50_net = arcface_resnet50.ArcfaceResnet50(in_features=1024, out_features=10177, s=64.0, m=0.50)
+model = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent1024\checkpoints\saved_model\face_recognition_resnet50\epoch=130-step=259400.ckpt').to(device)
 
+for param in model.parameters():
+    param.requires_grad_(False)
 # 让模型进行计算
 Z_data = 0
 S_data = 0
 for i, item in enumerate(dataloader):
     print('i', i)
     x, u, s = item
-    U, Z = model(x,u)
+    U, Z = model(x.to(device),u.to(device))
     #print(Z.shape)
-    Z_data = Z
-    S_data = s
-    break
-Z_data = Z_data.detach().numpy()
-S_data = S_data.detach().numpy()
+    if i == 0:
+        Z_data = Z
+        S_data = s
+    else:
+        Z_data = torch.cat((Z_data, Z), 0)
+        S_data = torch.cat((S_data, s), 0)
+
+Z_data = Z_data.cpu().detach().numpy()
+S_data = S_data.cpu().detach().numpy()
 print(Z_data.shape)
 print(S_data.shape)
 # 进行TSNE计算
+
+
 
 
 

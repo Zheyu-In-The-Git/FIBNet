@@ -28,9 +28,9 @@ def batch_accuracy(y_pred, y_true):
 
 
 class ArcfaceResnet50(pl.LightningModule):
-    def __init__(self, in_features=512, out_features=10177, s=30.0, m=0.50):
+    def __init__(self, in_features=1024, out_features=10177, s=30.0, m=0.50):
         super(ArcfaceResnet50, self).__init__()
-        self.resnet50 = ResNet50(512, channels=3)
+        self.resnet50 = ResNet50(in_features, channels=3)
         self.arc_margin_product = ArcMarginProduct(in_features=in_features, out_features=out_features, s=s, m=m, easy_margin=False)
         self.softmax = nn.Softmax()
         self.save_hyperparameters()
@@ -109,14 +109,14 @@ class ArcfaceResnet50(pl.LightningModule):
 
         fpr_cos, tpr_cos, thresholds_cos, eer_cos = self.calculate_eer(cos, match)
 
-        self.log('eer_cos', eer_cos, on_step=True, on_epoch=True, prog_bar=True)
+        self.log('eer_cos', eer_cos, prog_bar=True)
 
-        arcface_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_cos':thresholds_cos,'eer_cos':eer_cos}
-        torch.save(arcface_confusion_cos,r"/lightning_logs")
+        #arcface_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_cos':thresholds_cos,'eer_cos':eer_cos}
+        #torch.save(arcface_confusion_cos, r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\lightning_log\roc_arcface_512.pt')
 
 
 
-CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/')
+CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_recognizer_resnet50_latent1024/checkpoints/')
 #os.makedirs(CHECKPOINT_PATH, exist_ok=True)
 
 def main(model_name, Resume, save_name=None):
@@ -176,16 +176,16 @@ def main(model_name, Resume, save_name=None):
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
 
     if Resume:
-        model = ArcfaceResnet50(in_features=512, out_features=10177, s=32.0, m=0.50)
-        trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt')
-        trainer.test(model, data_module)
-        trainer.save_checkpoint('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50')
+        model = ArcfaceResnet50(in_features=1024, out_features=10177, s=32.0, m=0.50)
+        #trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
+        trainer.test(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
+        #trainer.save_checkpoint('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50')
     else:
         resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
         print('Model will be created')
-        model = ArcfaceResnet50(in_features=512, out_features=10177, s=32.0, m=0.50)
+        model = ArcfaceResnet50(in_features=1024, out_features=10177, s=32.0, m=0.50)
         trainer.fit(model, data_module)
         trainer.test(model, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
