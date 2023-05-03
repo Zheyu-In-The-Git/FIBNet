@@ -72,8 +72,8 @@ def main(args):
         log_every_n_steps=10,
         precision=32,
         enable_checkpointing=True,
-        #accelerator='gpu',
-        #devices=1,
+        accelerator='gpu',
+        devices=1,
         check_val_every_n_epoch=10,
         fast_dev_run=10
     )
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
     # 模型加载与命名
     VERSION = 'bottleneck_experiment_latent512_beta0.8'
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + 'checkpoints/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + '/checkpoints/')
 
     ###################
     ## 设置参数这里开始 #
@@ -155,15 +155,14 @@ if __name__ == '__main__':
     # 数据集参数设置
     parser.add_argument('--dataset', default='celeba_data', type=str)
     parser.add_argument('--data_dir', default = DATASET_PATH, type=str)
-    parser.add_argument('--num_workers', default =0, type=int)
+    parser.add_argument('--num_workers', default =2, type=int)
     parser.add_argument('--sensitive_attr', default='Male', type=str)
     parser.add_argument('--pin_memory', default = False)
 
     # bottleneck_nets的参数
-    parser.add_argument('--encoder_model', default='ResNet50',type = str)
     parser.add_argument('--model_name', default='bottleneck', type=str)
     parser.add_argument('--beta', default=0.8, type=float)
-    parser.add_argument('--batch_size', default = 10, type=int)
+    parser.add_argument('--batch_size', default=64, type=int)
     parser.add_argument('--max_epochs', default=150, type = int)
     parser.add_argument('--min_epochs', default=100, type=int)
 
