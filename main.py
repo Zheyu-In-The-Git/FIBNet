@@ -15,8 +15,8 @@ from arcface_resnet50 import ArcfaceResnet50
 def load_callbacks(load_path):
     callbacks = []
     callbacks.append(plc.EarlyStopping(
-        monitor='val_loss_phi_theta',
-        mode='min',
+        monitor='val_u_accuracy',
+        mode='max',
         patience=3,
         min_delta=0.001,
     ))
@@ -25,6 +25,8 @@ def load_callbacks(load_path):
         save_last=True,
         dirpath = os.path.join(load_path, 'saved_models'),
         every_n_train_steps=50,
+        monitor='val_u_accuracy',  # 用valid_acc比较好
+        mode='max'  # 用valid_acc比较好 保存top_k 3个比较好把
     ))
 
     callbacks.append(
@@ -44,10 +46,18 @@ def main(args):
     print(load_path)
 
     #数据模块
-    data_module = CelebaInterface(**vars(args))
+    data_module = CelebaInterface(num_workers = args.num_workers,
+                 dataset=args.dataset,
+                 batch_size=args.batch_size,
+                 dim_img=args.dim_img,
+                 data_dir=args.data_dir,
+                 sensitive_dim=args.sensitive_dim,
+                 identity_nums=args.identity_nums,
+                 sensitive_attr=args.sensitive_attr,
+                 pin_memory=args.pin_memory)
 
     #打开记录器
-    logger = TensorBoardLogger(save_dir=load_path + args.log_dir, name=args.log_name)  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=load_path, name='tensorboard_log')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     # 加载网络模块，并构建BottleneckNets
     arcface_resnet50_net =ArcfaceResnet50(in_features=args.latent_dim, out_features=10177, s=64.0, m=0.50)
@@ -75,10 +85,11 @@ def main(args):
         accelerator='gpu',
         devices=1,
         check_val_every_n_epoch=10,
-        fast_dev_run=10
+        fast_dev_run=False,
+        reload_dataloaders_every_n_epochs=1
     )
     trainer.logger._log_graph = True
-    trainer.logger._default_hp_metric = True
+    trainer.logger._default_hp_metric = None
 
 
     if args.RESUME:
@@ -118,7 +129,7 @@ if __name__ == '__main__':
     # Create checkpoint path if it doesn't exist yet
 
     # 数据集的路径 CELEBA的位置需要更改
-    DATASET_PATH = '/Users/xiaozhe/datasets/celeba' # D:\datasets\celeba
+    DATASET_PATH = 'D:\datasets\celeba' # D:\datasets\celeba
 
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
@@ -140,7 +151,7 @@ if __name__ == '__main__':
     parser.add_argument('--load_v_num', default = 1, type=int)
     parser.add_argument('--RESUME', default=False, type=bool, help = '是否需要重载模型')
     parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_beta0.8.ckpt', type = str )
-    parser.add_argument('--arcface_resnet50_path', default=r'/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
+    parser.add_argument('--arcface_resnet50_path', default=r'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
 
 
     #基本超参数，构建小网络的基本参数

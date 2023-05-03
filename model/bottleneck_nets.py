@@ -31,7 +31,7 @@ class BottleneckNets(pl.LightningModule):
 
         super(BottleneckNets, self).__init__()
 
-        self.save_hyperparameters()
+
         self.model_name = model_name
 
         # 把Arcface的参数冻结掉
@@ -40,7 +40,7 @@ class BottleneckNets(pl.LightningModule):
             param.requires_grad_(False)
 
         # 小网络
-        self.encoder = encoder # 用预训练 直接就是Resnet50,
+        self.encoder = encoder
         self.decoder = decoder
         self.utility_discriminator = utility_discriminator
         self.latent_discriminator = latent_discriminator
@@ -49,6 +49,8 @@ class BottleneckNets(pl.LightningModule):
         self.beta = beta
         self.batch_size = kwargs['batch_size']
         self.identity_nums = kwargs['identity_nums']
+
+        self.save_hyperparameters(ignore=['arcface_model', 'encoder', 'decoder', 'utility_discriminator', 'latent_discriminator'])
 
         # 设置一些激活函数
         self.softmax = nn.Softmax(dim=1)
@@ -101,8 +103,8 @@ class BottleneckNets(pl.LightningModule):
         opt_phi = optim.Adam(self.encoder.parameters(), lr=0.001, betas=(b1, b2))
         scheduler_phi = optim.lr_scheduler.ReduceLROnPlateau(opt_phi, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
 
-        opt_tau = optim.Adam(self.utility_discriminator.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler_tau = optim.lr_scheduler.ReduceLROnPlateau(opt_tau, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
+        opt_omega = optim.Adam(self.utility_discriminator.parameters(), lr=0.001, betas=(b1, b2))
+        scheduler_omega = optim.lr_scheduler.ReduceLROnPlateau(opt_omega, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
 
         opt_theta = optim.Adam(self.decoder.parameters(), lr=0.001, betas=(b1, b2))
         scheduler_theta = optim.lr_scheduler.ReduceLROnPlateau(opt_theta, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
@@ -122,10 +124,10 @@ class BottleneckNets(pl.LightningModule):
                             'scheduler':scheduler_phi,
                             'monitor':'loss_phi'
                         }},
-                       {'optimizer':opt_tau,
+                       {'optimizer':opt_omega,
                         'lr_scheduler':{
-                            'scheduler':scheduler_tau,
-                            'monitor':'loss_tau'
+                            'scheduler':scheduler_omega,
+                            'monitor':'loss_omega'
                         }},
                        {'optimizer':opt_theta,
                         'lr_scheduler':{
@@ -289,8 +291,10 @@ class BottleneckNets(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         # 数据
         img_1, img_2, match = batch
-        z_1_mu, z_1_sigma = self.encoder(img_1)
-        z_2_mu, z_2_sigma = self.encoder(img_2)
+
+
+        z_1_mu, z_1_sigma = self.encoder(self.arcface_model_resnet50(img_1))
+        z_2_mu, z_2_sigma = self.encoder(self.arcface_model_resnet50(img_2))
 
         z_1 = self.sample_z(z_1_mu, z_1_sigma)
         z_2 = self.sample_z(z_2_mu, z_2_sigma)
@@ -308,6 +312,6 @@ class BottleneckNets(pl.LightningModule):
         self.log('eer_cos', eer_cos, on_epoch=True)
         bottleneck_net_confusion_cos = {'fpr_cos': fpr_cos, 'tpr_cos': tpr_cos, 'thresholds_cos': thresholds_cos,'eer_cos': eer_cos}
 
-        torch.save(bottleneck_net_confusion_cos, r'lightning_logs/bottleneck'+str(self.beta)+'.pt')
+        torch.save(bottleneck_net_confusion_cos, r'lightning_logs/bottleneck_roc_beta'+str(self.beta)+'.pt')
 
 
