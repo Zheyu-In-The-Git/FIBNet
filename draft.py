@@ -179,7 +179,24 @@ model = load_path['state_dict']
 #print(output)
 
 '''
+'''
 
 import numpy as np
 s = np.sqrt(2) * np.log(10177-1)
 print(s)
+'''
+
+
+from arcface_resnet50 import ArcfaceResnet50
+arcface_resnet50_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
+model = arcface_resnet50_net.load_from_checkpoint('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
+#print(model)
+
+#model_resnet50 = model.resnet50.layer4[2] # 这是最后一层卷积
+for name, param in model.named_parameters():
+    #if model.resnet50.layer4[2] in name:
+        #param.requires_grad =False
+    print(name)
+
+print(model)
+

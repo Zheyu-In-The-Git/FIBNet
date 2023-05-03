@@ -20,7 +20,7 @@ import seaborn as sns
 # Celeba数据集的准备
 celeba_dir = '/Users/xiaozhe/datasets/celeba'
 celeba_dataset = CelebaTSNEExperiment(dim_img=224, data_dir=celeba_dir, sensitive_attr='Male', split='test_30%')
-dataloader = DataLoader(celeba_dataset, batch_size=500, shuffle=True)
+dataloader = DataLoader(celeba_dataset, batch_size=550, shuffle=True)
 
 
 
@@ -47,7 +47,7 @@ print(S_data.shape)
 
 
 
-tsne = TSNE(n_components=2, perplexity=2.0, early_exaggeration=50.0, learning_rate=100.0, n_iter=1500,
+tsne = TSNE(n_components=2, perplexity=30.0, early_exaggeration=100.0, learning_rate=20.0, n_iter=4300,
             n_iter_without_progress=300, min_grad_norm=1e-07, metric='cosine', init='pca', verbose=1,
             random_state=83, method='barnes_hut', angle=0.5) # 这里metric可以换成cosine 到时候试一下  3*perplexity < nrow(data) - 1
 X_tsne = tsne.fit_transform(Z_data)
