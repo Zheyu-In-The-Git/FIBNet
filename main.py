@@ -6,9 +6,10 @@ from pytorch_lightning import Trainer
 import pytorch_lightning.callbacks as plc
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from model import ConstructBottleneckNets
 from data import CelebaInterface
 from utils import load_model_path_by_args
+from model import Encoder, Decoder, LatentDiscriminator, UtilityDiscriminator, BottleneckNets
+from arcface_resnet50 import ArcfaceResnet50
 
 
 def load_callbacks(load_path):
@@ -40,11 +41,27 @@ def main(args):
 
     # 模型加载路径，
     load_path = load_model_path_by_args(args)
-    print(load_path) # lightning_logs\bottleneck_test_version_1\checkpoints
+    print(load_path)
 
+    #数据模块
     data_module = CelebaInterface(**vars(args))
 
-    logger = TensorBoardLogger(save_dir=load_path + args.log_dir, name=args.log_name, version='version_1',)  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    #打开记录器
+    logger = TensorBoardLogger(save_dir=load_path + args.log_dir, name=args.log_name)  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+
+    # 加载网络模块，并构建BottleneckNets
+    arcface_resnet50_net =ArcfaceResnet50(in_features=args.latent_dim, out_features=10177, s=64.0, m=0.50)
+    arcface = arcface_resnet50_net.load_from_checkpoint(args.arcface_resnet50_path)
+    encoder = Encoder(latent_dim=args.latent_dim)
+    decoder = Decoder(latent_dim=args.latent_dim, identity_nums=args.identity_nums, s=64.0, m=0.50, easy_margin=False)
+    latent_discriminator = LatentDiscriminator(latent_dim=args.latent_dim)
+    utility_discriminator = UtilityDiscriminator(utility_dim=args.identity_nums)
+
+    bottlenecknets = BottleneckNets(model_name=args.model_name, arcface_model = arcface, encoder=encoder,
+                                     decoder = decoder, latent_discriminator = latent_discriminator,
+                                     utility_discriminator = utility_discriminator, beta=args.beta, batch_size=args.batch_size,
+                                    identity_nums=args.identity_nums)
+
 
     trainer = Trainer(
         default_root_dir=os.path.join(load_path, 'saved_models'),
@@ -58,10 +75,11 @@ def main(args):
         #accelerator='gpu',
         #devices=1,
         check_val_every_n_epoch=10,
-        fast_dev_run=2
+        fast_dev_run=10
     )
     trainer.logger._log_graph = True
     trainer.logger._default_hp_metric = True
+
 
     if args.RESUME:
         # 模型重载训练阶段
@@ -69,9 +87,8 @@ def main(args):
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, args.ckpt_name)
         print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
-        model = ConstructBottleneckNets(args)
-        trainer.fit(model, datamodule=data_module, ckpt_path=resume_checkpoint_path)
-        trainer.test(model, data_module)
+        trainer.fit(bottlenecknets, datamodule=data_module, ckpt_path=resume_checkpoint_path)
+        trainer.test(bottlenecknets, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
 
     else:
@@ -80,10 +97,10 @@ def main(args):
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, args.ckpt_name)
         print('Model will be created')
-        model = ConstructBottleneckNets(args)
-        trainer.fit(model, datamodule=data_module)
-        trainer.test(model, data_module)
+        trainer.fit(bottlenecknets, data_module)
+        trainer.test(bottlenecknets, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
+
 
 if __name__ == '__main__':
     '''
@@ -101,14 +118,13 @@ if __name__ == '__main__':
     # Create checkpoint path if it doesn't exist yet
 
     # 数据集的路径 CELEBA的位置需要更改
-    DATASET_PATH = 'D:\celeba' # D:\datasets\celeba
+    DATASET_PATH = '/Users/xiaozhe/datasets/celeba' # D:\datasets\celeba
 
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
     # 模型加载与命名
-    VERSION = 'bottleneck_experiment_latent512_beta1.0'
-    VERSION_NUM = '_1/'
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + VERSION_NUM + 'checkpoints/')
+    VERSION = 'bottleneck_experiment_latent512_beta0.8'
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + 'checkpoints/')
 
     ###################
     ## 设置参数这里开始 #
@@ -120,10 +136,11 @@ if __name__ == '__main__':
     # Restart Control
     parser.add_argument('--load_best', action='store_true')
     parser.add_argument('--load_dir', default = CHECKPOINT_PATH, type=str, help = 'The root directory of checkpoints.')
-    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta1.0', type=str, help = '训练和加载模型的命名 采用')
+    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.8', type=str, help = '训练和加载模型的命名 采用')
     parser.add_argument('--load_v_num', default = 1, type=int)
     parser.add_argument('--RESUME', default=False, type=bool, help = '是否需要重载模型')
-    parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_beta1.0.ckpt', type = str )
+    parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_beta0.8.ckpt', type = str )
+    parser.add_argument('--arcface_resnet50_path', default=r'/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
 
 
     #基本超参数，构建小网络的基本参数
@@ -138,22 +155,18 @@ if __name__ == '__main__':
     # 数据集参数设置
     parser.add_argument('--dataset', default='celeba_data', type=str)
     parser.add_argument('--data_dir', default = DATASET_PATH, type=str)
-    parser.add_argument('--num_workers', default =2, type=int)
+    parser.add_argument('--num_workers', default =0, type=int)
     parser.add_argument('--sensitive_attr', default='Male', type=str)
-    parser.add_argument('--pin_memory', default = True)
+    parser.add_argument('--pin_memory', default = False)
 
     # bottleneck_nets的参数
     parser.add_argument('--encoder_model', default='ResNet50',type = str)
-    parser.add_argument('--model_name', default='bottleneck_experiment_version', type=str)
-    parser.add_argument('--beta', default=1.0, type=float)
-    parser.add_argument('--batch_size', default = 64, type=int)
+    parser.add_argument('--model_name', default='bottleneck', type=str)
+    parser.add_argument('--beta', default=0.8, type=float)
+    parser.add_argument('--batch_size', default = 10, type=int)
     parser.add_argument('--max_epochs', default=150, type = int)
-    parser.add_argument('--min_epochs', default=50, type=int)
-    parser.add_argument('--lr', default=1e-3, type=float)
+    parser.add_argument('--min_epochs', default=100, type=int)
 
-    # arcface的参数
-    parser.add_argument('--s', default=64.0, type=float)
-    parser.add_argument('--m', default=0.5, type=float)
 
     # 日志参数
     parser.add_argument('--log_dir', default=LOG_PATH, type=str)

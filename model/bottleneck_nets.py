@@ -26,13 +26,18 @@ def batch_accuracy(y_pred, y_true):
 
 
 class BottleneckNets(pl.LightningModule):
-    def __init__(self, model_name, encoder, decoder,  utility_discriminator, latent_discriminator, beta, lr, **kwargs):
+    def __init__(self, model_name, arcface_model, encoder, decoder, utility_discriminator, latent_discriminator, beta, **kwargs):
 
 
         super(BottleneckNets, self).__init__()
 
         self.save_hyperparameters()
         self.model_name = model_name
+
+        # 把Arcface的参数冻结掉
+        self.arcface_model_resnet50 = arcface_model.resnet50
+        for name, param in self.arcface_model_resnet50.named_parameters():
+            param.requires_grad_(False)
 
         # 小网络
         self.encoder = encoder # 用预训练 直接就是Resnet50,
@@ -42,7 +47,6 @@ class BottleneckNets(pl.LightningModule):
 
         # 超参数设置
         self.beta = beta
-        self.lr = lr
         self.batch_size = kwargs['batch_size']
         self.identity_nums = kwargs['identity_nums']
 
@@ -63,6 +67,7 @@ class BottleneckNets(pl.LightningModule):
         return z
 
     def forward(self, x, u):
+        x = self.arcface_model_resnet50(x)
         mu, log_var = self.encoder(x)
         z = self.sample_z(mu, log_var)
         u_hat = self.decoder(z, u)
@@ -87,19 +92,19 @@ class BottleneckNets(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
 
-        opt_phi_theta = optim.Adam(itertools.chain(self.encoder.parameters(),self.decoder.parameters()),lr=self.lr, betas=(b1, b2)) # 可能学习率需要重新设置
+        opt_phi_theta = optim.Adam(itertools.chain(self.encoder.parameters(),self.decoder.parameters()),lr=0.001, betas=(b1, b2)) # 可能学习率需要重新设置
         scheduler_phi_theta = optim.lr_scheduler.ReduceLROnPlateau(opt_phi_theta, mode='min', factor=0.5, patience=3, min_lr=1e-6, threshold=1e-1)
 
-        opt_eta = optim.Adam(self.latent_discriminator.parameters(), lr = self.lr, betas=(b1, b2))
+        opt_eta = optim.Adam(self.latent_discriminator.parameters(), lr=0.001, betas=(b1, b2))
         scheduler_eta = optim.lr_scheduler.ReduceLROnPlateau(opt_eta, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
 
-        opt_phi = optim.Adam(self.encoder.parameters(), lr=self.lr, betas=(b1, b2))
+        opt_phi = optim.Adam(self.encoder.parameters(), lr=0.001, betas=(b1, b2))
         scheduler_phi = optim.lr_scheduler.ReduceLROnPlateau(opt_phi, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
 
-        opt_tau = optim.Adam(self.utility_discriminator.parameters(), lr=self.lr, betas=(b1, b2))
+        opt_tau = optim.Adam(self.utility_discriminator.parameters(), lr=0.001, betas=(b1, b2))
         scheduler_tau = optim.lr_scheduler.ReduceLROnPlateau(opt_tau, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
 
-        opt_theta = optim.Adam(self.decoder.parameters(), lr=self.lr, betas=(b1, b2))
+        opt_theta = optim.Adam(self.decoder.parameters(), lr=0.001, betas=(b1, b2))
         scheduler_theta = optim.lr_scheduler.ReduceLROnPlateau(opt_theta, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
 
         return_list = ({'optimizer':opt_phi_theta,
@@ -301,8 +306,8 @@ class BottleneckNets(pl.LightningModule):
 
         fpr_cos, tpr_cos, thresholds_cos, eer_cos = self.calculate_eer(cos, match)
         self.log('eer_cos', eer_cos, on_epoch=True)
-        bottleneck_net_confusion_cos = {'fpr_cos': fpr_cos, 'tpr_cos': tpr_cos, 'thresholds_coss': thresholds_cos,'eer_cos': eer_cos}
+        bottleneck_net_confusion_cos = {'fpr_cos': fpr_cos, 'tpr_cos': tpr_cos, 'thresholds_cos': thresholds_cos,'eer_cos': eer_cos}
 
-        torch.save(bottleneck_net_confusion_cos, r"C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottlenecknets_confusion_cos.pt")
+        torch.save(bottleneck_net_confusion_cos, r'lightning_logs/bottleneck'+str(self.beta)+'.pt')
 
 

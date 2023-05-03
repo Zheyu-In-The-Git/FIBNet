@@ -1,3 +1,4 @@
+import matplotlib.backends.backend_pdf
 import torch
 import pytorch_lightning as pl
 import os
@@ -30,8 +31,11 @@ dataloader = DataLoader(celeba_dataset, batch_size=50, shuffle=True)
 arcface_resnet50_net = arcface_resnet50.ArcfaceResnet50(in_features=1024, out_features=10177, s=64.0, m=0.50)
 model = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent1024\checkpoints\saved_model\face_recognition_resnet50\epoch=130-step=259400.ckpt').to(device)
 
+# 冻结住网络参数的梯度
 for param in model.parameters():
     param.requires_grad_(False)
+
+    
 # 让模型进行计算
 Z_data = 0
 S_data = 0
@@ -69,5 +73,8 @@ df_tsne = pd.DataFrame(X_tsne_data, columns=['Dim1', 'Dim2', 'gender'])
 df_tsne.loc[df_tsne['gender'] == 0, 'gender'] = 'female'
 df_tsne.loc[df_tsne['gender'] == 1, 'gender'] = 'male'
 
-sns.scatterplot(data=df_tsne, hue='gender', x='Dim1', y='Dim2')
+# sns.scatterplot(data=df_tsne, hue='gender', x='Dim1', y='Dim2')
+sns.scatterplot(data=df_tsne, hue='gender') # 不打 x轴 和 y轴
 plt.show()
+# plt.savefig('arcface_512_resnet50.eps', format='eps', bbox_inches='tight') # 保存成.eps格式
+matplotlib.backends.backend_pdf.PdfPages(filename='', keep_empty=True)

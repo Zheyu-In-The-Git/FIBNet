@@ -28,7 +28,7 @@ def batch_accuracy(y_pred, y_true):
 
 
 class ArcfaceResnet50(pl.LightningModule):
-    def __init__(self, in_features=1024, out_features=10177, s=30.0, m=0.50):
+    def __init__(self, in_features, out_features=10177, s=64.0, m=0.50):
         super(ArcfaceResnet50, self).__init__()
         self.resnet50 = ResNet50(in_features, channels=3)
         self.arc_margin_product = ArcMarginProduct(in_features=in_features, out_features=out_features, s=s, m=m, easy_margin=False)
@@ -112,7 +112,7 @@ class ArcfaceResnet50(pl.LightningModule):
         self.log('eer_cos', eer_cos, prog_bar=True)
 
         #arcface_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_cos':thresholds_cos,'eer_cos':eer_cos}
-        #torch.save(arcface_confusion_cos, r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\lightning_log\roc_arcface_512.pt')
+        #torch.save(arcface_confusion_cos, r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\lightning_log\roc_arcface_celeba_512.pt')
 
 
 

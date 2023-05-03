@@ -18,7 +18,7 @@ import torch.nn.functional as F
 # 5y月1日 celeba数据集训练arcface_resnet50
 # -----------------ROC实验----------------------
 #
-list = torch.load('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/lightning_log/roc_arcface_512.pt', map_location=torch.device('cpu'))
+list = torch.load('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/lightning_log/roc_arcface_celeba_512.pt', map_location=torch.device('cpu'))
 print(list.keys()) # fpr_cos, tpr_cos, thresholds_coss, eer_cos
 print(list['fpr_cos'])
 print('eer_cos:',list['eer_cos'])

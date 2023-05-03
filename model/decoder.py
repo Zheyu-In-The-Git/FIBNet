@@ -7,9 +7,9 @@ import math
 identity_nums = 2622
 
 
-class ResNetDecoder(nn.Module):
-    def __init__(self, latent_dim, identity_nums, s, m, easy_margin=False): # s = 30.0, m =0.5
-        super(ResNetDecoder, self).__init__()
+class Decoder(nn.Module):
+    def __init__(self, latent_dim, identity_nums, s, m, easy_margin=False): # s = 64.0, m =0.5
+        super(Decoder, self).__init__()
         self.in_features = latent_dim
         self.out_features = identity_nums
         self.s = s
@@ -46,11 +46,6 @@ class ResNetDecoder(nn.Module):
 
 
 
-def Decoder(latent_dim, identity_nums, s, m, easy_margin=False):
-    return ResNetDecoder(latent_dim=latent_dim, identity_nums=identity_nums, s=s, m=m, easy_margin=easy_margin)
-
-
-
 if __name__ == '__main__':
     # net = ResNet50Decoder(latent_dim=1024, identity_nums=identity_nums, act_fn='Softmax')
     # x = torch.randn(2, 1024)
@@ -58,7 +53,7 @@ if __name__ == '__main__':
     # print(out.shape)
 
 
-    decoder = ResNetDecoder(latent_dim=512, identity_nums=2622, s = 30.0, m=0.5, easy_margin=False)
+    decoder = Decoder(latent_dim=512, identity_nums=10177, s = 64.0, m=0.5, easy_margin=False)
     x = torch.rand(3, 512)
     label = torch.arange(3)
     out = decoder(x, label)
