@@ -12,16 +12,9 @@ class Encoder(nn.Module):
             nn.BatchNorm1d(latent_dim * 2),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Linear(latent_dim * 2, latent_dim),
-            nn.BatchNorm1d(latent_dim),
-            nn.LeakyReLU(0.2, inplace=True),
-
-            nn.Linear(latent_dim, latent_dim),
-            nn.BatchNorm1d(latent_dim),
-            nn.LeakyReLU(0.2, inplace=True),
         )
-        self.mu_fc = nn.Linear(latent_dim, latent_dim)
-        self.log_var_fc = nn.Linear(latent_dim, latent_dim)
+        self.mu_fc = nn.Linear(latent_dim * 2, latent_dim)
+        self.log_var_fc = nn.Linear(latent_dim * 2, latent_dim)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
