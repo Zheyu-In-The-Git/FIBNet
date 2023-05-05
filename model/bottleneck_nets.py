@@ -26,7 +26,7 @@ def batch_accuracy(y_pred, y_true):
 
 
 class BottleneckNets(pl.LightningModule):
-    def __init__(self, model_name, arcface_model, encoder, decoder, utility_discriminator, latent_discriminator, beta, **kwargs):
+    def __init__(self, model_name, arcface_model, encoder, decoder, beta, **kwargs):
 
 
         super(BottleneckNets, self).__init__()
@@ -42,8 +42,6 @@ class BottleneckNets(pl.LightningModule):
         # 小网络
         self.encoder = encoder # 用预训练 直接就是Resnet50,
         self.decoder = decoder
-        self.utility_discriminator = utility_discriminator
-        self.latent_discriminator = latent_discriminator
 
         # 超参数设置
         self.beta = beta
@@ -71,8 +69,7 @@ class BottleneckNets(pl.LightningModule):
         mu, log_var = self.encoder(x)
         z = self.sample_z(mu, log_var)
         u_hat = self.decoder(z, u)
-        u_value = self.utility_discriminator(u_hat)
-        return z, u_hat, mu, log_var, u_value
+        return z, u_hat, mu, log_var
 
     def configure_loss(self, pred, true, loss_type):
         if loss_type == 'MSE':
@@ -92,47 +89,10 @@ class BottleneckNets(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
 
-        opt_phi_theta = optim.Adam(itertools.chain(self.encoder.parameters(),self.decoder.parameters()),lr=0.001, betas=(b1, b2)) # 可能学习率需要重新设置
-        scheduler_phi_theta = optim.lr_scheduler.ReduceLROnPlateau(opt_phi_theta, mode='min', factor=0.5, patience=3, min_lr=1e-6, threshold=1e-1)
+        opt = optim.Adam(itertools.chain(self.encoder.parameters(), self.decoder.parameters()), lr=0.0001, betas=(b1, b2))
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(opt, mode="min", factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
 
-        opt_eta = optim.Adam(self.latent_discriminator.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler_eta = optim.lr_scheduler.ReduceLROnPlateau(opt_eta, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
-
-        opt_phi = optim.Adam(self.encoder.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler_phi = optim.lr_scheduler.ReduceLROnPlateau(opt_phi, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
-
-        opt_tau = optim.Adam(self.utility_discriminator.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler_tau = optim.lr_scheduler.ReduceLROnPlateau(opt_tau, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
-
-        opt_theta = optim.Adam(self.decoder.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler_theta = optim.lr_scheduler.ReduceLROnPlateau(opt_theta, mode='min', factor=0.1, patience=3, min_lr=1e-6,threshold=1e-1)
-
-        return_list = ({'optimizer':opt_phi_theta,
-                        'lr_scheduler':{
-                            'scheduler':scheduler_phi_theta,
-                            'monitor':'loss_phi_theta'
-                        }},
-                       {'optimizer':opt_eta,
-                        'lr_scheduler':{
-                            'scheduler':scheduler_eta,
-                            'monitor':'loss_eta'
-                        }},
-                       {'optimizer':opt_phi,
-                        'lr_scheduler':{
-                            'scheduler':scheduler_phi,
-                            'monitor':'loss_phi'
-                        }},
-                       {'optimizer':opt_tau,
-                        'lr_scheduler':{
-                            'scheduler':scheduler_tau,
-                            'monitor':'loss_tau'
-                        }},
-                       {'optimizer':opt_theta,
-                        'lr_scheduler':{
-                            'scheduler':scheduler_theta,
-                            'monitor':'loss_theta'
-                        }})
-        return return_list
+        return {"optimizer": opt, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
     def loss_fn_KL(self, mu, log_var):
         loss = 0.5 * (torch.pow(mu, 2) + torch.exp(log_var) - log_var - 1).sum(1).mean()
@@ -156,123 +116,26 @@ class BottleneckNets(pl.LightningModule):
         return fpr, tpr, thresholds, eer
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        ###################
-        # data processing #
-        ###################
         x, u, _ = batch
+        z, u_hat, mu, log_var = self.forward(x, u)
+        train_loss = self.configure_loss(u_hat, u, 'CE') + self.beta * self.loss_fn_KL(mu, log_var)
 
-        z, u_hat, mu, log_var, u_value = self.forward(x, u)
+        self.log('train_loss', train_loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        self.log('entropy_loss', self.configure_loss(u_hat, u, 'CE'), prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        self.log('KL_divergence', self.loss_fn_KL(mu, log_var), prog_bar=True, logger=True, on_step=True, on_epoch=True)
 
-        # 从Qz分布中采样的标准正太分布
-        q_z = torch.randn_like(mu)
+        train_acc, train_misclass = self.get_stats(u_hat, u)
+        self.log('train_acc', train_acc, on_step=True, on_epoch=True, prog_bar=True)
+        self.log('train_misclass', train_misclass, on_step=True, on_epoch=True, prog_bar=True)
 
-        #########################################
-        # training the encoder, utility decoder #
-        #########################################
-        if optimizer_idx == 0:
-            loss_phi_theta = self.configure_loss(u_hat, u, 'CE') + self.beta * self.loss_fn_KL(mu, log_var)
-            self.log('KL_divergence', self.loss_fn_KL(mu, log_var), prog_bar=True, logger=True, on_step=True)
-            self.log('cross_entropy', self.configure_loss(u_hat, u, 'CE'), prog_bar=True, logger=True, on_step=True)
-            self.log('loss_phi_theta', loss_phi_theta, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-            return {'loss': loss_phi_theta}
-
-        ############################################
-        ## training the latent space discriminator##
-        ############################################
-        if optimizer_idx == 1:
-
-            # 正样本是来自编码器的；负样本来自标准正太分布
-            # 正样本
-            z_valid = torch.ones(z.size(0), 1)
-            z_valid = z_valid.type_as(z)
-            z_valid = z_valid.to(torch.float32)
-
-            real_z_discriminator_value = self.latent_discriminator(z.detach())
-            real_loss = self.configure_loss(real_z_discriminator_value, z_valid, 'BCE')
-
-            # 负样本
-            z_fake = torch.zeros(q_z.size(0), 1)
-            z_fake = z_fake.type_as(z)
-            z_fake = z_fake.to(torch.float32)
-
-            fake_z_discriminator_value = self.latent_discriminator(q_z.detach())
-            fake_loss = self.configure_loss(fake_z_discriminator_value, z_fake, 'BCE')
-
-
-            loss_eta = (real_loss + fake_loss) * self.beta * 0.5
-            self.log('loss_eta', loss_eta, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-
-            return {'loss': loss_eta}
-
-
-        ##########################################
-        ## training the Encoder phi Adversarially#
-        ##########################################
-        if optimizer_idx == 2:
-            z_valid = torch.ones(z.size(0), 1)
-            z_valid = z_valid.type_as(z)
-            z_valid = z_valid.to(torch.float32)
-
-            real_z_discriminator_value = self.latent_discriminator(z)
-            loss_phi = - self.configure_loss(real_z_discriminator_value, z_valid, 'BCE') * self.beta
-
-            self.log('loss_phi', loss_phi, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-            return {'loss': loss_phi}
-
-
-        ##############################################
-        ## Train Attribute Class Discriminator Omega##
-        ##############################################
-        if optimizer_idx == 3:
-
-            # 正样本是真实的身份；负样本是表征推断而来的
-            u_valid = torch.ones(u.size(0), 1)
-            u_valid = u_valid.type_as(u)
-            u_valid = u_valid.to(torch.float32)
-
-            u_one_hot = F.one_hot(u, num_classes=self.identity_nums)
-            real_u_discriminator_value = self.utility_discriminator(u_one_hot.to(torch.float32))
-            loss_real = self.configure_loss(real_u_discriminator_value, u_valid, 'BCE')
-
-            u_fake = torch.zeros(u.size(0), 1)
-            u_fake = u_fake.type_as(u)
-            u_fake = u_fake.to(torch.float32)
-
-            fake_u_discrimination_value = self.utility_discriminator(u_hat.detach())
-            loss_fake = self.configure_loss(fake_u_discrimination_value, u_fake, 'BCE')
-
-            loss_omega = (loss_real + loss_fake) * 0.5
-            self.log('loss_omega', loss_omega, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-            return {'loss': loss_omega}
-
-        ################################################
-        # Train the Utility Decoder theta Adversarially#
-        ################################################
-        if optimizer_idx == 4:
-            u_fake = torch.zeros(u.size(0), 1)
-            u_fake = u_fake.type_as(u)
-            u_fake = u_fake.to(torch.float32)
-
-            fake_u_discrimination_value = self.utility_discriminator(u_hat)
-            loss_theta = self.configure_loss(fake_u_discrimination_value, u_fake, 'BCE')
-            self.log('loss_theta', loss_theta, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-
-            # 识别准确率
-            u_accuracy, u_misclass_rate = self.get_stats(self.decoder(z, u),u)
-
-            # 记录
-            tensorboard_log = {'train_u_accuracy': u_accuracy,
-                               'train_u_error_rate': u_misclass_rate}
-            self.log_dict(tensorboard_log, prog_bar=True, logger=True, on_step=True, on_epoch = True)
-
-            return {'loss':loss_theta}
+        return train_loss
 
     # 验证步骤
     def validation_step(self, batch, batch_idx):
         # 数据
         x, u, s = batch
 
-        z, u_hat, mu, log_var, u_value = self.forward(x, u)
+        z, u_hat, mu, log_var = self.forward(x, u)
 
         val_loss_phi_theta = self.configure_loss(u_hat, u, 'CE') + self.beta * self.loss_fn_KL(mu, log_var)
 

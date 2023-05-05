@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-# from ResNet import Bottleneck
 import math
 
 class Encoder(nn.Module):
@@ -10,12 +8,20 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
 
         self.encoder_net = nn.Sequential(
-            nn.Linear(latent_dim , latent_dim * 4),
-            nn.BatchNorm1d(latent_dim * 4),
+            nn.Linear(latent_dim , latent_dim * 2),
+            nn.BatchNorm1d(latent_dim * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            nn.Linear(latent_dim * 2, latent_dim),
+            nn.BatchNorm2d(latent_dim),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            nn.Linear(latent_dim, latent_dim),
+            nn.BatchNorm2d(latent_dim),
             nn.LeakyReLU(0.2, inplace=True),
         )
-        self.mu_fc = nn.Linear(latent_dim*4, 512)
-        self.log_var_fc = nn.Linear(latent_dim*4, 512)
+        self.mu_fc = nn.Linear(latent_dim, latent_dim)
+        self.log_var_fc = nn.Linear(latent_dim, latent_dim)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
