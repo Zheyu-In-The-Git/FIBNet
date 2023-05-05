@@ -28,10 +28,9 @@ def batch_accuracy(y_pred, y_true):
 class BottleneckNets(pl.LightningModule):
     def __init__(self, model_name, arcface_model, encoder, decoder, beta, **kwargs):
 
-
         super(BottleneckNets, self).__init__()
 
-        self.save_hyperparameters()
+
         self.model_name = model_name
 
         # 把Arcface的参数冻结掉
@@ -40,13 +39,15 @@ class BottleneckNets(pl.LightningModule):
             param.requires_grad_(False)
 
         # 小网络
-        self.encoder = encoder # 用预训练 直接就是Resnet50,
+        self.encoder = encoder
         self.decoder = decoder
 
         # 超参数设置
         self.beta = beta
         self.batch_size = kwargs['batch_size']
         self.identity_nums = kwargs['identity_nums']
+
+        self.save_hyperparameters(ignore=['arcface_model', 'encoder', 'decoder'])
 
         # 设置一些激活函数
         self.softmax = nn.Softmax(dim=1)
@@ -152,8 +153,9 @@ class BottleneckNets(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         # 数据
         img_1, img_2, match = batch
-        z_1_mu, z_1_sigma = self.encoder(img_1)
-        z_2_mu, z_2_sigma = self.encoder(img_2)
+
+        z_1_mu, z_1_sigma = self.encoder(self.arcface_model_resnet50(img_1))
+        z_2_mu, z_2_sigma = self.encoder(self.arcface_model_resnet50(img_2))
 
         z_1 = self.sample_z(z_1_mu, z_1_sigma)
         z_2 = self.sample_z(z_2_mu, z_2_sigma)
@@ -171,6 +173,6 @@ class BottleneckNets(pl.LightningModule):
         self.log('eer_cos', eer_cos, on_epoch=True)
         bottleneck_net_confusion_cos = {'fpr_cos': fpr_cos, 'tpr_cos': tpr_cos, 'thresholds_cos': thresholds_cos,'eer_cos': eer_cos}
 
-        torch.save(bottleneck_net_confusion_cos, r'lightning_logs/bottleneck'+str(self.beta)+'.pt')
+        torch.save(bottleneck_net_confusion_cos, r'lightning_logs/bottleneck_roc_beta'+str(self.beta)+'.pt')
 
 

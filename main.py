@@ -64,13 +64,9 @@ def main(args):
     arcface = arcface_resnet50_net.load_from_checkpoint(args.arcface_resnet50_path)
     encoder = Encoder(latent_dim=args.latent_dim)
     decoder = Decoder(latent_dim=args.latent_dim, identity_nums=args.identity_nums, s=64.0, m=0.50, easy_margin=False)
-    latent_discriminator = LatentDiscriminator(latent_dim=args.latent_dim)
-    utility_discriminator = UtilityDiscriminator(utility_dim=args.identity_nums)
 
-    bottlenecknets = BottleneckNets(model_name=args.model_name, arcface_model = arcface, encoder=encoder,
-                                     decoder = decoder, latent_discriminator = latent_discriminator,
-                                     utility_discriminator = utility_discriminator, beta=args.beta, batch_size=args.batch_size,
-                                    identity_nums=args.identity_nums)
+    bottlenecknets = BottleneckNets(model_name=args.model_name, arcface_model=arcface, encoder=encoder, decoder=decoder,
+                                    beta=args.beta, batch_size=args.batch_size, identity_nums=args.identity_nums)
 
 
     trainer = Trainer(
