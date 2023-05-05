@@ -13,11 +13,11 @@ class Encoder(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
 
             nn.Linear(latent_dim * 2, latent_dim),
-            nn.BatchNorm2d(latent_dim),
+            nn.BatchNorm1d(latent_dim),
             nn.LeakyReLU(0.2, inplace=True),
 
             nn.Linear(latent_dim, latent_dim),
-            nn.BatchNorm2d(latent_dim),
+            nn.BatchNorm1d(latent_dim),
             nn.LeakyReLU(0.2, inplace=True),
         )
         self.mu_fc = nn.Linear(latent_dim, latent_dim)

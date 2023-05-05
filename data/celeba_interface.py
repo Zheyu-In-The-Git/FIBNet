@@ -20,6 +20,7 @@ class CelebaInterface(pl.LightningDataModule):
                  **kargs
                  ):
         super(CelebaInterface).__init__()
+        self.save_hyperparameters()
         self.num_workers = num_workers
         self.dataset = dataset
         self.batch_size = batch_size
@@ -33,7 +34,7 @@ class CelebaInterface(pl.LightningDataModule):
         self.pin_memory = kargs['pin_memory']
 
         self.prepare_data_per_node = True
-        self.save_hyperparameters()
+
         self.allow_zero_length_dataloader_with_multiple_devices =True
 
     def prepare_data(self):
