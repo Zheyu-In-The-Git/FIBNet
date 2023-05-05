@@ -116,7 +116,7 @@ class BottleneckNets(pl.LightningModule):
                 eer = (fpr[i] + (1-tpr[i])) / 2
         return fpr, tpr, thresholds, eer
 
-    def training_step(self, batch, batch_idx, optimizer_idx):
+    def training_step(self, batch, batch_idx):
         x, u, _ = batch
         z, u_hat, mu, log_var = self.forward(x, u)
         train_loss = self.configure_loss(u_hat, u, 'CE') + self.beta * self.loss_fn_KL(mu, log_var)
