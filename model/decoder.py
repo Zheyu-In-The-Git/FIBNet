@@ -22,6 +22,8 @@ class Decoder(nn.Module):
         self.sin_m = math.sin(m)
         self.th = math.cos(math.pi - m)
         self.mm = math.sin(math.pi - m) * m
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     def forward(self, input, label):
         # --------------------------- cos(theta) & phi(theta) ---------------------------
         cosine = F.linear(F.normalize(input), F.normalize(self.weight))
@@ -33,7 +35,7 @@ class Decoder(nn.Module):
             phi = torch.where(cosine > self.th, phi, cosine - self.mm)
         # --------------------------- convert label to one-hot ---------------------------
         # one_hot = torch.zeros(cosine.size(), requires_grad=True, device='cuda')
-        one_hot = torch.zeros(cosine.size())
+        one_hot = torch.zeros(cosine.size()).to(self.device)
         one_hot.scatter_(1, label.view(-1, 1).long(), 1)
         # print('one-hot', one_hot)
         # -------------torch.where(out_i = {x_i if condition_i else y_i) -------------
