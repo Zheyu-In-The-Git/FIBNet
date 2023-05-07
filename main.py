@@ -62,10 +62,10 @@ def main(args):
     # 加载网络模块，并构建BottleneckNets
     arcface_resnet50_net =ArcfaceResnet50(in_features=args.latent_dim, out_features=10177, s=64.0, m=0.50)
     arcface = arcface_resnet50_net.load_from_checkpoint(args.arcface_resnet50_path)
-    encoder = Encoder(latent_dim=args.latent_dim)
+    encoder = Encoder(latent_dim=args.latent_dim, arcface_model=arcface)
     decoder = Decoder(latent_dim=args.latent_dim, identity_nums=args.identity_nums, s=64.0, m=0.50, easy_margin=False)
 
-    bottlenecknets = BottleneckNets(model_name=args.model_name, arcface_model=arcface, encoder=encoder, decoder=decoder,
+    bottlenecknets = BottleneckNets(model_name=args.model_name, encoder=encoder, decoder=decoder,
                                     beta=args.beta, batch_size=args.batch_size, identity_nums=args.identity_nums)
 
 
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
     # 模型加载与命名
-    VERSION = 'bottleneck_experiment_latent512_beta0.8'
+    VERSION = 'bottleneck_experiment_latent512_beta0.1'
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + '/checkpoints/')
 
     ###################
@@ -143,10 +143,10 @@ if __name__ == '__main__':
     # Restart Control
     parser.add_argument('--load_best', action='store_true')
     parser.add_argument('--load_dir', default = CHECKPOINT_PATH, type=str, help = 'The root directory of checkpoints.')
-    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.8', type=str, help = '训练和加载模型的命名 采用')
+    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.1', type=str, help = '训练和加载模型的命名 采用')
     parser.add_argument('--load_v_num', default = 1, type=int)
     parser.add_argument('--RESUME', default=False, type=bool, help = '是否需要重载模型')
-    parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_beta0.8.ckpt', type = str )
+    parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_beta0.1.ckpt', type = str )
     parser.add_argument('--arcface_resnet50_path', default=r'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
 
 
@@ -161,14 +161,14 @@ if __name__ == '__main__':
 
     # 数据集参数设置
     parser.add_argument('--dataset', default='celeba_data', type=str)
-    parser.add_argument('--data_dir', default = DATASET_PATH, type=str)
-    parser.add_argument('--num_workers', default =2, type=int)
+    parser.add_argument('--data_dir', default=DATASET_PATH, type=str)
+    parser.add_argument('--num_workers', default=2, type=int)
     parser.add_argument('--sensitive_attr', default='Male', type=str)
     parser.add_argument('--pin_memory', default = False)
 
     # bottleneck_nets的参数
     parser.add_argument('--model_name', default='bottleneck', type=str)
-    parser.add_argument('--beta', default=0.8, type=float)
+    parser.add_argument('--beta', default=0.1, type=float)
     parser.add_argument('--batch_size', default=64, type=int)
     parser.add_argument('--max_epochs', default=150, type = int)
     parser.add_argument('--min_epochs', default=100, type=int)

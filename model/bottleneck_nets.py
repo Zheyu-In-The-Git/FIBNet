@@ -26,17 +26,13 @@ def batch_accuracy(y_pred, y_true):
 
 
 class BottleneckNets(pl.LightningModule):
-    def __init__(self, model_name, arcface_model, encoder, decoder, beta, **kwargs):
+    def __init__(self, model_name,  encoder, decoder, beta, **kwargs):
 
         super(BottleneckNets, self).__init__()
 
 
         self.model_name = model_name
 
-        # 把Arcface的参数冻结掉
-        self.arcface_model_resnet50 = arcface_model.resnet50
-        for name, param in self.arcface_model_resnet50.named_parameters():
-            param.requires_grad_(False)
 
         # 小网络
         self.encoder = encoder
@@ -47,7 +43,7 @@ class BottleneckNets(pl.LightningModule):
         self.batch_size = kwargs['batch_size']
         self.identity_nums = kwargs['identity_nums']
 
-        self.save_hyperparameters(ignore=['arcface_model', 'encoder', 'decoder'])
+        self.save_hyperparameters(ignore=['encoder', 'decoder'])
 
         # 设置一些激活函数
         self.softmax = nn.Softmax(dim=1)
@@ -66,7 +62,6 @@ class BottleneckNets(pl.LightningModule):
         return z
 
     def forward(self, x, u):
-        x = self.arcface_model_resnet50(x)
         mu, log_var = self.encoder(x)
         z = self.sample_z(mu, log_var)
         u_hat = self.decoder(z, u)
@@ -90,10 +85,19 @@ class BottleneckNets(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
 
-        opt = optim.Adam(itertools.chain(self.encoder.parameters(), self.decoder.parameters()), lr=0.0001, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(opt, mode="min", factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
+        opt_train = optim.Adam(self.parameters(), lr=0.0001, betas=(b1, b2))
+        scheduler_train = optim.lr_scheduler.ReduceLROnPlateau(opt_train, mode='min', factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
 
-        return {"optimizer": opt, "lr_scheduler": scheduler, "monitor": "train_loss"}
+        #opt_encoder = optim.Adam(self.encoder.parameters(), lr=0.00001, betas = (b1, b2))
+        #scheduler_encoder = optim.lr_scheduler.ReduceLROnPlateau(opt_encoder, mode='min', factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
+
+        #opt_decoder = optim.Adam(self.decoder.parameters(), lr=0.0001, betas=(b1, b2))
+        #scheduler_decoder = optim.lr_scheduler.ReduceLROnPlateau(opt_decoder, mode='min', factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
+
+
+        return {'optimizer': opt_train, 'lr_scheduler':scheduler_train, 'monitor':'train_loss'}
+            #({"optimizer": opt_encoder, "lr_scheduler": scheduler_encoder, "monitor": "KL_divergence"},
+             #   {"optimizer": opt_decoder, "lr_scheduler": scheduler_decoder, "monitor": "entropy_loss"})
 
     def loss_fn_KL(self, mu, log_var):
         loss = 0.5 * (torch.pow(mu, 2) + torch.exp(log_var) - log_var - 1).sum(1).mean()

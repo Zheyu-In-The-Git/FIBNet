@@ -193,10 +193,28 @@ model = arcface_resnet50_net.load_from_checkpoint('/Users/xiaozhe/PycharmProject
 #print(model)
 
 #model_resnet50 = model.resnet50.layer4[2] # 这是最后一层卷积
-for name, param in model.named_parameters():
+#print(model_resnet50)
+
+
+#for name, param in model.named_parameters():
+#    param.requires_grad = False
     #if model.resnet50.layer4[2] in name:
-        #param.requires_grad =False
-    print(name)
+    #    param.requires_grad =True
 
-print(model)
 
+for param in model.resnet50.parameters():
+    param.requires_grad = False
+
+for param in model.resnet50.layer4.parameters():
+    param.requires_grad = True
+
+for param in model.resnet50.fc.parameters():
+    param.requires_grad = True
+
+print(model.resnet50.fc.in_features)
+
+for name, param in model.named_parameters():
+    if not param.requires_grad:
+        print(name, 'is frozen.')
+    else:
+        print(name, 'is trainable.')
