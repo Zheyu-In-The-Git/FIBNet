@@ -170,8 +170,8 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', default='bottleneck', type=str)
     parser.add_argument('--beta', default=0.1, type=float)
     parser.add_argument('--batch_size', default=64, type=int)
-    parser.add_argument('--max_epochs', default=150, type = int)
-    parser.add_argument('--min_epochs', default=100, type=int)
+    parser.add_argument('--max_epochs', default=200, type = int)
+    parser.add_argument('--min_epochs', default=150, type=int)
 
 
     # 日志参数
