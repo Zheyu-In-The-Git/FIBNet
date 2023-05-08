@@ -41,7 +41,7 @@ arcface = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\40398\PycharmProj
 encoder = Encoder(latent_dim=512, arcface_model=arcface)
 decoder = Decoder(latent_dim=512, identity_nums=10177, s=64.0, m=0.50, easy_margin=False)
 bottlenecknets = BottleneckNets(model_name='bottleneck', encoder=encoder, decoder=decoder, beta=0.1, batch_size=64, identity_nums=10177)
-model = bottlenecknets.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent512_beta0.1\checkpoints\saved_models\epoch=50-step=99800.ckpt', encoder=encoder,decoder=decoder)
+model = bottlenecknets.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent512_beta0.01\checkpoints\saved_models\last.ckpt', encoder=encoder,decoder=decoder)
 model.to(device)
 
 # 冻结住网络参数的梯度
