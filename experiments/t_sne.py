@@ -12,11 +12,13 @@ from sklearn.manifold import TSNE
 
 from data import CelebaTSNEExperiment
 from torch.utils.data import DataLoader
+from model import BottleneckNets, Encoder, Decoder
 import arcface_resnet50
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu") #******#
 
@@ -28,14 +30,26 @@ dataloader = DataLoader(celeba_dataset, batch_size=50, shuffle=True)
 
 
 # 导入模型
-arcface_resnet50_net = arcface_resnet50.ArcfaceResnet50(in_features=1024, out_features=10177, s=64.0, m=0.50)
-model = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent1024\checkpoints\saved_model\face_recognition_resnet50\epoch=130-step=259400.ckpt').to(device)
+#arcface_resnet50_net = arcface_resnet50.ArcfaceResnet50(in_features=1024, out_features=10177, s=64.0, m=0.50)
+#model = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent1024\checkpoints\saved_model\face_recognition_resnet50\epoch=130-step=259400.ckpt').to(device)
+
+
+# 导入Bottleneck模型
+
+arcface_resnet50_net = arcface_resnet50.ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
+arcface = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=140-step=279350.ckpt')
+encoder = Encoder(latent_dim=512, arcface_model=arcface)
+decoder = Decoder(latent_dim=512, identity_nums=10177, s=64.0, m=0.50, easy_margin=False)
+bottlenecknets = BottleneckNets(model_name='bottleneck', encoder=encoder, decoder=decoder, beta=0.1, batch_size=64, identity_nums=10177)
+model = bottlenecknets.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent512_beta0.1\checkpoints\saved_models\epoch=50-step=99800.ckpt', encoder=encoder,decoder=decoder)
+model.to(device)
 
 # 冻结住网络参数的梯度
 for param in model.parameters():
     param.requires_grad_(False)
 
-    
+'''
+   
 # 让模型进行计算
 Z_data = 0
 S_data = 0
@@ -43,6 +57,21 @@ for i, item in enumerate(dataloader):
     print('i', i)
     x, u, s = item
     U, Z = model(x.to(device),u.to(device))
+    #print(Z.shape)
+    if i == 0:
+        Z_data = Z
+        S_data = s
+    else:
+        Z_data = torch.cat((Z_data, Z), 0)
+        S_data = torch.cat((S_data, s), 0)
+'''
+
+Z_data = 0
+S_data = 0
+for i, item in enumerate(dataloader):
+    print('i', i)
+    x, u, s = item
+    Z, _, _, _ = model(x.to(device),u.to(device))
     #print(Z.shape)
     if i == 0:
         Z_data = Z
@@ -73,8 +102,7 @@ df_tsne = pd.DataFrame(X_tsne_data, columns=['Dim1', 'Dim2', 'gender'])
 df_tsne.loc[df_tsne['gender'] == 0, 'gender'] = 'female'
 df_tsne.loc[df_tsne['gender'] == 1, 'gender'] = 'male'
 
-# sns.scatterplot(data=df_tsne, hue='gender', x='Dim1', y='Dim2')
-sns.scatterplot(data=df_tsne, hue='gender') # 不打 x轴 和 y轴
+sns.scatterplot(data=df_tsne, hue='gender', x='Dim1', y='Dim2')
+#sns.scatterplot(data=df_tsne, hue='gender') # 不打 x轴 和 y轴
 plt.show()
 # plt.savefig('arcface_512_resnet50.eps', format='eps', bbox_inches='tight') # 保存成.eps格式
-matplotlib.backends.backend_pdf.PdfPages(filename='', keep_empty=True)

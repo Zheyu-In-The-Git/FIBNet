@@ -148,18 +148,18 @@ class BottleneckNets(pl.LightningModule):
 
         tensorboard_logs = {'val_u_accuracy': u_accuracy,
                             'val_u_misclass_rate': u_misclass_rate,
-                            'val_loss_phi_theta': val_loss_phi_theta}
+                            'val_loss': val_loss_phi_theta}
 
         self.log_dict(tensorboard_logs, prog_bar=True, logger=True, on_step=True, on_epoch = True)
-        return {'val_loss_phi_theta': val_loss_phi_theta,'val_u_accuracy': u_accuracy}
+        return {'val_loss': val_loss_phi_theta,'val_u_accuracy': u_accuracy}
 
 
     def test_step(self, batch, batch_idx):
         # 数据
         img_1, img_2, match = batch
 
-        z_1_mu, z_1_sigma = self.encoder(self.arcface_model_resnet50(img_1))
-        z_2_mu, z_2_sigma = self.encoder(self.arcface_model_resnet50(img_2))
+        z_1_mu, z_1_sigma = self.encoder(img_1)
+        z_2_mu, z_2_sigma = self.encoder(img_2)
 
         z_1 = self.sample_z(z_1_mu, z_1_sigma)
         z_2 = self.sample_z(z_2_mu, z_2_sigma)
