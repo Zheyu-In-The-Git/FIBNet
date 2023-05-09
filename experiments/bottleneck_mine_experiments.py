@@ -44,7 +44,7 @@ class MineNet(nn.Module):
 
 class BottleneckMineEstimator(pl.LightningModule):
     def __init__(self, latent_dim, s_dim, pretrained_model):
-        super(BottleneckMineEstimator).__init__()
+        super(BottleneckMineEstimator, self).__init__()
         self.mine_net = MineNet(latent_dim, s_dim)
         self.latent_dim = latent_dim
         self.s_dim = s_dim
