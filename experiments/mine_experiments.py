@@ -20,19 +20,16 @@ class MineNet(nn.Module):
     def __init__(self, latent_dim, s_dim):
         super(MineNet, self).__init__()
         self.mine_net = nn.Sequential(
-            nn.Linear((latent_dim + s_dim), 100),
+            nn.Linear((latent_dim + s_dim), 256),
             torch.nn.ELU(alpha=1.0, inplace=False),
+            #torch.nn.ReLU6(),
 
-            nn.Linear(100,100),
+            nn.Linear(256,128),
             torch.nn.ELU(alpha=1.0, inplace=False),
+            #torch.nn.ReLU6(),
 
-            nn.Linear(100, 100),
-            torch.nn.ELU(alpha=1.0, inplace=False),
 
-            nn.Linear(100, 100),
-            torch.nn.ELU(alpha=1.0, inplace=False),
-
-            nn.Linear(100, 1),
+            nn.Linear(128, 1),
         )
     def forward(self, z, s):
         batch_size = z.size(0)
@@ -45,7 +42,7 @@ class MineNet(nn.Module):
         logits = self.mine_net(inputs)
         pred_zs = logits[:batch_size]
         pred_z_s = logits[batch_size:]
-        loss = -np.log2(np.exp(1)) * (torch.mean(pred_zs)) - torch.log(torch.mean(torch.exp(pred_z_s)))
+        loss = -np.log2(np.exp(1)) * (torch.mean(pred_zs) - torch.log(torch.mean(torch.exp(pred_z_s))))
         return loss
 
 
@@ -65,8 +62,8 @@ class ArcfaceMineEstimator(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.mine_net.parameters(), lr=0.001, betas=(b1, b2), weight_decay=5e-4)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=3, min_lr=1e-8,
+        optim_train = optim.Adam(self.mine_net.parameters(), lr=0.001, betas=(b1, b2))
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=3, min_lr=1e-8,
                                                          threshold=1e-2)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "infor_loss"}
 
@@ -74,7 +71,7 @@ class ArcfaceMineEstimator(pl.LightningModule):
         x, u, s = batch
         _, z = self.model(x,u)
         infor_loss = self.mine_net(z, s)
-        self.log('infor_loss', infor_loss, on_epoch=True, on_step=True, prog_bar=True)
+        self.log('infor_loss', -infor_loss, on_epoch=True, on_step=True, prog_bar=True)
         return infor_loss
 
 def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模型，特征向量维度，数据集，训练还是测试集
@@ -126,7 +123,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         log_every_n_steps=10,
         precision=32,
         enable_checkpointing=True,
-        fast_dev_run=True,
+        fast_dev_run=False,
     )
 
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
@@ -138,9 +135,9 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
     trainer.fit(arcfacemineestimator, data_module)
-    trainer.save_checkpoint(resume_checkpoint_path)
+
 
 
 if __name__ == '__main__':
-    model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent1024\checkpoints\saved_model\face_recognition_resnet50\epoch=130-step=259400.ckpt'
+    model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=140-step=279350.ckpt'
     ArcfaceMineMain(model_path, latent_dim=512, save_name='arcface_mine_512_celeba_traindataset')
