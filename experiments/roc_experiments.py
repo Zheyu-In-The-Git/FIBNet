@@ -5,20 +5,59 @@ import PIL
 pl.seed_everything(83)
 from model import utility_discriminator
 import torch.nn as nn
-from model import ConstructBottleneckNets
 from matplotlib import pyplot as plt
-from torchvision import transforms
-from arcface_resnet50 import ArcfaceResnet50
-from sklearn.manifold import TSNE
-import torch.nn.functional as F
 
-# 预备测试的超参数beta 为 0.0001， 0.1， 0.3， 0.5， 0.8， 0.95
+
+# 预备测试的超参数beta 为 0.0001, 0.001, 0.01, 0.1, 1
 
 
 # 5y月1日 celeba数据集训练arcface_resnet50
 # -----------------ROC实验----------------------
 #
-list = torch.load('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/lightning_log/roc_arcface_celeba_512.pt', map_location=torch.device('cpu'))
+list_arcface = torch.load(r'/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/arcface_recognizer_resnet50_latent512/roc_arcface_celeba_512.pt', map_location=torch.device('cpu'))
+list_bottleneck_beta_01 = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/bottleneck_experiment_latent512_beta0.1/bottleneck_roc_beta0.1.pt', map_location=torch.device('cpu'))
+list_bottleneck_beta_001 = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/bottleneck_experiment_latent512_beta0.01/bottleneck_roc_beta0.01.pt', map_location=torch.device('cpu'))
+list_bottleneck_beta_0001 = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/bottleneck_experiment_latent512_beta0.001/bottleneck_roc_beta0.001.pt', map_location=torch.device('cpu'))
+
+# fpr相关数据
+fpr_cos_arcface = list_arcface['fpr_cos'].numpy()
+fpr_cos_bottleneck_beta_01 = list_bottleneck_beta_01['fpr_cos'].numpy()
+fpr_cos_bottleneck_beta_001 = list_bottleneck_beta_001['fpr_cos'].numpy()
+fpr_cos_bottleneck_beta_0001 = list_bottleneck_beta_0001['fpr_cos'].numpy()
+
+# tpr相关数据
+tpr_cos_arcface = list_arcface['tpr_cos'].numpy()
+tpr_cos_bottleneck_beta_01 = list_bottleneck_beta_01['tpr_cos'].numpy()
+tpr_cos_bottleneck_beta_001 = list_bottleneck_beta_001['tpr_cos'].numpy()
+tpr_cos_bottleneck_beta_0001 = list_bottleneck_beta_0001['tpr_cos'].numpy()
+
+# threshold相关数据
+thresholds_cos_arcface = list_arcface['thresholds_cos'].numpy()
+thresholds_cos_bottleneck_beta_01 = list_bottleneck_beta_01['thresholds_cos'].numpy()
+thresholds_cos_bottleneck_beta_001 = list_bottleneck_beta_001['thresholds_cos'].numpy()
+thresholds_cos_bottleneck_beta_0001 = list_bottleneck_beta_0001['thresholds_cos'].numpy()
+
+
+# 画线
+plt.plot(fpr_cos_arcface, tpr_cos_arcface, linestyle='-', label='Arcface')
+plt.plot(fpr_cos_bottleneck_beta_0001, tpr_cos_bottleneck_beta_0001, linestyle='-', label=r'$\beta$ = 0.001')
+plt.plot(fpr_cos_bottleneck_beta_001, tpr_cos_bottleneck_beta_001, linestyle='-', label=r'$\beta$ = 0.01')
+plt.plot(fpr_cos_bottleneck_beta_01, tpr_cos_bottleneck_beta_01, linestyle='-', label=r'$\beta$ = 0.1')
+
+plt.xlabel("FPR",fontsize=15)
+plt.ylabel("TPR",fontsize=15)
+
+plt.title("ROC")
+plt.legend(loc="lower right")
+plt.show()
+
+print(list_arcface['eer_cos'])
+print(list_bottleneck_beta_0001['eer_cos'])
+print(list_bottleneck_beta_001['eer_cos'])
+print(list_bottleneck_beta_01['eer_cos'])
+
+
+'''
 print(list.keys()) # fpr_cos, tpr_cos, thresholds_coss, eer_cos
 print(list['fpr_cos'])
 print('eer_cos:',list['eer_cos'])
@@ -27,7 +66,7 @@ tpr_cos = list['tpr_cos'].numpy()
 thresholds_cos = list['thresholds_cos'].numpy()
 
 # 之后可以用的
-'''
+
 
 list2 = torch.load('data/arcface_confusion_cos.pt', map_location=torch.device('cpu'))
 # print(list2.keys()) # (['fpr_cos', 'tpr_cos', 'thresholds_coss', 'eer_cos'])
@@ -37,19 +76,11 @@ thresholds_cos_wrong = list2['thresholds_coss'].numpy()
 '''
 
 
-plt.plot(fpr_cos, tpr_cos, linestyle='-')
-# plt.plot(fpr_cos_wrong, tpr_cos_wrong, linestyle='-.')
-
-plt.xlabel("FPR",fontsize=15)
-plt.ylabel("TPR",fontsize=15)
-
-plt.title("ROC")
-plt.legend(loc="lower right")
-plt.show()
 
 
 
 
+'''
 
 # ------ 测人脸# ----
 trans = transforms.Compose([transforms.CenterCrop((130, 130)),
@@ -80,3 +111,5 @@ x_latent = x_latent.reshape(x_latent.shape[0], -1)
 y_latent = y_latent.reshape(x_latent.shape[0], -1)
 cos_value = F.cosine_similarity(x_latent, y_latent)
 print(cos_value)
+
+'''
