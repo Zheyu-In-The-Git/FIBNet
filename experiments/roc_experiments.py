@@ -18,28 +18,34 @@ list_arcface = torch.load(r'/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/light
 list_bottleneck_beta_01 = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/bottleneck_experiment_latent512_beta0.1/bottleneck_roc_beta0.1.pt', map_location=torch.device('cpu'))
 list_bottleneck_beta_001 = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/bottleneck_experiment_latent512_beta0.01/bottleneck_roc_beta0.01.pt', map_location=torch.device('cpu'))
 list_bottleneck_beta_0001 = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/bottleneck_experiment_latent512_beta0.001/bottleneck_roc_beta0.001.pt', map_location=torch.device('cpu'))
+list_bottleneck_beta_00001 = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/bottleneck_experiment_latent512_beta0.0001/bottleneck_roc_beta0.0001.pt', map_location=torch.device('cpu'))
+
 
 # fpr相关数据
 fpr_cos_arcface = list_arcface['fpr_cos'].numpy()
 fpr_cos_bottleneck_beta_01 = list_bottleneck_beta_01['fpr_cos'].numpy()
 fpr_cos_bottleneck_beta_001 = list_bottleneck_beta_001['fpr_cos'].numpy()
 fpr_cos_bottleneck_beta_0001 = list_bottleneck_beta_0001['fpr_cos'].numpy()
+fpr_cos_bottleneck_beta_00001 = list_bottleneck_beta_00001['fpr_cos'].numpy()
 
 # tpr相关数据
 tpr_cos_arcface = list_arcface['tpr_cos'].numpy()
 tpr_cos_bottleneck_beta_01 = list_bottleneck_beta_01['tpr_cos'].numpy()
 tpr_cos_bottleneck_beta_001 = list_bottleneck_beta_001['tpr_cos'].numpy()
 tpr_cos_bottleneck_beta_0001 = list_bottleneck_beta_0001['tpr_cos'].numpy()
+tpr_cos_bottleneck_beta_00001 = list_bottleneck_beta_00001['tpr_cos'].numpy()
 
 # threshold相关数据
 thresholds_cos_arcface = list_arcface['thresholds_cos'].numpy()
 thresholds_cos_bottleneck_beta_01 = list_bottleneck_beta_01['thresholds_cos'].numpy()
 thresholds_cos_bottleneck_beta_001 = list_bottleneck_beta_001['thresholds_cos'].numpy()
 thresholds_cos_bottleneck_beta_0001 = list_bottleneck_beta_0001['thresholds_cos'].numpy()
+thresholds_cos_bottleneck_beta_00001 = list_bottleneck_beta_00001['thresholds_cos'].numpy()
 
 
 # 画线
 plt.plot(fpr_cos_arcface, tpr_cos_arcface, linestyle='-', label='Arcface')
+plt.plot(fpr_cos_bottleneck_beta_00001, tpr_cos_bottleneck_beta_00001, linestyle='-', label=r'$\beta$ = 0.0001')
 plt.plot(fpr_cos_bottleneck_beta_0001, tpr_cos_bottleneck_beta_0001, linestyle='-', label=r'$\beta$ = 0.001')
 plt.plot(fpr_cos_bottleneck_beta_001, tpr_cos_bottleneck_beta_001, linestyle='-', label=r'$\beta$ = 0.01')
 plt.plot(fpr_cos_bottleneck_beta_01, tpr_cos_bottleneck_beta_01, linestyle='-', label=r'$\beta$ = 0.1')
@@ -52,6 +58,7 @@ plt.legend(loc="lower right")
 plt.show()
 
 print(list_arcface['eer_cos'])
+print(list_bottleneck_beta_00001['eer_cos'])
 print(list_bottleneck_beta_0001['eer_cos'])
 print(list_bottleneck_beta_001['eer_cos'])
 print(list_bottleneck_beta_01['eer_cos'])
