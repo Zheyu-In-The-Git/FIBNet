@@ -235,10 +235,9 @@ mtcnn = MTCNN(keep_all=True)
 #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 trans = transforms.Compose([transforms.CenterCrop((180, 180)),
-                                    # transforms.Resize(112),
-                                    ])
+                            transforms.RandomHorizontalFlip(p=0.5)])
 
-img = PIL.Image.open('/Users/xiaozhe/datasets/celeba/img_align_celeba/img_align_celeba/001000.jpg')
+img = PIL.Image.open('/Users/xiaozhe/datasets/celeba/img_align_celeba/img_align_celeba/001005.jpg')
 img = trans(img)
 
 boxes, probs, landmarks = mtcnn.detect(img, landmarks=True)

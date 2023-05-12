@@ -140,9 +140,9 @@ class LFWRecognitionTestPairs(data.Dataset):
 
 
 if __name__ == '__main__':
-    data_dir = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
-    loader = LFWData(dim_img=224, data_dir=data_dir, identity_nums=5749, sensitive_attr='Male', img_path_replace=True, split='test')
-    train_loader = DataLoader(loader, batch_size=2, shuffle=False)
+    data_dir = '/Users/xiaozhe/datasets/lfw/lfw112'
+    loader = LFWData(dim_img=112, data_dir=data_dir, identity_nums=5749, sensitive_attr='Male', img_path_replace=True, split='test')
+    train_loader = DataLoader(loader, batch_size=3, shuffle=False)
 
     for i, item in enumerate(train_loader):
         print('i', i)
@@ -154,10 +154,10 @@ if __name__ == '__main__':
 
 
 
-    '''
+
     
     loader_face_recognition = LFWRecognitionTestPairs(dim_img=224, data_dir=data_dir, img_path_replace=False)
-    test_loader = DataLoader(loader_face_recognition, batch_size=2, shuffle=False)
+    test_loader = DataLoader(loader_face_recognition, batch_size=4, shuffle=False)
     for i, item in enumerate(test_loader):
         print('i', i)
         img_x, img_y, match = item
@@ -165,7 +165,7 @@ if __name__ == '__main__':
         print(img_y)
         print(match)
         break
-    '''
+
 
 
 

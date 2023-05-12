@@ -10,6 +10,11 @@ from functools import partial
 from torchvision import transforms
 
 from torch.utils.data import DataLoader
+from facenet_pytorch import MTCNN
+import torchvision.transforms.functional as F
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
+mtcnn = MTCNN(keep_all=True)
 
 # 要做训练集和测试集吗
 
@@ -43,12 +48,12 @@ class AdienceData(data.Dataset):
 
         self.adience_dataset = adience_dataset[['user_id', 'original_image', 'face_id', 'gender']]
 
-        self.trans = transforms.Compose([
-            transforms.Resize(self.dim_img),
-            transforms.CenterCrop((125, 125)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-        ])
+        self.trans_first = transforms.Compose([transforms.CenterCrop((1250, 1250))])
+        self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
+                                                transforms.ToTensor(),
+                                                transforms.Normalize(mean=[0.5, 0.5, 0.5],
+                                                                     std=[0.5, 0.5, 0.5]),
+                                                ])
 
 
     def __len__(self):
@@ -67,7 +72,26 @@ class AdienceData(data.Dataset):
 
         x = PIL.Image.open(img_path)
 
-        x = self.trans(x)
+        x = self.trans_first(x)
+
+        boxes, probs, landmarks = mtcnn.detect(x, landmarks=True)
+
+        max_prob_idx = probs.argmax()
+        max_prob_box = boxes[max_prob_idx]
+
+        x1, y1, x2, y2 = max_prob_box.astype(int)
+
+        h = y2 - y1
+        w = x2 - x1
+
+        x = F.crop(x, x1, y1, h, w)
+        x = self.trans_second(x)
+
+        to_img = transforms.ToPILImage()
+        img = to_img(x)
+        img.show()
+
+        # x = self.trans(x)
 
         u = face_id - 1
 
@@ -95,12 +119,12 @@ class AdienceRecognitionTestPairs(data.Dataset):
 
 
         # 图像变换成张量
-        self.trans = transforms.Compose([
-                                    transforms.CenterCrop((125, 125)),
-                                    transforms.Resize(self.dim_img),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-                                    ])
+        self.trans_first = transforms.Compose([transforms.CenterCrop((1250, 1250))]) # 175左右报错
+        self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
+                                                transforms.ToTensor(),
+                                                transforms.Normalize(mean=[0.5, 0.5, 0.5],
+                                                                     std=[0.5, 0.5, 0.5]),
+                                                ])
 
     def __len__(self):
         return self.adience_dataset_pairs.shape[0]
@@ -109,14 +133,53 @@ class AdienceRecognitionTestPairs(data.Dataset):
 
 
         img_x = PIL.Image.open(os.path.join(self.data_dir, 'faces', self.adience_dataset_pairs['img_x'][index]))
+        img_x = self.trans_first(img_x)
 
-        img_x = self.trans(img_x)
+        boxes, probs, landmarks = mtcnn.detect(img_x, landmarks=True)
+
+        max_prob_idx = probs.argmax()
+        max_prob_box = boxes[max_prob_idx]
+
+        img_x_x1, img_x_y1, img_x_x2, img_x_y2 = max_prob_box.astype(int)
+
+        img_x_h = img_x_y2 - img_x_y1
+        img_x_w = img_x_x2 - img_x_x1
+
+        img_x = F.crop(img_x, img_x_x1, img_x_y1, img_x_h, img_x_w)
+        img_x = self.trans_second(img_x)
+
+        # img_x = self.trans(img_x)
+
+        #to_img = transforms.ToPILImage()
+        #img = to_img(img_x)
+        #img.show()
+
 
         img_y = PIL.Image.open(os.path.join(self.data_dir, 'faces', self.adience_dataset_pairs['img_y'][index]))
 
-        img_y = self.trans(img_y)
+        # img_y = self.trans(img_y)
+        img_y = self.trans_first(img_y)
+
+        boxes, probs, landmarks = mtcnn.detect(img_y, landmarks=True)
+
+        max_prob_idx = probs.argmax()
+        max_prob_box = boxes[max_prob_idx]
+
+        img_y_x1, img_y_y1, img_y_x2, img_y_y2 = max_prob_box.astype(int)
+
+        img_y_h = img_y_y2 - img_y_y1
+        img_y_w = img_y_x2 - img_y_x1
+
+        img_y = F.crop(img_y, img_y_x1, img_y_y1, img_y_h, img_y_w)
+        img_y = self.trans_second(img_y)
+
+        #to_img = transforms.ToPILImage()
+        #img = to_img(img_y)
+        #img.show()
+
 
         match = torch.tensor(self.adience_dataset_pairs['match'][index])
+
 
         return img_x, img_y, match
 
@@ -125,13 +188,11 @@ class AdienceRecognitionTestPairs(data.Dataset):
 
 
 if __name__ == '__main__':
-    data_dir = '/Volumes/xiaozhe_SSD/datasets/Adience'
-    loader = AdienceData(dim_img=224, data_dir=data_dir, identity_nums=10177, sensitive_attr='Male')
-    train_loader = DataLoader(loader, batch_size=2, shuffle=True)
-
-
+    data_dir = '/Users/xiaozhe/datasets/Adience'
     '''
     
+    loader = AdienceData(dim_img=112, data_dir=data_dir, identity_nums=10177, sensitive_attr='Male')
+    train_loader = DataLoader(loader, batch_size=10, shuffle=True)
     for i, item in enumerate(train_loader):
         print('i', i)
         x, u, s = item
@@ -139,16 +200,22 @@ if __name__ == '__main__':
         print(u)
         print(s)
         break
+        
     '''
-    loader_face_recogntion = AdienceRecognitionTestPairs(dim_img=224, data_dir=data_dir)
-    test_pairs = DataLoader(loader_face_recogntion, batch_size=2, shuffle=False)
-    for i, item in enumerate(train_loader):
+
+
+
+
+    loader_face_recogntion = AdienceRecognitionTestPairs(dim_img=112, data_dir=data_dir)
+    test_pairs = DataLoader(loader_face_recogntion, batch_size=10, shuffle=False)
+    for i, item in enumerate(test_pairs):
         print('i', i)
         img_x, img_y, match = item
         print(img_x)
         print(img_y)
         print(match)
-        break
+
+
 
 
 
