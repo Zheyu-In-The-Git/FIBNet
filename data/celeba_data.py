@@ -10,11 +10,7 @@ from functools import partial
 
 from torchvision import transforms
 from torchvision.datasets.utils import verify_str_arg
-
-
-
 from torch.utils.data import DataLoader
-from torchvision.datasets import CelebA
 
 
 class CelebaData(data.Dataset):

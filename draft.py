@@ -186,6 +186,7 @@ s = np.sqrt(2) * np.log(10177-1)
 print(s)
 '''
 
+'''
 
 from arcface_resnet50 import ArcfaceResnet50
 arcface_resnet50_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
@@ -218,3 +219,61 @@ for name, param in model.named_parameters():
         print(name, 'is frozen.')
     else:
         print(name, 'is trainable.')
+        
+'''
+
+
+from facenet_pytorch import MTCNN
+import cv2
+import PIL
+from torchvision import transforms
+import torchvision.transforms.functional as F
+
+
+mtcnn = MTCNN(keep_all=True)
+#img = cv2.imread('/Users/xiaozhe/datasets/celeba/img_align_celeba/img_align_celeba/000001.jpg')
+#img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+trans = transforms.Compose([transforms.CenterCrop((180, 180)),
+                                    # transforms.Resize(112),
+                                    ])
+
+img = PIL.Image.open('/Users/xiaozhe/datasets/celeba/img_align_celeba/img_align_celeba/001000.jpg')
+img = trans(img)
+
+boxes, probs, landmarks = mtcnn.detect(img, landmarks=True)
+
+# print(f"Detected {len(boxes)} faces")
+
+max_prob_idx = probs.argmax()
+max_prob_box = boxes[max_prob_idx]
+
+x1, y1, x2, y2 = max_prob_box.astype(int)
+
+cropped_face_position = (x1, y1, x2, y2)
+h = y2 - y1
+w = x2 - x1
+
+cropped_face = F.crop(img, x1, y1, h, w)
+trans2 = transforms.Compose([
+    transforms.Resize((112, 112)),
+])
+cropped_face = trans2(cropped_face)
+
+#print(cropped_face.shape)
+cropped_face.show()
+# img.show()
+
+'''
+# 在图像上绘制人脸框和关键点
+for box in boxes:
+    x1, y1, x2, y2 = box.astype(int)
+    cropped_face_position = (x1, y1, x2, y2)
+    h = y2 - y1
+    w = x2 - x1
+    cropped_face = F.crop(img, x1, y1, h, w)
+    cropped_face.show()
+'''
+
+
+
