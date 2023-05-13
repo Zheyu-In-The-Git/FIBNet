@@ -222,6 +222,7 @@ for name, param in model.named_parameters():
         
 '''
 
+'''
 
 from facenet_pytorch import MTCNN
 import cv2
@@ -262,6 +263,7 @@ cropped_face = trans2(cropped_face)
 #print(cropped_face.shape)
 cropped_face.show()
 # img.show()
+'''
 
 '''
 # 在图像上绘制人脸框和关键点
