@@ -25,7 +25,7 @@ def batch_accuracy(y_pred, y_true):
     return np.sum(y_pred == y_true) / len(y_true)
 
 # 加载预训练模型
-with open('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/resnet50_scratch_weight.pkl', 'rb') as f:
+with open(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\resnet50_scratch_weight.pkl', 'rb') as f:
     model_dict = pickle.load(f)
 state_dict = {}
 for k, v in model_dict.items():
@@ -138,7 +138,7 @@ def main(model_name, Resume, save_name=None):
     if save_name is None:
         save_name = model_name
 
-    data_module = CelebaInterface(num_workers =2,
+    data_module = CelebaInterface(num_workers = 2,
                  dataset = 'celeba_data',
                  batch_size = 64,
                  dim_img = 224,
@@ -146,7 +146,7 @@ def main(model_name, Resume, save_name=None):
                  sensitive_dim = 1,
                  identity_nums = 10177,
                  sensitive_attr = 'Male',
-                 pin_memory=False)
+                 pin_memory=True)
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_log', name='tensorboard_log')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
