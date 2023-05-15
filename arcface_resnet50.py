@@ -61,7 +61,7 @@ class ArcfaceResnet50(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.parameters(), lr=0.00001, betas=(b1, b2), weight_decay=5e-4)
+        optim_train = optim.Adam(self.parameters(), lr=0.0001, betas=(b1, b2), weight_decay=5e-4)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
