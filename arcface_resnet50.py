@@ -25,7 +25,7 @@ def batch_accuracy(y_pred, y_true):
     return np.sum(y_pred == y_true) / len(y_true)
 
 # 加载预训练模型
-with open('lightning_logs/resnet50_scratch_weight.pkl', 'rb') as f:
+with open('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/resnet50_scratch_weight.pkl', 'rb') as f:
     model_dict = pickle.load(f)
 state_dict = {}
 for k, v in model_dict.items():
@@ -49,10 +49,6 @@ class ArcfaceResnet50(pl.LightningModule):
         self.softmax = nn.Softmax()
         self.save_hyperparameters()
         self.criterion = FocalLoss(gamma=2)
-
-        # 使用一些度量
-        # 欧几里得距离
-        self.pdist = nn.PairwiseDistance(p=2)
 
         # roc
         self.roc = torchmetrics.ROC(task='binary')
