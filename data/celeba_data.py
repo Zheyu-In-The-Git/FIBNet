@@ -13,11 +13,6 @@ from torchvision import transforms
 from torchvision.datasets.utils import verify_str_arg
 from torch.utils.data import DataLoader
 import os
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
-
-mtcnn = MTCNN(keep_all=True)
-
-
 
 
 class CelebaData(data.Dataset):
