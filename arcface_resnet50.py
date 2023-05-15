@@ -130,7 +130,7 @@ class ArcfaceResnet50(pl.LightningModule):
 
 
 
-CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_recognizer_resnet50_latent1024/checkpoints/')
+CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/')
 #os.makedirs(CHECKPOINT_PATH, exist_ok=True)
 
 def main(model_name, Resume, save_name=None):
