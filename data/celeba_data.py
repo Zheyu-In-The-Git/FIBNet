@@ -258,7 +258,7 @@ if __name__ == '__main__':
 
     
     #loader = CelebaData(dim_img=112, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train_valid_70%')
-    dataset = CelebaTSNEExperiment(dim_img=224, data_dir=data_dir, sensitive_attr='Male', split='train_valid_70%')
+    dataset = CelebaTSNEExperiment(dim_img=112, data_dir=data_dir, sensitive_attr='Male', split='test_30%')
     train_loader = DataLoader(dataset, batch_size=64)
     #print(sampler)
 
@@ -266,8 +266,8 @@ if __name__ == '__main__':
     for i, item in enumerate(train_loader):
         print('i', i)
         x, u, s = item
-        print(x.shape)
-        break
+        print(x)
+
 
 
 

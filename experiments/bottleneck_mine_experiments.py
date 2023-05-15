@@ -89,7 +89,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                   sensitive_attr='Male',
                                   pin_memory=False)
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/bottleneck_mine_estimator/checkpoints/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/bottleneck_mine_estimator/checkpoints_beta'+str(beta))
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='bottleneck_mine_estimator_logger_beta' + str(beta))
 
@@ -133,9 +133,9 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
 
 if __name__ == '__main__':
     arcface_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=140-step=279350.ckpt'
-    bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent512_beta0.01\checkpoints\saved_models\last.ckpt'
+    bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent512_beta0.1\checkpoints\saved_models\epoch=50-step=99800.ckpt'
     latent_dim = 512
-    beta = 0.01
+    beta = 0.1
     save_name = 'bottleneck_mine_512_celeba_traindataset'
     BottleneckMineMain(arcface_model_path, bottleneck_model_path, latent_dim, beta, save_name)
 
