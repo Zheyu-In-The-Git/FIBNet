@@ -53,6 +53,7 @@ class CelebaData(data.Dataset):
         self.sensitive_dim = sensitive_dim
         self.identity_nums = identity_nums
         self.dim_img = dim_img
+        self.data_dir = data_dir
 
         # 数据集分区
         self.split = split
@@ -85,29 +86,25 @@ class CelebaData(data.Dataset):
 
         if split_ == 'train_valid_70%':
             mask = slice(0, 141819, 1)
-            self.trans_first = transforms.Compose([transforms.CenterCrop((180, 180)),
-                                                   transforms.RandomHorizontalFlip(p=0.5)])
-            self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
-                                                    transforms.ToTensor(),
-                                                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-                                                    ])
+            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+                                             transforms.RandomHorizontalFlip(p=0.5),
+                                             transforms.ToTensor(),
+                                             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
         elif split_ == 'test_30%':
             mask = slice(141819, 202599, 1)
-            self.trans_first = transforms.Compose([transforms.CenterCrop((180, 180))])
-            self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
-                                                    transforms.ToTensor(),
-                                                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-                                                    ])
+            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+                                             transforms.ToTensor(),
+                                             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
         elif split_ is None:
             mask = slice(None)
-            self.trans_first = transforms.Compose([transforms.CenterCrop((180, 180))])
-            self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
-                                                    transforms.ToTensor(),
-                                                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-                                                    ])
+            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+                                             transforms.ToTensor(),
+                                             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
         else:
             mask = (splits[1] == split_) # 后面train test之类的再说吧
-
+            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+                                             transforms.ToTensor(),
+                                             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
 
         self.filename = splits[mask].index.values
@@ -118,6 +115,7 @@ class CelebaData(data.Dataset):
         self.s = torch.as_tensor(sensitive_attr[mask].values)
         self.s = torch.div(self.s +1, 2, rounding_mode='floor')
         self.s = self.s.to(torch.float32)
+
 
 
     def __len__(self):
@@ -131,47 +129,14 @@ class CelebaData(data.Dataset):
 
 
     def __getitem__(self, index):
-        try:
-            # 图像
-            X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba", self.filename[index]))
-            x = self.trans_first(X)
+        X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba_mtcnn", self.filename[index]))
 
-            boxes, probs, landmarks = mtcnn.detect(x, landmarks=True)
+        x = self.trans(X)
 
-            max_prob_idx = probs.argmax()
-            max_prob_box = boxes[max_prob_idx]
+        u = self.u[index, 0] - 1
 
-            x1, y1, x2, y2 = max_prob_box.astype(int)
-
-            h = y2 - y1
-            w = x2 - x1
-
-            x = F.crop(x, x1, y1, h, w)
-            x = self.trans_second(x)
-
-            #to_img = transforms.ToPILImage()
-            #img = to_img(x)
-            #img.show()
-
-            # 身份信息
-            u = self.u[index, 0] - 1
-
-            # 所有属性信息
-            s = self.s[index, :]
-
-            return x, u, s
-        except Exception as e:
-            X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba", self.filename[index]))
-            trans = transforms.Compose([transforms.CenterCrop((130, 130)),
-                                        transforms.Resize(self.dim_img),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
-            x = trans(X)
-
-            u = self.u[index, 0] - 1
-
-            s = self.s[index, :]
-            return x, u, s
+        s = self.s[index, :]
+        return x, u, s
 
 
 
@@ -190,14 +155,7 @@ class CelebaRecognitionTestDataSet(data.Dataset):
         print(self.celeba_test_dataset)
 
         # 图像变换成张量
-        self.trans_first = transforms.Compose([transforms.CenterCrop((180, 180))])
-        self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
-                                                transforms.ToTensor(),
-                                                transforms.Normalize(mean=[0.5, 0.5, 0.5],
-                                                                     std=[0.5, 0.5, 0.5]),
-                                                ])
-        self.trans = transforms.Compose([transforms.CenterCrop((130, 130)),
-                                         transforms.Resize(self.dim_img),
+        self.trans = transforms.Compose([transforms.Resize(self.dim_img),
                                          transforms.ToTensor(),
                                          transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
@@ -205,71 +163,15 @@ class CelebaRecognitionTestDataSet(data.Dataset):
         return self.celeba_test_dataset.shape[0]
 
     def __getitem__(self, index):
-        try:
-            img_x = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba",
-                                            self.celeba_test_dataset['img_x'][index]))
+        img_x = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba_mtcnn', self.celeba_test_dataset['img_x'][index]))
+        img_x = self.trans(img_x)
 
-            # img_x = self.trans(img_x)
+        img_y = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba_mtcnn', self.celeba_test_dataset['img_y'][index]))
+        img_y = self.trans(img_y)
 
-            img_x = self.trans_first(img_x)
+        match = torch.tensor(self.celeba_test_dataset['match'][index])
+        return img_x, img_y, match
 
-            boxes, probs, landmarks = mtcnn.detect(img_x, landmarks=True)
-
-            max_prob_idx = probs.argmax()
-            max_prob_box = boxes[max_prob_idx]
-
-            img_x_x1, img_x_y1, img_x_x2, img_x_y2 = max_prob_box.astype(int)
-
-            img_x_h = img_x_y2 - img_x_y1
-            img_x_w = img_x_x2 - img_x_x1
-
-            img_x = F.crop(img_x, img_x_x1, img_x_y1, img_x_h, img_x_w)
-            img_x = self.trans_second(img_x)
-
-            #to_img = transforms.ToPILImage()
-            #img = to_img(img_x)
-            #img.show()
-
-
-
-            img_y = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba",
-                                            self.celeba_test_dataset['img_y'][index]))
-
-            # img_y = self.trans(img_y)
-            img_y = self.trans_first(img_y)
-
-            boxes, probs, landmarks = mtcnn.detect(img_y, landmarks=True)
-
-            max_prob_idx = probs.argmax()
-            max_prob_box = boxes[max_prob_idx]
-
-            img_y_x1, img_y_y1, img_y_x2, img_y_y2 = max_prob_box.astype(int)
-
-            img_y_h = img_y_y2 - img_y_y1
-            img_y_w = img_y_x2 - img_y_x1
-
-            img_y = F.crop(img_y, img_y_x1, img_y_y1, img_y_h, img_y_w)
-            img_y = self.trans_second(img_y)
-
-            #to_img = transforms.ToPILImage()
-            #img = to_img(img_y)
-            #img.show()
-
-
-
-            match = torch.tensor(self.celeba_test_dataset['match'][index])
-
-            return img_x, img_y, match
-
-        except Exception as e:
-            img_x = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba', self.celeba_test_dataset['img_x'][index]))
-            img_x = self.trans(img_x)
-
-            img_y = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba', self.celeba_test_dataset['img_y'][index]))
-            img_y = self.trans(img_y)
-
-            match = torch.tensor(self.celeba_test_dataset['match'][index])
-            return img_x, img_y, match
 
 
 class CelebaTSNEExperiment(data.Dataset):
@@ -305,29 +207,10 @@ class CelebaTSNEExperiment(data.Dataset):
 
         if split_ == 'train_valid_70%':
             mask = slice(0, 141819, 1)
-            self.trans_first = transforms.Compose([transforms.CenterCrop((180, 180)),
-                                                   transforms.RandomHorizontalFlip(p=0.5)])
-            self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
-                                                    transforms.ToTensor(),
-                                                    transforms.Normalize(mean=[0.5, 0.5, 0.5],
-                                                                         std=[0.5, 0.5, 0.5]),
-                                                    ])
         elif split_ == 'test_30%':
             mask = slice(141819, 202599, 1)
-            self.trans_first = transforms.Compose([transforms.CenterCrop((180, 180))])
-            self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
-                                                    transforms.ToTensor(),
-                                                    transforms.Normalize(mean=[0.5, 0.5, 0.5],
-                                                                         std=[0.5, 0.5, 0.5]),
-                                                    ])
         elif split_ is None:
             mask = slice(None)
-            self.trans_first = transforms.Compose([transforms.CenterCrop((180, 180))])
-            self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
-                                                    transforms.ToTensor(),
-                                                    transforms.Normalize(mean=[0.5, 0.5, 0.5],
-                                                                         std=[0.5, 0.5, 0.5]),
-                                                    ])
         else:
             mask = (splits[1] == split_)
 
@@ -342,69 +225,27 @@ class CelebaTSNEExperiment(data.Dataset):
 
         self.id = identity
 
-
+        self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        try:
-            img_path = self.dataset.index.values[index]
-            # 图像
-            X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba", img_path))
+        img_path = self.dataset.index.values[index]
+        X = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba_mtcnn', img_path))
 
-            x = self.trans_first(X)
+        x = self.trans(X)
 
-            boxes, probs, landmarks = mtcnn.detect(x, landmarks=True)
+        u = self.id.loc[img_path].values
+        u = torch.as_tensor(u) - 1.0
+        u = u.long()
 
-            max_prob_idx = probs.argmax()
-            max_prob_box = boxes[max_prob_idx]
-
-            x1, y1, x2, y2 = max_prob_box.astype(int)
-
-            h = y2 - y1
-            w = x2 - x1
-
-            x = F.crop(x, x1, y1, h, w)
-            x = self.trans_second(x)
-
-            #to_img = transforms.ToPILImage()
-            #img = to_img(x)
-            #img.show()
-
-            # 身份信息
-
-            u = self.id.loc[img_path].values
-            u = torch.as_tensor(u)-1.0
-            u = u.long()
-            #print(u)
-
-
-            #敏感属性
-            s = torch.as_tensor(self.dataset.values[index])
-            s = torch.div(s + 1, 2, rounding_mode='floor')
-            s = s.to(torch.float32)
-
-            return x, u, s
-        except Exception as e:
-            img_path = self.dataset.index.values[index]
-            X = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba', img_path))
-            trans = transforms.Compose([transforms.CenterCrop((130,130)),
-                                        transforms.Resize(self.dim_img),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
-            x = trans(X)
-
-            u = self.id.loc[img_path].values
-            u = torch.as_tensor(u) - 1.0
-            u = u.long()
-
-            s = torch.as_tensor(self.dataset.values[index])
-            s = torch.div(s+1, 2, rounding_mode='floor')
-            s = s.to(torch.float32)
-            return x, u, s
-
-
+        s = torch.as_tensor(self.dataset.values[index])
+        s = torch.div(s + 1, 2, rounding_mode='floor')
+        s = s.to(torch.float32)
+        return x, u, s
 
 
 if __name__ == '__main__':
