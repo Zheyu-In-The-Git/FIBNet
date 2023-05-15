@@ -275,6 +275,47 @@ for box in boxes:
     cropped_face = F.crop(img, x1, y1, h, w)
     cropped_face.show()
 '''
+'''
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model = torch.load('lightning_logs/model_ir_se50.pth', map_location=device)
+print(model)
+'''
+
+import pickle
+import torch
+import torchvision.models as models
+import numpy as np
+import torch.nn as nn
+
+#model = models.resnet50()
+
+#weights = torch.load('lightning_logs/resnet50_scratch_weight.pkl')
+#model.load_state_dict(weights)
+#print(model)
+#torch.save(model.state_dict(), 'resnet50.pth')
+
+#with open('lightning_logs/resnet50_scratch_weight.pkl', 'rb') as f:
+#    model = pickle.load(f)
+
+# torch.save(model.state_dict(), 'resnet-50.pth')
+
+with open('lightning_logs/resnet50_scratch_weight.pkl', 'rb') as f:
+    model_dict = pickle.load(f)
+
+# 转换为PyTorch模型
+state_dict = {}
+for k, v in model_dict.items():
+    if isinstance(v, np.ndarray):
+        v = torch.from_numpy(v)
+    state_dict[k] = v
+model = models.resnet50()
+model.fc = nn.Linear(2048, 8631)
+# print(model.fc.out_features)
+model.load_state_dict(state_dict)
+print(model)
+
+model.fc = nn.Linear(2048, 512)
+print(model)
 
 

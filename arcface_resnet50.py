@@ -6,13 +6,11 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, Ea
 import torch.optim as optim
 import os
 import numpy as np
-import math
 from data import CelebaInterface
 from pytorch_lightning.loggers import TensorBoardLogger
-from argparse import ArgumentParser
 from model import ResNet50, ArcMarginProduct, FocalLoss
-from torchmetrics.functional import pairwise_cosine_similarity
-from torchmetrics.functional import mean_squared_error
+import torchvision.models as models
+import pickle
 
 
 pl.seed_everything(83)
@@ -26,11 +24,27 @@ def batch_misclass_rate(y_pred, y_true):
 def batch_accuracy(y_pred, y_true):
     return np.sum(y_pred == y_true) / len(y_true)
 
+# 加载预训练模型
+with open('lightning_logs/resnet50_scratch_weight.pkl', 'rb') as f:
+    model_dict = pickle.load(f)
+state_dict = {}
+for k, v in model_dict.items():
+    if isinstance(v, np.ndarray):
+        v = torch.from_numpy(v)
+    state_dict[k] = v
+pretrained_model = models.resnet50()
+pretrained_model.fc = nn.Linear(2048, 8631)
+# print(model.fc.out_features)
+pretrained_model.load_state_dict(state_dict)
+
 
 class ArcfaceResnet50(pl.LightningModule):
     def __init__(self, in_features, out_features=10177, s=64.0, m=0.50):
         super(ArcfaceResnet50, self).__init__()
-        self.resnet50 = ResNet50(in_features, channels=3)
+
+        # 加载预训练模型
+        pretrained_model.fc = nn.Linear(2048, in_features)
+        self.resnet50 = pretrained_model
         self.arc_margin_product = ArcMarginProduct(in_features=in_features, out_features=out_features, s=s, m=m, easy_margin=False)
         self.softmax = nn.Softmax()
         self.save_hyperparameters()
