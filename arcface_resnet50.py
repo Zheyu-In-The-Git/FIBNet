@@ -65,7 +65,7 @@ class ArcfaceResnet50(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.parameters(), lr=0.0005, betas=(b1, b2), weight_decay=5e-4)
+        optim_train = optim.Adam(self.parameters(), lr=0.00001, betas=(b1, b2), weight_decay=5e-4)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
@@ -146,7 +146,7 @@ def main(model_name, Resume, save_name=None):
                  dataset = 'celeba_data',
                  batch_size = 64,
                  dim_img = 224,
-                 data_dir = 'D:\datasets\celeba', # 'D:\datasets\celeba'
+                 data_dir = 'D:\celeba', # 'D:\datasets\celeba'
                  sensitive_dim = 1,
                  identity_nums = 10177,
                  sensitive_attr = 'Male',
@@ -181,7 +181,7 @@ def main(model_name, Resume, save_name=None):
         log_every_n_steps=10,
         precision=32,
         enable_checkpointing=True,
-        check_val_every_n_epoch=10,
+        check_val_every_n_epoch=3,
         fast_dev_run=False,
         reload_dataloaders_every_n_epochs=1,
         auto_lr_find=True,
@@ -190,7 +190,7 @@ def main(model_name, Resume, save_name=None):
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
 
     if Resume:
-        model = ArcfaceResnet50(in_features=1024, out_features=10177, s=32.0, m=0.50)
+        model = ArcfaceResnet50(in_features=1024, out_features=10177, s=64.0, m=0.50)
         #trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
         trainer.test(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
         #trainer.save_checkpoint('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50')
@@ -199,7 +199,7 @@ def main(model_name, Resume, save_name=None):
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
         print('Model will be created')
-        model = ArcfaceResnet50(in_features=1024, out_features=10177, s=32.0, m=0.50)
+        model = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
         trainer.fit(model, data_module)
         trainer.test(model, data_module)
         trainer.save_checkpoint(resume_checkpoint_path)
