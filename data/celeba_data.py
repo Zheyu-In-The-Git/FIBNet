@@ -369,14 +369,15 @@ class CelebaTSNEExperiment(data.Dataset):
 if __name__ == '__main__':
 
     #data_dir = 'D:\datasets\celeba'
-    data_dir = '/Users/xiaozhe/datasets/celeba'
+    #data_dir = '/Users/xiaozhe/datasets/celeba'
+    data_dir = 'D:\celeba'
 
 
 
     
     #loader = CelebaData(dim_img=112, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train_valid_70%')
-    dataset = CelebaTSNEExperiment(dim_img=112, data_dir=data_dir, sensitive_attr='Male', split='test_30%')
-    train_loader = DataLoader(dataset, batch_size=10)
+    dataset = CelebaTSNEExperiment(dim_img=224, data_dir=data_dir, sensitive_attr='Male', split='train_valid_70%')
+    train_loader = DataLoader(dataset, batch_size=64)
     #print(sampler)
 
 
