@@ -138,7 +138,7 @@ def main(model_name, Resume, save_name=None):
     if save_name is None:
         save_name = model_name
 
-    data_module = CelebaInterface(num_workers = 2,
+    data_module = CelebaInterface(num_workers = 1,
                  dataset = 'celeba_data',
                  batch_size = 64,
                  dim_img = 224,
@@ -146,7 +146,7 @@ def main(model_name, Resume, save_name=None):
                  sensitive_dim = 1,
                  identity_nums = 10177,
                  sensitive_attr = 'Male',
-                 pin_memory=True)
+                 pin_memory=False)
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_log', name='tensorboard_log')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
