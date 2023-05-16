@@ -172,7 +172,7 @@ def main(model_name, Resume, save_name=None):
         accelerator="auto",
         devices=1,
         max_epochs=200,
-        min_epochs=50,
+        min_epochs=120,
         logger=logger,
         log_every_n_steps=10,
         precision=32,
@@ -186,9 +186,9 @@ def main(model_name, Resume, save_name=None):
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
 
     if Resume:
-        model = ArcfaceResnet50(in_features=1024, out_features=10177, s=64.0, m=0.50)
-        #trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
-        trainer.test(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
+        model = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
+        trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt')
+        trainer.test(model, data_module)
         #trainer.save_checkpoint('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50')
     else:
         resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
@@ -204,7 +204,7 @@ def main(model_name, Resume, save_name=None):
 
 
 if __name__ == '__main__':
-    main(model_name='face_recognition_resnet50',  Resume = 0, save_name=None)
+    main(model_name='face_recognition_resnet50',  Resume = 1, save_name=None)
 
 
 

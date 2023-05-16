@@ -30,6 +30,10 @@ class Encoder(nn.Module):
 
         self.fc_2 = nn.Linear(latent_dim, latent_dim)
 
+        self.fc_3 = nn.Linear(latent_dim, latent_dim)
+
+        self.fc_4 = nn.Linear(latent_dim, latent_dim)
+
         self.mu_fc = nn.Linear(latent_dim, latent_dim)
 
         self.log_var_fc = nn.Linear(latent_dim, latent_dim)
@@ -44,6 +48,14 @@ class Encoder(nn.Module):
         x = self.leakyrelu(x)
 
         x = self.fc_2(x)
+        x = self.batchnorm(x)
+        x = self.leakyrelu(x)
+
+        x = self.fc_3(x)
+        x = self.batchnorm(x)
+        x = self.leakyrelu(x)
+
+        x = self.fc_4(x)
         x = self.batchnorm(x)
         x = self.leakyrelu(x)
 
