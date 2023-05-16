@@ -12,6 +12,9 @@ class Encoder(nn.Module):
         for name, param in self.arcface_model_resnet50.named_parameters():
             param.requires_grad_(False)
 
+        for param in self.arcface_model_resnet50.layer3.parameters():
+            param.requires_grad = True
+
         for param in self.arcface_model_resnet50.layer4.parameters():
             param.requires_grad = True
 
@@ -20,43 +23,19 @@ class Encoder(nn.Module):
 
         in_features = self.arcface_model_resnet50.fc.in_features
 
-        self.arcface_model_resnet50.fc = nn.Linear(in_features, latent_dim)
+        self.arcface_model_resnet50.fc = nn.Linear(in_features, 1024)
 
-        self.batchnorm = nn.BatchNorm1d(latent_dim)
+        self.batchnorm1024 = nn.BatchNorm1d(1024)
 
         self.leakyrelu = nn.LeakyReLU(negative_slope=1e-2, inplace=True)
 
-        self.fc_1 = nn.Linear(latent_dim, latent_dim)
+        self.mu_fc = nn.Linear(1024, latent_dim)
 
-        self.fc_2 = nn.Linear(latent_dim, latent_dim)
-
-        self.fc_3 = nn.Linear(latent_dim, latent_dim)
-
-        self.fc_4 = nn.Linear(latent_dim, latent_dim)
-
-        self.mu_fc = nn.Linear(latent_dim, latent_dim)
-
-        self.log_var_fc = nn.Linear(latent_dim, latent_dim)
+        self.log_var_fc = nn.Linear(1024, latent_dim)
 
     def forward(self, x): # 输入的是表征
         x = self.arcface_model_resnet50(x)
-        x = self.batchnorm(x)
-        x = self.leakyrelu(x)
-
-        x = self.fc_1(x)
-        x = self.batchnorm(x)
-        x = self.leakyrelu(x)
-
-        x = self.fc_2(x)
-        x = self.batchnorm(x)
-        x = self.leakyrelu(x)
-
-        x = self.fc_3(x)
-        x = self.batchnorm(x)
-        x = self.leakyrelu(x)
-
-        x = self.fc_4(x)
-        x = self.batchnorm(x)
+        x = self.batchnorm1024(x)
         x = self.leakyrelu(x)
 
         mu = self.mu_fc(x)
