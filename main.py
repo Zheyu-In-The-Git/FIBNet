@@ -80,7 +80,7 @@ def main(args):
         enable_checkpointing=True,
         accelerator='gpu',
         devices=1,
-        check_val_every_n_epoch=10,
+        check_val_every_n_epoch=5,
         fast_dev_run=False,
         reload_dataloaders_every_n_epochs=1
     )
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
     # 模型加载与命名
-    VERSION = 'bottleneck_experiment_latent512_beta0.0001'
+    VERSION = 'bottleneck_experiment_latent_new_512_beta0.01'
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + '/checkpoints/')
 
     ###################
@@ -143,11 +143,11 @@ if __name__ == '__main__':
     # Restart Control
     parser.add_argument('--load_best', action='store_true')
     parser.add_argument('--load_dir', default = CHECKPOINT_PATH, type=str, help = 'The root directory of checkpoints.')
-    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.0001', type=str, help = '训练和加载模型的命名 采用')
+    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.01', type=str, help = '训练和加载模型的命名 采用')
     parser.add_argument('--load_v_num', default = 1, type=int)
     parser.add_argument('--RESUME', default=False, type=bool, help = '是否需要重载模型')
-    parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_beta0.0001.ckpt', type = str )
-    parser.add_argument('--arcface_resnet50_path', default=r'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
+    parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_beta0.01.ckpt', type = str )
+    parser.add_argument('--arcface_resnet50_path', default=r'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt')
 
 
     #基本超参数，构建小网络的基本参数
@@ -157,7 +157,7 @@ if __name__ == '__main__':
     parser.add_argument('--identity_nums', default=10177, type = int)
 
     # 基本系统参数
-    parser.add_argument('--seed', default=43, type = int)
+    parser.add_argument('--seed', default=83, type = int)
 
     # 数据集参数设置
     parser.add_argument('--dataset', default='celeba_data', type=str)
@@ -168,10 +168,10 @@ if __name__ == '__main__':
 
     # bottleneck_nets的参数
     parser.add_argument('--model_name', default='bottleneck', type=str)
-    parser.add_argument('--beta', default=0.0001, type=float)
+    parser.add_argument('--beta', default=0.01, type=float)
     parser.add_argument('--batch_size', default=64, type=int)
-    parser.add_argument('--max_epochs', default=100, type = int)
-    parser.add_argument('--min_epochs', default=50, type=int)
+    parser.add_argument('--max_epochs', default=150, type = int)
+    parser.add_argument('--min_epochs', default=70, type=int)
 
 
     # 日志参数
