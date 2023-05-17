@@ -94,8 +94,8 @@ def main(args):
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, args.ckpt_name)
         print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
-        trainer.fit(bottlenecknets, datamodule=data_module, ckpt_path='lightning_logs/bottleneck_experiment_latent512_beta0.1/checkpoints/saved_models/epoch=50-step=99800.ckpt')
-        trainer.test(bottlenecknets, data_module)
+        #trainer.fit(bottlenecknets, datamodule=data_module, ckpt_path='lightning_logs/bottleneck_experiment_latent_new_512_beta0.01/checkpoints/saved_models/epoch=60-step=119750.ckpt')
+        trainer.test(bottlenecknets, data_module, ckpt_path='lightning_logs/bottleneck_experiment_latent_new_512_beta0.01/checkpoints/saved_models/epoch=60-step=119750.ckpt')
         #trainer.save_checkpoint(resume_checkpoint_path)
 
     else:

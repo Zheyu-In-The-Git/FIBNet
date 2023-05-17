@@ -37,11 +37,11 @@ dataloader = DataLoader(celeba_dataset, batch_size=50, shuffle=True)
 # 导入Bottleneck模型
 
 arcface_resnet50_net = arcface_resnet50.ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
-arcface = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=140-step=279350.ckpt')
+arcface = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
 encoder = Encoder(latent_dim=512, arcface_model=arcface)
 decoder = Decoder(latent_dim=512, identity_nums=10177, s=64.0, m=0.50, easy_margin=False)
 bottlenecknets = BottleneckNets(model_name='bottleneck', encoder=encoder, decoder=decoder, beta=0.1, batch_size=64, identity_nums=10177)
-model = bottlenecknets.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent512_beta0.0001\checkpoints\saved_models\last.ckpt', encoder=encoder,decoder=decoder)
+model = bottlenecknets.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.01\checkpoints\saved_models\last.ckpt', encoder=encoder,decoder=decoder)
 model.to(device)
 
 # 冻结住网络参数的梯度
@@ -102,9 +102,10 @@ df_tsne = pd.DataFrame(X_tsne_data, columns=['Dim1', 'Dim2', 'gender'])
 df_tsne.loc[df_tsne['gender'] == 0, 'gender'] = 'female'
 df_tsne.loc[df_tsne['gender'] == 1, 'gender'] = 'male'
 
-markers = {"female": 'yellow', "male": "blue"}
+#markers = {"female": 'y', "male": "b"}
+color = {"female": 'y', "male": "b"}
 
-sns.scatterplot(data=df_tsne, hue='gender', x='Dim1', y='Dim2', markers=markers)
+sns.scatterplot(data=df_tsne, hue='gender', x='Dim1', y='Dim2') # markers=markers
 #sns.scatterplot(data=df_tsne, hue='gender') # 不打 x轴 和 y轴
 plt.show()
 # plt.savefig('arcface_512_resnet50.eps', format='eps', bbox_inches='tight') # 保存成.eps格式
