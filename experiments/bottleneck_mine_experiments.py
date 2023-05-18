@@ -81,7 +81,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
 
     data_module = CelebaInterface(num_workers=2,
                                   dataset='celeba_data',
-                                  batch_size=128,
+                                  batch_size=256,
                                   dim_img=224,
                                   data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
                                   sensitive_dim=1,
@@ -133,7 +133,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
 
 if __name__ == '__main__':
     arcface_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
-    bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.01\checkpoints\saved_models\last.ckpt'
+    bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.0001\checkpoints\saved_models\last.ckpt'
     latent_dim = 512
     beta = 0.01
     save_name = 'bottleneck_mine_512_celeba_traindataset'

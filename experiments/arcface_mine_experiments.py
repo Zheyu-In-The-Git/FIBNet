@@ -84,7 +84,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     # 数据
     data_module = CelebaInterface(num_workers=2,
                                   dataset='celeba_data',
-                                  batch_size=64,
+                                  batch_size=256,
                                   dim_img=224,
                                   data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
                                   sensitive_dim=1,
@@ -139,5 +139,5 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
 
 
 if __name__ == '__main__':
-    model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=140-step=279350.ckpt'
+    model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt'
     ArcfaceMineMain(model_path, latent_dim=512, save_name='arcface_mine_512_celeba_traindataset')
