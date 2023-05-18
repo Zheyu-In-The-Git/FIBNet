@@ -63,7 +63,7 @@ class ArcfaceMineEstimator(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
         optim_train = optim.Adam(self.mine_net.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=3, min_lr=1e-8,
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.5, patience=10, min_lr=1e-5,verbose=True,
                                                          threshold=1e-2)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "infor_loss"}
 
@@ -107,18 +107,14 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                 every_n_train_steps=50
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
             LearningRateMonitor("epoch"),
-            EarlyStopping(
-                monitor='infor_loss',
-                patience=5,
-                mode='max'
-            )
+
         ],  # Log learning rate every epoch
 
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=100,
-        min_epochs=50,
+        max_epochs=200,
+        min_epochs=150,
         logger=logger,
         log_every_n_steps=10,
         precision=32,
@@ -135,7 +131,6 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
     trainer.fit(arcfacemineestimator, data_module)
-
 
 
 if __name__ == '__main__':
