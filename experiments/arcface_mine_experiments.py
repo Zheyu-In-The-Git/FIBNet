@@ -110,7 +110,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
             EarlyStopping(
                 monitor='infor_loss',
                 patience=5,
-                mode='min'
+                mode='max'
             )
         ],  # Log learning rate every epoch
 
