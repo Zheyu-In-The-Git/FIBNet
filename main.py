@@ -130,7 +130,7 @@ if __name__ == '__main__':
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
     # 模型加载与命名
-    VERSION = 'bottleneck_experiment_latent_new_512_beta0.001'
+    VERSION = 'bottleneck_experiment_latent_new_512_beta0.00001'
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + '/checkpoints/')
 
     ###################
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     # Restart Control
     parser.add_argument('--load_best', action='store_true')
     parser.add_argument('--load_dir', default = CHECKPOINT_PATH, type=str, help = 'The root directory of checkpoints.')
-    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.001', type=str, help = '训练和加载模型的命名 采用')
+    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.00001', type=str, help = '训练和加载模型的命名 采用')
     parser.add_argument('--load_v_num', default = 1, type=int)
     parser.add_argument('--RESUME', default=False, type=bool, help = '是否需要重载模型')
     parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_beta0.001.ckpt', type = str )
@@ -168,7 +168,7 @@ if __name__ == '__main__':
 
     # bottleneck_nets的参数
     parser.add_argument('--model_name', default='bottleneck', type=str)
-    parser.add_argument('--beta', default=0.001, type=float)
+    parser.add_argument('--beta', default=0.00001, type=float)
     parser.add_argument('--batch_size', default=128, type=int)
     parser.add_argument('--max_epochs', default=150, type = int)
     parser.add_argument('--min_epochs', default=100, type=int)
