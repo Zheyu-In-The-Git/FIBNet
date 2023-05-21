@@ -43,16 +43,21 @@ class CelebaInterface(pl.LightningDataModule):
     def setup(self, stage=None):
         # Assign train/val datasets for use in dataloaders
         if stage == 'fit' or stage is None:
-            train_valid_dataset = CelebaData(dim_img=self.dim_img,
+            train_dataset = CelebaData(dim_img=self.dim_img,
                                              data_dir=self.data_dir,
                                              sensitive_dim=self.sensitive_dim,
                                              identity_nums=self.identity_nums, sensitive_attr=self.sensitive_attr,
-                                             split='train_valid_70%')
-            seed = torch.Generator().manual_seed(83)
-            valid_set_size = int(len(train_valid_dataset) * 0.1)
-            train_set_size = len(train_valid_dataset) - valid_set_size
+                                             split='train_63%')
 
-            self.Train_Dataset, self.Valid_Dataset = data.random_split(train_valid_dataset,[train_set_size, valid_set_size], generator=seed)
+            valid_dataset = CelebaData(dim_img=self.dim_img,
+                                       data_dir=self.data_dir,
+                                       sensitive_dim=self.sensitive_dim,
+                                       identity_nums=self.identity_nums,
+                                       sensitive_attr=self.sensitive_attr,
+                                       split='valid_7%')
+
+            self.Train_Dataset = train_dataset
+            self.Valid_Dataset = valid_dataset
 
         if stage == 'test' or stage is None:
             self.Test_Dataset = CelebaRecognitionTestDataSet(dim_img=self.dim_img, data_dir=self.data_dir)
@@ -71,11 +76,11 @@ class CelebaInterface(pl.LightningDataModule):
 
 if __name__ == '__main__':
     # data_dir = 'D:\celeba' # 'D:\datasets\celeba'
-    data_dir = '/Volumes/xiaozhe_SSD/datasets/celeba'
+    data_dir = '/Users/xiaozhe/datasets/celeba'
     dataloader = CelebaInterface(dim_img=224,dataset='celeba_data', data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', batch_size=2, num_workers=0, pin_memory=False)
-    dataloader.setup(stage='test')
+    dataloader.setup(stage='fit')
 
-    for i, item in enumerate(dataloader.test_dataloader()):
+    for i, item in enumerate(dataloader.train_dataloader()):
         print('i', i )
         img_x, img_y, match = item
         print(img_x)

@@ -64,12 +64,13 @@ class CelebaData(data.Dataset):
             'valid':1,
             'test':2,
             'all':None,
-            'train_valid_70%': 'train_valid_70%',
+            'train_63%': 'train_63%',
+            'valid_7%': 'valid_7%',
             'test_30%':'test_30%'
         }
 
         split_ =  split_map[verify_str_arg(split.lower(), "split",
-                                          ("train", "valid", "test", "all", 'train_valid_70%', 'test_30%'))]
+                                          ("train", "valid", "test", "all", 'train_63%', 'valid_7%', 'test_30%'))]
 
 
         fn = partial(os.path.join, self.data_dir) # csv检索用的
@@ -79,12 +80,21 @@ class CelebaData(data.Dataset):
         sensitive_attr = attr[self.sensitive_attr]
 
 
-        if split_ == 'train_valid_70%':
-            mask = slice(0, 141819, 1)
+        if split_ == 'train_63%':
+            mask = slice(0, 127638, 1)
             self.trans = transforms.Compose([transforms.Resize(self.dim_img),
                                              transforms.RandomHorizontalFlip(p=0.5),
+                                             transforms.ColorJitter(brightness=0.5),
+                                             transforms.ColorJitter(contrast=4),
                                              transforms.ToTensor(),
                                              transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+
+        elif split_ == 'valid_7%':
+            mask = slice(127638, 141819, 1)
+            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+                                             transforms.ToTensor(),
+                                             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+
         elif split_ == 'test_30%':
             mask = slice(141819, 202599, 1)
             self.trans = transforms.Compose([transforms.Resize(self.dim_img),
@@ -125,6 +135,8 @@ class CelebaData(data.Dataset):
 
     def __getitem__(self, index):
         X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba_mtcnn", self.filename[index]))
+
+        #X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba", self.filename[index]))
 
         x = self.trans(X)
 
@@ -246,15 +258,15 @@ class CelebaTSNEExperiment(data.Dataset):
 if __name__ == '__main__':
 
     #data_dir = 'D:\datasets\celeba'
-    #data_dir = '/Users/xiaozhe/datasets/celeba'
-    data_dir = 'D:\celeba'
+    data_dir = '/Users/xiaozhe/datasets/celeba'
+    #data_dir = 'D:\celeba'
 
 
 
     
-    #loader = CelebaData(dim_img=112, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train_valid_70%')
-    dataset = CelebaTSNEExperiment(dim_img=112, data_dir=data_dir, sensitive_attr='Male', split='test_30%')
-    train_loader = DataLoader(dataset, batch_size=64)
+    loader = CelebaData(dim_img=112, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train_63%')
+    # dataset = CelebaTSNEExperiment(dim_img=112, data_dir=data_dir, sensitive_attr='Male', split='test_30%')
+    train_loader = DataLoader(loader, batch_size=64)
     #print(sampler)
 
 
@@ -262,6 +274,7 @@ if __name__ == '__main__':
         print('i', i)
         x, u, s = item
         print(x)
+        break
 
 
 
