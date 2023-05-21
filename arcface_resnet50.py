@@ -61,8 +61,8 @@ class ArcfaceResnet50(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.parameters(), lr=0.0001, betas=(b1, b2), weight_decay=5e-4)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
+        optim_train = optim.Adam(self.parameters(), lr=0.001, betas=(b1, b2), weight_decay=5e-4)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.5, patience=3, min_lr=1e-8, threshold=1e-2)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
     def calculate_eer(self, metrics, match):
@@ -138,15 +138,15 @@ def main(model_name, Resume, save_name=None):
     if save_name is None:
         save_name = model_name
 
-    data_module = CelebaInterface(num_workers = 1,
+    data_module = CelebaInterface(num_workers = 2,
                  dataset = 'celeba_data',
-                 batch_size = 64,
+                 batch_size = 128,
                  dim_img = 224,
                  data_dir = 'D:\datasets\celeba', # 'D:\datasets\celeba'
                  sensitive_dim = 1,
                  identity_nums = 10177,
                  sensitive_attr = 'Male',
-                 pin_memory=False)
+                 pin_memory=True)
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_log', name='tensorboard_log')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
@@ -172,10 +172,10 @@ def main(model_name, Resume, save_name=None):
         accelerator="auto",
         devices=1,
         max_epochs=200,
-        min_epochs=120,
+        min_epochs=150,
         logger=logger,
         log_every_n_steps=10,
-        precision=32,
+        precision=16,
         enable_checkpointing=True,
         check_val_every_n_epoch=3,
         fast_dev_run=False,
@@ -204,7 +204,7 @@ def main(model_name, Resume, save_name=None):
 
 
 if __name__ == '__main__':
-    main(model_name='face_recognition_resnet50',  Resume = 1, save_name=None)
+    main(model_name='face_recognition_resnet50',  Resume = 0, save_name=None)
 
 
 
