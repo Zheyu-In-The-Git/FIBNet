@@ -61,8 +61,8 @@ class ArcfaceResnet50(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.parameters(), lr=0.001, betas=(b1, b2), weight_decay=5e-4)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.5, patience=3, min_lr=1e-8, threshold=1e-2)
+        optim_train = optim.Adam(self.parameters(), lr=0.00001, betas=(b1, b2), weight_decay=5e-4)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=10, min_lr=1e-8, threshold=1e-3)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
     def calculate_eer(self, metrics, match):
@@ -126,7 +126,7 @@ class ArcfaceResnet50(pl.LightningModule):
 
 
 
-CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/')
+CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints2/')
 #os.makedirs(CHECKPOINT_PATH, exist_ok=True)
 
 def main(model_name, Resume, save_name=None):
@@ -171,8 +171,8 @@ def main(model_name, Resume, save_name=None):
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=200,
-        min_epochs=150,
+        max_epochs=300,
+        min_epochs=100,
         logger=logger,
         log_every_n_steps=10,
         precision=16,
@@ -187,7 +187,8 @@ def main(model_name, Resume, save_name=None):
 
     if Resume:
         model = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
-        trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt')
+        model.load_from_checkpoint('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt')
+        trainer.fit(model, data_module)
         trainer.test(model, data_module)
         #trainer.save_checkpoint('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50')
     else:
@@ -204,7 +205,7 @@ def main(model_name, Resume, save_name=None):
 
 
 if __name__ == '__main__':
-    main(model_name='face_recognition_resnet50',  Resume = 0, save_name=None)
+    main(model_name='face_recognition_resnet50',  Resume = 1, save_name=None)
 
 
 
