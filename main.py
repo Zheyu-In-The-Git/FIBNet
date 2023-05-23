@@ -162,9 +162,9 @@ if __name__ == '__main__':
     # 数据集参数设置
     parser.add_argument('--dataset', default='celeba_data', type=str)
     parser.add_argument('--data_dir', default=DATASET_PATH, type=str)
-    parser.add_argument('--num_workers', default=2, type=int)
+    parser.add_argument('--num_workers', default=1, type=int)
     parser.add_argument('--sensitive_attr', default='Male', type=str)
-    parser.add_argument('--pin_memory', default = True)
+    parser.add_argument('--pin_memory', default = False)
 
     # bottleneck_nets的参数
     parser.add_argument('--model_name', default='bottleneck', type=str)
