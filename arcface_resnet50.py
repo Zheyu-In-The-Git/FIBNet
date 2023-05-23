@@ -138,7 +138,7 @@ def main(model_name, Resume, save_name=None):
     if save_name is None:
         save_name = model_name
 
-    data_module = CelebaInterface(num_workers = 2,
+    data_module = CelebaInterface(num_workers = 1,
                  dataset = 'celeba_data',
                  batch_size = 128,
                  dim_img = 224,
@@ -146,7 +146,7 @@ def main(model_name, Resume, save_name=None):
                  sensitive_dim = 1,
                  identity_nums = 10177,
                  sensitive_attr = 'Male',
-                 pin_memory=True)
+                 pin_memory=False)
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_log', name='tensorboard_log')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
@@ -187,7 +187,7 @@ def main(model_name, Resume, save_name=None):
 
     if Resume:
         model = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
-        trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints2/saved_model/face_recognition_resnet50/last.ckpt')
+        trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt')
         trainer.test(model, data_module)
         #trainer.save_checkpoint('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50')
     else:
@@ -204,7 +204,7 @@ def main(model_name, Resume, save_name=None):
 
 
 if __name__ == '__main__':
-    main(model_name='face_recognition_resnet50',  Resume = 0, save_name=None)
+    main(model_name='face_recognition_resnet50',  Resume = 1, save_name=None)
 
 
 
