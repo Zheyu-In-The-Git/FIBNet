@@ -85,7 +85,7 @@ class CelebaData(data.Dataset):
             self.trans = transforms.Compose([transforms.Resize(self.dim_img),
                                              transforms.RandomHorizontalFlip(p=0.5),
                                              transforms.ColorJitter(brightness=0.5),
-                                             transforms.ColorJitter(contrast=4),
+                                             #transforms.ColorJitter(contrast=4),
                                              transforms.ToTensor(),
                                              transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
