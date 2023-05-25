@@ -82,7 +82,7 @@ def main(args):
         accelerator='gpu',
         devices=1,
         check_val_every_n_epoch=5,
-        fast_dev_run=10,
+        fast_dev_run=False,
         reload_dataloaders_every_n_epochs=1
     )
     trainer.logger._log_graph = True
