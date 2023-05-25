@@ -15,9 +15,9 @@ from arcface_resnet50 import ArcfaceResnet50
 def load_callbacks(load_path):
     callbacks = []
     callbacks.append(plc.EarlyStopping(
-        monitor='val_u_accuracy',
-        mode='max',
-        patience=3,
+        monitor='val_loss',
+        mode='min',
+        patience=5,
         min_delta=0.001,
     ))
 
@@ -82,7 +82,7 @@ def main(args):
         accelerator='gpu',
         devices=1,
         check_val_every_n_epoch=5,
-        fast_dev_run=False,
+        fast_dev_run=10,
         reload_dataloaders_every_n_epochs=1
     )
     trainer.logger._log_graph = True
