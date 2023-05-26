@@ -25,8 +25,8 @@ def load_callbacks(load_path):
         save_last=True,
         dirpath = os.path.join(load_path, 'saved_models'),
         every_n_train_steps=50,
-        monitor='val_u_accuracy',  # 用valid_acc比较好
-        mode='max'  # 用valid_acc比较好 保存top_k 3个比较好把
+        monitor='val_loss',  # 用valid_acc比较好
+        mode='min'
     ))
 
     callbacks.append(
@@ -61,9 +61,9 @@ def main(args):
 
     # 加载网络模块，并构建BottleneckNets
     arcface_resnet50_net =ArcfaceResnet50(in_features=args.latent_dim, out_features=10177, s=64.0, m=0.50)
-    #arcface = arcface_resnet50_net.load_from_checkpoint(args.arcface_resnet50_path) # 采用预训练模型
-    # encoder = Encoder(latent_dim=args.latent_dim, arcface_model=arcface)
-    encoder = Encoder(latent_dim=args.latent_dim, arcface_model=arcface_resnet50_net)
+    arcface = arcface_resnet50_net.load_from_checkpoint(args.arcface_resnet50_path) # 采用预训练模型
+    encoder = Encoder(latent_dim=args.latent_dim, arcface_model=arcface)
+
     decoder = Decoder(latent_dim=args.latent_dim, identity_nums=args.identity_nums, s=64.0, m=0.50, easy_margin=False)
 
     bottlenecknets = BottleneckNets(model_name=args.model_name, encoder=encoder, decoder=decoder,
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
     # 模型加载与命名
-    VERSION = 'bottleneck_experiment_latent_new2_512_beta0.0001' # 采用非预训练模型
+    VERSION = 'bottleneck_experiment_latent_new_512_beta0.001' # 采用非预训练模型
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + '/checkpoints/')
 
     ###################
@@ -146,9 +146,9 @@ if __name__ == '__main__':
     parser.add_argument('--load_dir', default = CHECKPOINT_PATH, type=str, help = 'The root directory of checkpoints.')
     parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.001', type=str, help = '训练和加载模型的命名 采用')
     parser.add_argument('--load_v_num', default = 1, type=int)
-    parser.add_argument('--RESUME', default=False, type=bool, help = '是否需要重载模型')
+    parser.add_argument('--RESUME', default=True, type=bool, help = '是否需要重载模型')
     parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_beta0.0001.ckpt', type = str )
-    parser.add_argument('--arcface_resnet50_path', default=r'lightning_logs/model_ir_se50.pth') # 这里采用非预训练模型
+    parser.add_argument('--arcface_resnet50_path', default=r'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=48-step=95800.ckpt') # 这里采用非预训练模型
 
 
     #基本超参数，构建小网络的基本参数
@@ -169,7 +169,7 @@ if __name__ == '__main__':
 
     # bottleneck_nets的参数
     parser.add_argument('--model_name', default='bottleneck', type=str)
-    parser.add_argument('--beta', default=0.0001, type=float)
+    parser.add_argument('--beta', default=0.001, type=float)
     parser.add_argument('--batch_size', default=64, type=int)
     parser.add_argument('--max_epochs', default=150, type = int)
     parser.add_argument('--min_epochs', default=100, type=int)
