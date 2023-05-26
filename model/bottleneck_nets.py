@@ -86,7 +86,7 @@ class BottleneckNets(pl.LightningModule):
         b2 = 0.999
 
         opt_train = optim.Adam(self.parameters(), lr=0.0001, betas=(b1, b2))
-        scheduler_train = optim.lr_scheduler.ReduceLROnPlateau(opt_train, mode='min', factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
+        scheduler_train = optim.lr_scheduler.ReduceLROnPlateau(opt_train, mode='min', factor=0.1, patience=5, min_lr=1e-6, threshold=1e-4)
 
         #opt_encoder = optim.Adam(self.encoder.parameters(), lr=0.00001, betas = (b1, b2))
         #scheduler_encoder = optim.lr_scheduler.ReduceLROnPlateau(opt_encoder, mode='min', factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
