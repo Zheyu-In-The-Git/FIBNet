@@ -131,7 +131,7 @@ if __name__ == '__main__':
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
     # 模型加载与命名
-    VERSION = 'bottleneck_experiment_latent_new_512_beta0.01' # 采用非预训练模型
+    VERSION = 'bottleneck_experiment_latent_new_512_beta0.1' # 采用非预训练模型
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + '/checkpoints/')
 
     ###################
@@ -169,10 +169,10 @@ if __name__ == '__main__':
 
     # bottleneck_nets的参数
     parser.add_argument('--model_name', default='bottleneck', type=str)
-    parser.add_argument('--beta', default=0.01, type=float)
+    parser.add_argument('--beta', default=0.1, type=float)
     parser.add_argument('--batch_size', default=64, type=int)
-    parser.add_argument('--max_epochs', default=100, type = int)
-    parser.add_argument('--min_epochs', default=60, type=int)
+    parser.add_argument('--max_epochs', default=150, type = int)
+    parser.add_argument('--min_epochs', default=100, type=int)
 
 
     # 日志参数
