@@ -14,11 +14,11 @@ from matplotlib import pyplot as plt
 # 5y月1日 celeba数据集训练arcface_resnet50
 # -----------------ROC实验----------------------
 #
-list_arcface = torch.load(r'/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/arcface_recognizer_resnet50_latent512/roc_arcface_celeba_512.pt', map_location=torch.device('cpu'))
-list_bottleneck_beta_01 = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/bottleneck_experiment_latent512_beta0.1/bottleneck_roc_beta0.1.pt', map_location=torch.device('cpu'))
-list_bottleneck_beta_001 = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/bottleneck_experiment_latent512_beta0.01/bottleneck_roc_beta0.01.pt', map_location=torch.device('cpu'))
-list_bottleneck_beta_0001 = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/bottleneck_experiment_latent512_beta0.001/bottleneck_roc_beta0.001.pt', map_location=torch.device('cpu'))
-list_bottleneck_beta_00001 = torch.load('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/bottleneck_experiment_latent512_beta0.0001/bottleneck_roc_beta0.0001.pt', map_location=torch.device('cpu'))
+list_arcface = torch.load(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.00001\bottleneck_roc_beta1e-05.pt', map_location=torch.device('cpu'))
+list_bottleneck_beta_01 = torch.load(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.1\bottleneck_roc_beta0.1.pt', map_location=torch.device('cpu'))
+list_bottleneck_beta_001 = torch.load(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.01\bottleneck_roc_beta0.01.pt', map_location=torch.device('cpu'))
+list_bottleneck_beta_0001 = torch.load(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.001\bottleneck_roc_beta0.001.pt', map_location=torch.device('cpu'))
+list_bottleneck_beta_00001 = torch.load(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.0001\bottleneck_roc_beta0.0001.pt', map_location=torch.device('cpu'))
 
 
 # fpr相关数据

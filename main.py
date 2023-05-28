@@ -95,7 +95,7 @@ def main(args):
         os.makedirs(resume_checkpoint_dir, exist_ok=True)
         resume_checkpoint_path = os.path.join(resume_checkpoint_dir, args.ckpt_name)
         print('Found pretrained model at ' + resume_checkpoint_path + ', loading ... ')  # 重新加载
-        trainer.fit(bottlenecknets, datamodule=data_module, ckpt_path='lightning_logs/bottleneck_experiment_latent_new_512_beta0.001/checkpoints/saved_models/last.ckpt') #明天继续训练0.001
+        trainer.fit(bottlenecknets, datamodule=data_module, ckpt_path='lightning_logs/bottleneck_experiment_latent_new_512_beta0.00001/checkpoints/saved_models/last.ckpt') #明天继续训练0.001
         trainer.test(bottlenecknets, data_module)
         #trainer.save_checkpoint(resume_checkpoint_path)
 
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
     # 模型加载与命名
-    VERSION = 'bottleneck_experiment_latent_new_512_beta0.1' # 采用非预训练模型
+    VERSION = 'bottleneck_experiment_latent_new_512_beta0.01' # 采用非预训练模型
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + '/checkpoints/')
 
     ###################
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     parser.add_argument('--load_dir', default = CHECKPOINT_PATH, type=str, help = 'The root directory of checkpoints.')
     parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.001', type=str, help = '训练和加载模型的命名 采用')
     parser.add_argument('--load_v_num', default = 1, type=int)
-    parser.add_argument('--RESUME', default=False, type=bool, help = '是否需要重载模型')
+    parser.add_argument('--RESUME', default=True, type=bool, help = '是否需要重载模型')
     parser.add_argument('--ckpt_name', default='bottleneck_experiment_latent512_beta0.01.ckpt', type = str )
     parser.add_argument('--arcface_resnet50_path', default=r'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt') # 尝试用last.ckpt
 
@@ -169,10 +169,10 @@ if __name__ == '__main__':
 
     # bottleneck_nets的参数
     parser.add_argument('--model_name', default='bottleneck', type=str)
-    parser.add_argument('--beta', default=0.1, type=float)
+    parser.add_argument('--beta', default=0.00001, type=float)
     parser.add_argument('--batch_size', default=64, type=int)
-    parser.add_argument('--max_epochs', default=150, type = int)
-    parser.add_argument('--min_epochs', default=100, type=int)
+    parser.add_argument('--max_epochs', default=200, type = int)
+    parser.add_argument('--min_epochs', default=150, type=int)
 
 
     # 日志参数
