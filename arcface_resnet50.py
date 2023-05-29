@@ -121,8 +121,8 @@ class ArcfaceResnet50(pl.LightningModule):
 
         self.log('eer_cos', eer_cos, prog_bar=True)
 
-        #arcface_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_cos':thresholds_cos,'eer_cos':eer_cos}
-        #torch.save(arcface_confusion_cos, r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\lightning_log\roc_arcface_celeba_512.pt')
+        arcface_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_cos':thresholds_cos,'eer_cos':eer_cos}
+        torch.save(arcface_confusion_cos, r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\lightning_log\roc_arcface_celeba_512.pt')
 
 
 
