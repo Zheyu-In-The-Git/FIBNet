@@ -63,8 +63,8 @@ class ArcfaceMineEstimator(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
         optim_train = optim.Adam(self.mine_net.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=10, min_lr=1e-8,verbose=True,
-                                                         threshold=1e-2)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.5, patience=10, min_lr=1e-6,verbose=True,
+                                                         threshold=1e-3)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "infor_loss"}
 
     def training_step(self, batch):
@@ -80,6 +80,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
 
     # 网络模型
     arcfacemineestimator = ArcfaceMineEstimator(latent_dim = latent_dim, s_dim = 1, pretrained_model = pretrained_model)
+    #arcfacemineestimator = arcfacemineestimator.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\arcface_mine_estimator2\checkpoints\saved_model\arcface_mine_512_celeba_traindataset\last.ckpt', latent_dim = latent_dim, s_dim = 1, pretrained_model = pretrained_model)
 
     # 数据
     data_module = CelebaInterface(num_workers=2,
@@ -114,10 +115,10 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         accelerator="auto",
         devices=1,
         max_epochs=400,
-        min_epochs=300,
+        min_epochs=350,
         logger=logger,
         log_every_n_steps=10,
-        precision=32,
+        precision=16,
         enable_checkpointing=True,
         fast_dev_run=False,
     )
@@ -130,7 +131,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
-    trainer.fit(arcfacemineestimator, data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\arcface_mine_estimator2\checkpoints\saved_model\arcface_mine_512_celeba_traindataset\last.ckpt')
+    trainer.fit(arcfacemineestimator, data_module)
 
 
 if __name__ == '__main__':
