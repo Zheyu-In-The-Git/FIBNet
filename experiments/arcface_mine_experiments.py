@@ -63,7 +63,7 @@ class ArcfaceMineEstimator(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
         optim_train = optim.Adam(self.mine_net.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.5, patience=10, min_lr=1e-5,verbose=True,
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=10, min_lr=1e-8,verbose=True,
                                                          threshold=1e-2)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "infor_loss"}
 
@@ -93,7 +93,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                                   pin_memory=False)
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator/checkpoints/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator2/checkpoints/')
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='arcface_mine_estimator_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
@@ -113,8 +113,8 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=200,
-        min_epochs=150,
+        max_epochs=400,
+        min_epochs=300,
         logger=logger,
         log_every_n_steps=10,
         precision=32,
@@ -130,9 +130,9 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
-    trainer.fit(arcfacemineestimator, data_module)
+    trainer.fit(arcfacemineestimator, data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\arcface_mine_estimator2\checkpoints\saved_model\arcface_mine_512_celeba_traindataset\last.ckpt')
 
 
 if __name__ == '__main__':
-    model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt'
+    model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
     ArcfaceMineMain(model_path, latent_dim=512, save_name='arcface_mine_512_celeba_traindataset')
