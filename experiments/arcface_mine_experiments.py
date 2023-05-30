@@ -94,7 +94,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                                   pin_memory=False)
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator2/checkpoints/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator/checkpoints_celeba_testdata/')
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='arcface_mine_estimator_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
@@ -115,10 +115,10 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         accelerator="auto",
         devices=1,
         max_epochs=400,
-        min_epochs=350,
+        min_epochs=150,
         logger=logger,
         log_every_n_steps=10,
-        precision=16,
+        precision=32,
         enable_checkpointing=True,
         fast_dev_run=False,
     )
@@ -136,4 +136,4 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
 
 if __name__ == '__main__':
     model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
-    ArcfaceMineMain(model_path, latent_dim=512, save_name='arcface_mine_512_celeba_traindataset')
+    ArcfaceMineMain(model_path, latent_dim=512, save_name='arcface_mine_512_celeba_testdataset')

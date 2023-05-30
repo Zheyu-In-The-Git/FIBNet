@@ -131,7 +131,7 @@ if __name__ == '__main__':
     # tensorboard记录
     LOG_PATH = os.environ.get('LOG_PATH', '\lightning_logs')
     # 模型加载与命名
-    VERSION = 'bottleneck_experiment_latent_new_512_beta0.01' # 采用非预训练模型
+    VERSION = 'bottleneck_experiment_latent_new_512_beta0.00001' # 采用非预训练模型
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/' + VERSION + '/checkpoints/')
 
     ###################

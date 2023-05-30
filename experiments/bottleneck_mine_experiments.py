@@ -129,7 +129,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
-    trainer.fit(bottlenecknetsmineestimator, data_module)
+    trainer.fit(bottlenecknetsmineestimator, data_module,ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\bottleneck_mine_estimator\checkpoints_beta0.0001\saved_model\bottleneck_mine_512_celeba_traindataset\last.ckpt')
 
 if __name__ == '__main__':
     arcface_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
