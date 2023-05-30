@@ -131,7 +131,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
-    trainer.fit(arcfacemineestimator, data_module)
+    trainer.fit(arcfacemineestimator, data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\arcface_mine_estimator\checkpoints_celeba_testdata\saved_model\arcface_mine_512_celeba_testdataset\last.ckpt')
 
 
 if __name__ == '__main__':
