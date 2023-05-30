@@ -115,7 +115,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         accelerator="auto",
         devices=1,
         max_epochs=400,
-        min_epochs=150,
+        min_epochs=300,
         logger=logger,
         log_every_n_steps=10,
         precision=32,
