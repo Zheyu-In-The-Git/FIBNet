@@ -47,7 +47,7 @@ class CelebaInterface(pl.LightningDataModule):
                                              data_dir=self.data_dir,
                                              sensitive_dim=self.sensitive_dim,
                                              identity_nums=self.identity_nums, sensitive_attr=self.sensitive_attr,
-                                             split='test_30%')
+                                             split='train_63%')
 
             valid_dataset = CelebaData(dim_img=self.dim_img,
                                        data_dir=self.data_dir,
@@ -71,7 +71,7 @@ class CelebaInterface(pl.LightningDataModule):
         return DataLoader(self.Valid_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, pin_memory=self.pin_memory)
 
     def test_dataloader(self):
-        return DataLoader(self.Test_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, pin_memory=self.pin_memory)
+        return DataLoader(self.Test_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, pin_memory=self.pin_memory)
 
 
 if __name__ == '__main__':
