@@ -143,25 +143,26 @@ print(celeba_facerecognition_test_dataset)
 
 '''
 
-'''
-lfw_ssd_path = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
+
+lfw_ssd_path = '/Users/xiaozhe/datasets/lfw/lfw112'
 fn_lfw = partial(os.path.join, lfw_ssd_path)
 
 
 
-lfw_dataset_load_att_mat = mat73.loadmat(fn_lfw('lfw_att_40.mat'))
+lfw_dataset_load_att_mat = mat73.loadmat(fn_lfw('lfw_att_73.mat'))
 
 print(lfw_dataset_load_att_mat.keys())
 
 lfw_dataset_load_AttName = lfw_dataset_load_att_mat['AttrName']
+print(lfw_dataset_load_AttName)
 lfw_dataset_load_label = lfw_dataset_load_att_mat['label']
 lfw_dataset_load_name = lfw_dataset_load_att_mat['name']
 
 lfw_dataset_pandas = pd.DataFrame(data = lfw_dataset_load_label, index=lfw_dataset_load_name, columns=lfw_dataset_load_AttName)
-print(lfw_dataset_pandas)
+#print(lfw_dataset_pandas)
 
 # lfw_dataset_pandas.to_csv('lfw_att_40.csv',encoding="utf_8_sig")
-'''
+
 
 
 '''
@@ -310,6 +311,7 @@ print(adience_dataset_faceverify)
 adience_dataset_faceverify.to_csv("adience_dataset_facerecognition.csv", encoding="utf_8_sig")
 '''
 
+'''
 
 celeba_ssd_path = '/Volumes/xiaozhe_SSD/datasets/celeba'
 
@@ -350,3 +352,4 @@ celeba_facerecognition_test_dataset = celeba_facerecognition_test_dataset.reset_
 celeba_facerecognition_test_dataset = celeba_facerecognition_test_dataset.drop(labels='index', axis=1)
 print(celeba_facerecognition_test_dataset)
 # celeba_facerecognition_test_dataset.to_csv("celeba_face_verify_test_dataset.csv", encoding="utf_8_sig")
+'''

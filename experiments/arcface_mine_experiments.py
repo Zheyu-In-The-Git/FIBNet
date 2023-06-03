@@ -10,7 +10,7 @@ import torch.optim as optim
 from matplotlib import pyplot as plt
 from torchvision import transforms
 from arcface_resnet50 import ArcfaceResnet50
-from data import CelebaInterface
+from data import CelebaInterface, LFWInterface
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.manifold import TSNE
 import torch.nn.functional as F
@@ -92,6 +92,14 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                                   identity_nums=10177,
                                   sensitive_attr='Male',
                                   pin_memory=False)
+
+    data_module = LFWInterface(num_workers=2,
+                               data_dir='',
+                               batch_size=256,
+                               dim_img=224,
+                               sensitive_attr='Male',
+                               purpose='attr_extract',
+                               pin_memory=False, identity_nums=5749, sensitive_dim=1)
 
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator/checkpoints_celeba_testdata/')

@@ -38,8 +38,11 @@ class LFWData(data.Dataset):
             self.lfw_dataset_indices = lfw_dataset_load_indices_train_test['indices_img_train']
         elif split == 'test':
             self.lfw_dataset_indices = lfw_dataset_load_indices_train_test['indices_img_test']
+        elif split == 'all':
+            self.lfw_dataset_indices = np.append(lfw_dataset_load_indices_train_test['indices_img_train'],lfw_dataset_load_indices_train_test['indices_img_test'])
         else:
             'please input the correct lfw dataset split string'
+
 
         self.lfw_dataset_img_path = self.lfw_dataset.iloc[:,0] # 路径这里需要重新思考
 
@@ -141,7 +144,7 @@ class LFWRecognitionTestPairs(data.Dataset):
 
 if __name__ == '__main__':
     data_dir = '/Users/xiaozhe/datasets/lfw/lfw112'
-    loader = LFWData(dim_img=112, data_dir=data_dir, identity_nums=5749, sensitive_attr='Male', img_path_replace=True, split='test')
+    loader = LFWData(dim_img=112, data_dir=data_dir, identity_nums=5749, sensitive_attr='Male', img_path_replace=True, split='train')
     train_loader = DataLoader(loader, batch_size=3, shuffle=False)
 
     for i, item in enumerate(train_loader):
@@ -155,6 +158,7 @@ if __name__ == '__main__':
 
 
 
+    '''
     
     loader_face_recognition = LFWRecognitionTestPairs(dim_img=224, data_dir=data_dir, img_path_replace=False)
     test_loader = DataLoader(loader_face_recognition, batch_size=4, shuffle=False)
@@ -165,6 +169,7 @@ if __name__ == '__main__':
         print(img_y)
         print(match)
         break
+    '''
 
 
 

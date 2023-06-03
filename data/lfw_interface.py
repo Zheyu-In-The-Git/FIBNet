@@ -49,15 +49,9 @@ class LFWInterface(pl.LightningDataModule):
         if purpose == 'attr_extract':
             self.trainset = LFWData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity,
                                     sensitive_attr=self.sensitive_attr, img_path_replace=self.LFWData_img_path_replace,
-                                    split='train')
-            self.testset = LFWData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity,
-                                    sensitive_attr=self.sensitive_attr, img_path_replace=self.LFWData_img_path_replace,
-                                    split='test')
+                                    split='all')
 
         elif purpose == 'face_recognition':
-            self.trainset = LFWData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity,
-                                    sensitive_attr=self.sensitive_attr, img_path_replace=self.LFWData_img_path_replace,
-                                    split='train')
             self.testset = LFWRecognitionTestPairs(dim_img=self.dim_img, data_dir=self.data_dir,
                                                    img_path_replace=self.LFWRecognition_img_path_replace)
 
