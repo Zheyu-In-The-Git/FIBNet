@@ -84,7 +84,7 @@ class LFWData(data.Dataset):
         # u = 0 # 身份需要后面再做
 
         s = self.lfw_dataset[self.sensitive_attr][indices]
-        s = torch.tensor(s).to(torch.float32)
+        s = torch.tensor([s]).to(torch.float32)
         return x, u, s
 
 
@@ -143,16 +143,17 @@ class LFWRecognitionTestPairs(data.Dataset):
 
 
 if __name__ == '__main__':
-    data_dir = '/Users/xiaozhe/datasets/lfw/lfw112'
-    loader = LFWData(dim_img=112, data_dir=data_dir, identity_nums=5749, sensitive_attr='Male', img_path_replace=True, split='train')
+    #data_dir = '/Users/xiaozhe/datasets/lfw/lfw112'
+    data_dir = 'D:\datasets\lfw\lfw112'
+    loader = LFWData(dim_img=224, data_dir=data_dir, identity_nums=5749, sensitive_attr='Male', img_path_replace=True, split='train')
     train_loader = DataLoader(loader, batch_size=3, shuffle=False)
 
     for i, item in enumerate(train_loader):
         print('i', i)
         x, u, s = item
-        print(x)
+        print(x.shape)
         print(u)
-        print(s)
+        print(s.shape)
         break
 
 

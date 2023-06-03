@@ -15,7 +15,7 @@ from arcface_resnet50 import ArcfaceResnet50
 def load_callbacks(load_path):
     callbacks = []
     callbacks.append(plc.EarlyStopping(
-        monitor='val_loss',
+        monitor='train_loss',
         mode='min',
         patience=5,
         min_delta=0.001,
@@ -173,8 +173,8 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', default='bottleneck', type=str)
     parser.add_argument('--beta', default=0.1, type=float)
     parser.add_argument('--batch_size', default=64, type=int)
-    parser.add_argument('--max_epochs', default=200, type = int)
-    parser.add_argument('--min_epochs', default=150, type=int)
+    parser.add_argument('--max_epochs', default=350, type = int)
+    parser.add_argument('--min_epochs', default=200, type=int)
 
 
     # 日志参数

@@ -143,6 +143,7 @@ class CelebaData(data.Dataset):
         u = self.u[index, 0] - 1
 
         s = self.s[index, :]
+
         return x, u, s
 
 
@@ -257,8 +258,8 @@ class CelebaTSNEExperiment(data.Dataset):
 
 if __name__ == '__main__':
 
-    #data_dir = 'D:\datasets\celeba'
-    data_dir = '/Users/xiaozhe/datasets/celeba'
+    data_dir = 'D:\datasets\celeba'
+    #data_dir = '/Users/xiaozhe/datasets/celeba'
     #data_dir = 'D:\celeba'
 
 
@@ -273,7 +274,7 @@ if __name__ == '__main__':
     for i, item in enumerate(train_loader):
         print('i', i)
         x, u, s = item
-        print(x)
+        print(s)
         break
 
 
