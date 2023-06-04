@@ -38,7 +38,7 @@ class AdienceInterface(pl.LightningDataModule):
         self.allow_zero_length_dataloader_with_multiple_devices = True
 
 
-        if purpose == 'attr_extract':
+        if purpose == 'gender_extract':
             self.trainset = AdienceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity,
                                     sensitive_attr=self.sensitive_attr)
             self.testset = AdienceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity,
