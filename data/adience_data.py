@@ -87,9 +87,9 @@ class AdienceData(data.Dataset):
         x = F.crop(x, x1, y1, h, w)
         x = self.trans_second(x)
 
-        to_img = transforms.ToPILImage()
-        img = to_img(x)
-        img.show()
+        #to_img = transforms.ToPILImage()
+        #img = to_img(x)
+        #img.show()
 
         # x = self.trans(x)
 

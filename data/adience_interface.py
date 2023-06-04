@@ -51,7 +51,7 @@ class AdienceInterface(pl.LightningDataModule):
 
     def prepare_data(self):
         AdienceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity, sensitive_attr=self.sensitive_attr)
-        AdienceRecognitionTestPairs(dim_img=self.dim_img, data_dir=data_dir)
+        AdienceRecognitionTestPairs(dim_img=self.dim_img, data_dir=self.data_dir)
 
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
