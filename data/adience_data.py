@@ -55,6 +55,11 @@ class AdienceData(data.Dataset):
                                                                      std=[0.5, 0.5, 0.5]),
                                                 ])
 
+        self.trans = transforms.Compose([transforms.CenterCrop((250,250)),
+                                         transforms.Resize((self.dim_img, self.dim_img)),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize(mean=[0.5,0.5,0.5], std=[0.5,0.5,0.5])])
+
 
     def __len__(self):
         return self.adience_dataset.shape[0]
@@ -72,8 +77,10 @@ class AdienceData(data.Dataset):
 
         x = PIL.Image.open(img_path)
 
-        x = self.trans_first(x)
+        x = self.trans(x)
 
+        '''
+        
         boxes, probs, landmarks = mtcnn.detect(x, landmarks=True)
 
         max_prob_idx = probs.argmax()
@@ -86,6 +93,7 @@ class AdienceData(data.Dataset):
 
         x = F.crop(x, x1, y1, h, w)
         x = self.trans_second(x)
+        '''
 
         #to_img = transforms.ToPILImage()
         #img = to_img(x)
@@ -205,10 +213,10 @@ class AdienceRecognitionTestPairs(data.Dataset):
 
 if __name__ == '__main__':
     data_dir = '/Users/xiaozhe/datasets/Adience'
-    '''
+
     
     loader = AdienceData(dim_img=112, data_dir=data_dir, identity_nums=10177, sensitive_attr='Male')
-    train_loader = DataLoader(loader, batch_size=10, shuffle=True)
+    train_loader = DataLoader(loader, batch_size=2, shuffle=True)
     for i, item in enumerate(train_loader):
         print('i', i)
         x, u, s = item
@@ -217,11 +225,11 @@ if __name__ == '__main__':
         print(s)
         break
         
+
+
+
     '''
-
-
-
-
+    
     loader_face_recogntion = AdienceRecognitionTestPairs(dim_img=112, data_dir=data_dir)
     test_pairs = DataLoader(loader_face_recogntion, batch_size=10, shuffle=False)
     for i, item in enumerate(test_pairs):
@@ -230,6 +238,7 @@ if __name__ == '__main__':
         print(img_x)
         print(img_y)
         print(match)
+    '''
 
 
 
