@@ -143,6 +143,7 @@ print(celeba_facerecognition_test_dataset)
 
 '''
 
+'''
 
 lfw_ssd_path = '/Users/xiaozhe/datasets/lfw/lfw112'
 fn_lfw = partial(os.path.join, lfw_ssd_path)
@@ -163,7 +164,7 @@ lfw_dataset_pandas = pd.DataFrame(data = lfw_dataset_load_label, index=lfw_datas
 
 # lfw_dataset_pandas.to_csv('lfw_att_40.csv',encoding="utf_8_sig")
 
-
+'''
 
 '''
 
@@ -353,3 +354,16 @@ celeba_facerecognition_test_dataset = celeba_facerecognition_test_dataset.drop(l
 print(celeba_facerecognition_test_dataset)
 # celeba_facerecognition_test_dataset.to_csv("celeba_face_verify_test_dataset.csv", encoding="utf_8_sig")
 '''
+
+celeba_path = '/Users/xiaozhe/datasets/celeba'
+fn = partial(os.path.join, celeba_path)
+identity_celeba = pd.read_table(fn('identity_CelebA.txt'), delim_whitespace=True, header=None, index_col=None, names = ['img_path','id'])
+print(identity_celeba)
+imgpath_race_celeba = pd.read_csv(fn('celeba_imgpath_race.csv')).drop(labels='Unnamed: 0', axis=1)
+print(imgpath_race_celeba)
+imgpath_race_id_celeba = pd.merge(imgpath_race_celeba,identity_celeba,on='img_path', how='left')
+print(imgpath_race_id_celeba)
+print(len(imgpath_race_id_celeba))
+mask = slice(0,3,1)
+data = imgpath_race_id_celeba[mask]['img_path'][0]
+print(data)

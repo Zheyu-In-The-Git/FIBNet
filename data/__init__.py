@@ -1,6 +1,6 @@
 
 from .celeba_interface import CelebaInterface
-from .celeba_data import CelebaData, CelebaRecognitionTestDataSet, CelebaTSNEExperiment
+from .celeba_data import CelebaData, CelebaRecognitionTestDataSet, CelebaTSNEExperiment, CelebaRaceDataset
 
 from .lfw_data import LFWData, LFWRecognitionTestPairs
 from .lfw_interface import LFWInterface
