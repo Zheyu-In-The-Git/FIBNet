@@ -58,7 +58,7 @@ class BottleneckMineEstimator(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
         optim_train = optim.Adam(self.mine_net.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=5, min_lr=1e-8, threshold=1e-2)
         return {'optimizer': optim_train, 'lr_scheduler':scheduler, 'monitor':'infor_loss'}
 
     def training_step(self, batch):
@@ -114,7 +114,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
         accelerator="auto",
         devices=1,
         max_epochs=100,
-        min_epochs=50,
+        min_epochs=60,
         logger=logger,
         log_every_n_steps=10,
         precision=32,
@@ -133,9 +133,9 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
 
 if __name__ == '__main__':
     arcface_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
-    bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.01\checkpoints\saved_models\last.ckpt'
+    bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.1\checkpoints\saved_models\last.ckpt'
     latent_dim = 512
-    beta = 0.01
+    beta = 0.1
     save_name = 'bottleneck_mine_512_celeba_traindataset'
     BottleneckMineMain(arcface_model_path, bottleneck_model_path, latent_dim, beta, save_name)
 
