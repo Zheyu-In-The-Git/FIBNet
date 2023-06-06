@@ -133,13 +133,14 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
 
 if __name__ == '__main__':
     arcface_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
-    bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.0001\checkpoints\saved_models\last.ckpt'
+    #bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.0001\checkpoints\saved_models\last.ckpt'
     latent_dim = 512
-    beta = 0.0001
     save_name = 'bottleneck_mine_512_celeba_testdataset'
-    BottleneckMineMain(arcface_model_path, bottleneck_model_path, latent_dim, beta, save_name)
 
-
+    beta_arr = [0.001, 0.01, 0.1, 1.0]
+    for beta in beta_arr:
+        bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
+        BottleneckMineMain(arcface_model_path, bottleneck_model_path, latent_dim, beta, save_name)
 
 
 

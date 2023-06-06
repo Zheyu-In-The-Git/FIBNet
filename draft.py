@@ -377,3 +377,8 @@ if __name__ == '__main__':
      mu, log_var = net(x)
      print(mu, log_var)
 '''
+
+beta_arr = [0.001, 0.01, 0.1, 1.0]
+for beta in beta_arr:
+    bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
+    print(bottleneck_model_path)
