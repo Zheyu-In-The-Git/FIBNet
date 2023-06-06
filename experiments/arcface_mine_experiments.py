@@ -10,7 +10,7 @@ import torch.optim as optim
 from matplotlib import pyplot as plt
 from torchvision import transforms
 from arcface_resnet50 import ArcfaceResnet50
-from data import CelebaInterface, LFWInterface, AdienceInterface
+from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.manifold import TSNE
 import torch.nn.functional as F
@@ -112,6 +112,8 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                                sensitive_dim=1)
     '''
 
+    '''
+    
     data_module = AdienceInterface(num_workers=2,
                                dataset = 'adience',
                                data_dir='D:\datasets\Adience',
@@ -122,10 +124,22 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                                pin_memory=False,
                                identity_nums=5749,
                                sensitive_dim=1)
+    '''
+
+    data_module = CelebaRaceInterface(
+        num_workers=2,
+        dataset='celeba_data',
+        batch_size=256,
+        dim_img=224,
+        data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
+        sensitive_dim=1,
+        identity_nums=10177,
+        pin_memory=False
+    )
 
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator/checkpoints_adience/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator_race/checkpoints_celebatrain/')
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='arcface_mine_estimator_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
