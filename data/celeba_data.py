@@ -84,8 +84,6 @@ class CelebaData(data.Dataset):
             mask = slice(0, 127638, 1)
             self.trans = transforms.Compose([transforms.Resize(self.dim_img),
                                              transforms.RandomHorizontalFlip(p=0.5),
-                                             #transforms.ColorJitter(brightness=0.5),
-                                             #transforms.ColorJitter(contrast=4),
                                              transforms.ToTensor(),
                                              transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
@@ -147,6 +145,82 @@ class CelebaData(data.Dataset):
         return x, u, s
 
 
+class CelebaRaceDataset(data.Dataset):
+    def __init__(self,
+                 dim_img: int,
+                 data_dir: str,
+                 sensitive_dim: int,
+                 identity_nums: int,
+                 split: str,  # train, valid, test
+                 ):
+
+        self.dim_img = dim_img
+        self.data_dir = data_dir
+        self.sensitive_dim = sensitive_dim
+        self.identity_nums = identity_nums
+        self.split = split
+
+        split_map = {
+            'train': 0,
+            'valid': 1,
+            'test': 2,
+            'all': None,
+            'train_63%': 'train_63%',
+            'valid_7%': 'valid_7%',
+            'test_30%': 'test_30%'
+        }
+
+        split_ = split_map[verify_str_arg(split.lower(), "split", ("train", "valid", "test", "all", 'train_63%', 'valid_7%', 'test_30%'))]
+
+        fn = partial(os.path.join, self.data_dir)  # csv检索用的
+        imgpath_id = pd.read_table(fn('identity_CelebA.txt'), delim_whitespace=True, header=None, index_col=None, names = ['img_path','id'])
+        imgpath_white = pd.read_csv(fn('celeba_imgpath_race.csv')).drop(labels='Unnamed: 0', axis=1)
+        imgpath_race_id = pd.merge(imgpath_white, imgpath_id, on='img_path', how='left')
+
+        if split_ == 'train_63%':
+            mask = slice(0, 118063, 1)
+            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+                                             transforms.RandomHorizontalFlip(p=0.5),
+                                             transforms.ToTensor(),
+                                             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+            self.dataset = imgpath_race_id[mask]
+
+        elif split_ == 'valid_7%':
+            mask = slice(118063, 131207, 1)
+            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+                                             transforms.ToTensor(),
+                                             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+            self.dataset = imgpath_race_id[mask]
+
+        elif split_ == 'test_30%':
+            mask = slice(131207, 187644, 1)
+            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+                                             transforms.ToTensor(),
+                                             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+            self.dataset = imgpath_race_id[mask]
+
+
+
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index):
+        X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba_mtcnn", self.dataset['img_path'][index]))
+        x = self.trans(X)
+        #to_img = transforms.ToPILImage()
+        #img = to_img(x)
+        #img.show()
+
+        u = self.dataset['id'][index] - 1
+        u = torch.tensor(u)
+        u = u.long()
+
+
+        s = self.dataset['white'][index]
+        s = torch.tensor([s]).to(torch.float32)
+
+        return x, u, s
 
 
 class CelebaRecognitionTestDataSet(data.Dataset):
@@ -258,12 +332,13 @@ class CelebaTSNEExperiment(data.Dataset):
 
 if __name__ == '__main__':
 
-    data_dir = 'D:\datasets\celeba'
-    #data_dir = '/Users/xiaozhe/datasets/celeba'
+    #data_dir = 'D:\datasets\celeba'
+    data_dir = '/Users/xiaozhe/datasets/celeba'
     #data_dir = 'D:\celeba'
 
 
 
+    '''
     
     loader = CelebaData(dim_img=112, data_dir=data_dir, sensitive_dim=2, identity_nums=10177, sensitive_attr='Male', split='train_63%')
     # dataset = CelebaTSNEExperiment(dim_img=112, data_dir=data_dir, sensitive_attr='Male', split='test_30%')
@@ -276,7 +351,17 @@ if __name__ == '__main__':
         x, u, s = item
         print(s)
         break
+    '''
 
+    loader = CelebaRaceDataset(dim_img=112, data_dir=data_dir, sensitive_dim=1, identity_nums=10177,split='train_63%')
+    train_loader = DataLoader(loader, batch_size=2)
+    for i, item in enumerate(train_loader):
+        print('i', i )
+        x, u, s = item
+        print(x)
+        print(u)
+        print(s)
+        break
 
 
 
