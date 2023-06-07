@@ -79,22 +79,6 @@ class AdienceData(data.Dataset):
 
         x = self.trans(x)
 
-        '''
-        
-        boxes, probs, landmarks = mtcnn.detect(x, landmarks=True)
-
-        max_prob_idx = probs.argmax()
-        max_prob_box = boxes[max_prob_idx]
-
-        x1, y1, x2, y2 = max_prob_box.astype(int)
-
-        h = y2 - y1
-        w = x2 - x1
-
-        x = F.crop(x, x1, y1, h, w)
-        x = self.trans_second(x)
-        '''
-
         #to_img = transforms.ToPILImage()
         #img = to_img(x)
         #img.show()
@@ -112,6 +96,39 @@ class AdienceData(data.Dataset):
 
 
         return x, u, s
+
+
+class AdienceRaceData(data.Dataset):
+    def __init__(self,
+                 dim_img:int,
+                 data_dir:str,
+                 identity_nums:int, # 2284?
+                 ):
+        self.dim_img = dim_img
+        self.data_dir = data_dir
+        self.identity_nums = identity_nums
+
+        fn = partial(os.path.join, self.data_dir)
+        adience_fold_0 = pandas.read_table(fn('fold_0_data.txt'), index_col=False)
+        adience_fold_1 = pandas.read_table(fn('fold_1_data.txt'), index_col=False)
+        adience_fold_2 = pandas.read_table(fn('fold_2_data.txt'), index_col=False)
+        adience_fold_3 = pandas.read_table(fn('fold_3_data.txt'), index_col=False)
+        adience_fold_4 = pandas.read_table(fn('fold_4_data.txt'), index_col=False)
+
+        adience_dataset = pd.concat([adience_fold_0,adience_fold_1,adience_fold_2,adience_fold_3,adience_fold_4], ignore_index=True)
+        print(adience_dataset)
+
+        imgsubpath_white_faceid = pandas.read_csv(fn('adience_imgpath_race_id.csv')).drop(labels='Unnamed: 0', axis=1)
+        print(imgsubpath_white_faceid)
+
+        self.trans = transforms.Compose([transforms.CenterCrop((250, 250)),
+                                         transforms.Resize((self.dim_img, self.dim_img)),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+
+
+
+
 
 class AdienceRecognitionTestPairs(data.Dataset):
     def __init__(self, dim_img : int, data_dir : str):
@@ -214,6 +231,11 @@ class AdienceRecognitionTestPairs(data.Dataset):
 if __name__ == '__main__':
     data_dir = '/Users/xiaozhe/datasets/Adience'
 
+    loader = AdienceRaceData(dim_img=112, data_dir=data_dir, identity_nums=2822)
+
+
+
+    '''
     
     loader = AdienceData(dim_img=112, data_dir=data_dir, identity_nums=10177, sensitive_attr='Male')
     train_loader = DataLoader(loader, batch_size=2, shuffle=True)
@@ -225,6 +247,7 @@ if __name__ == '__main__':
         print(s)
         break
         
+    '''
 
 
 
@@ -239,6 +262,8 @@ if __name__ == '__main__':
         print(img_y)
         print(match)
     '''
+
+
 
 
 
