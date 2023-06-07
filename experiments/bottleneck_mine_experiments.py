@@ -11,7 +11,7 @@ from model import BottleneckNets, Encoder, Decoder
 from matplotlib import pyplot as plt
 from torchvision import transforms
 from arcface_resnet50 import ArcfaceResnet50
-from data import CelebaInterface, LFWInterface
+from data import CelebaInterface, LFWInterface, AdienceInterface
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.manifold import TSNE
 import torch.nn.functional as F
@@ -91,6 +91,8 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                   pin_memory=False)
     '''
 
+
+    
     data_module = LFWInterface(num_workers=2,
                                dataset='lfw',
                                data_dir='D:\datasets\lfw\lfw112',
@@ -101,6 +103,9 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                pin_memory=False,
                                identity_nums=5749,
                                sensitive_dim=1)
+
+
+
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/bottleneck_mine_estimator_lfw/checkpoints_beta'+str(beta))
 
@@ -126,8 +131,8 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=100,
-        min_epochs=60,
+        max_epochs=200,
+        min_epochs=120,
         logger=logger,
         log_every_n_steps=10,
         precision=32,
@@ -142,7 +147,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
-    trainer.fit(bottlenecknetsmineestimator, data_module)
+    trainer.fit(bottlenecknetsmineestimator, data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\bottleneck_mine_estimator_lfw\checkpoints_beta'+ str(beta) + r'\saved_model\bottleneck_mine_512_lfw\last.ckpt')
 
 if __name__ == '__main__':
     arcface_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
