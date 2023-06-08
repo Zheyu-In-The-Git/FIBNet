@@ -115,16 +115,46 @@ class AdienceRaceData(data.Dataset):
         adience_fold_3 = pandas.read_table(fn('fold_3_data.txt'), index_col=False)
         adience_fold_4 = pandas.read_table(fn('fold_4_data.txt'), index_col=False)
 
-        adience_dataset = pd.concat([adience_fold_0,adience_fold_1,adience_fold_2,adience_fold_3,adience_fold_4], ignore_index=True)
-        print(adience_dataset)
+        self.adience_dataset = pd.concat([adience_fold_0,adience_fold_1,adience_fold_2,adience_fold_3,adience_fold_4], ignore_index=True)
+        print(self.adience_dataset)
 
-        imgsubpath_white_faceid = pandas.read_csv(fn('adience_imgpath_race_id.csv')).drop(labels='Unnamed: 0', axis=1)
-        print(imgsubpath_white_faceid)
+        self.userid_imgsubpath_white_faceid = pandas.read_csv(fn('adience_imgpath_race_id.csv')).drop(labels='Unnamed: 0', axis=1)
+        print(self.userid_imgsubpath_white_faceid)
 
-        self.trans = transforms.Compose([transforms.CenterCrop((250, 250)),
+        self.trans = transforms.Compose([transforms.CenterCrop((300, 300)),
                                          transforms.Resize((self.dim_img, self.dim_img)),
                                          transforms.ToTensor(),
                                          transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+
+    def __len__(self):
+        return len(self.userid_imgsubpath_white_faceid)
+
+    def __getitem__(self, index):
+        user_id_path = self.userid_imgsubpath_white_faceid.loc[index]['user_id']
+        img_sub_path = self.userid_imgsubpath_white_faceid.loc[index]['img_sub_path']
+        race = self.userid_imgsubpath_white_faceid.loc[index]['white']
+        face_id = self.userid_imgsubpath_white_faceid.loc[index]['face_id']
+
+        img_path = os.path.join(self.data_dir, 'faces', user_id_path, img_sub_path)
+
+        x = PIL.Image.open(img_path)
+
+        x = self.trans(x)
+
+        to_img = transforms.ToPILImage()
+        img = to_img(x)
+        img.show()
+
+        u = face_id - 1
+
+        u = torch.tensor(u)
+
+        s = torch.tensor([race])
+
+        return x, u, s
+
+
+
 
 
 
@@ -232,6 +262,14 @@ if __name__ == '__main__':
     data_dir = '/Users/xiaozhe/datasets/Adience'
 
     loader = AdienceRaceData(dim_img=112, data_dir=data_dir, identity_nums=2822)
+    train_loder = DataLoader(loader, batch_size=2, shuffle=True)
+    for i, item in enumerate(train_loder):
+        print('i',i)
+        x, u, s = item
+        print(x)
+        print(u)
+        print(s)
+        break
 
 
 

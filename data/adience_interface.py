@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
-from data.adience_data import AdienceData, AdienceRecognitionTestPairs
+from data.adience_data import AdienceData, AdienceRecognitionTestPairs, AdienceRaceData
 
 import platform
 
@@ -47,6 +47,9 @@ class AdienceInterface(pl.LightningDataModule):
             self.trainset = AdienceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity,
                                     sensitive_attr=self.sensitive_attr)
             self.testset = AdienceRecognitionTestPairs(dim_img=self.dim_img, data_dir=self.data_dir)
+
+        elif purpose == 'race_extract':
+            self.trainset = AdienceRaceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity)
 
 
     def prepare_data(self):
