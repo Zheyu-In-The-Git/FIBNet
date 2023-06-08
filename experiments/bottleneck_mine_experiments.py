@@ -131,8 +131,8 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=200,
-        min_epochs=120,
+        max_epochs=250,
+        min_epochs=200,
         logger=logger,
         log_every_n_steps=10,
         precision=32,

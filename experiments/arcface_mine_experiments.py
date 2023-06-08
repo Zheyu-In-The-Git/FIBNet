@@ -62,7 +62,7 @@ class ArcfaceMineEstimator(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.mine_net.parameters(), lr=0.0001, betas=(b1, b2))
+        optim_train = optim.Adam(self.mine_net.parameters(), lr=0.001, betas=(b1, b2))
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=10, min_lr=1e-8,verbose=True,
                                                          threshold=1e-4)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "infor_loss"}
