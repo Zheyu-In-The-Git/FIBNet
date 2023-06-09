@@ -63,7 +63,7 @@ class ArcfaceMineEstimator(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
         optim_train = optim.Adam(self.mine_net.parameters(), lr=0.01, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=15, min_lr=1e-8,verbose=True,
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=5, min_lr=1e-8,verbose=True,
                                                          threshold=1e-4)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "infor_loss"}
 
@@ -144,7 +144,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
 
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator_race/checkpoints_celeba_train/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator_race/checkpoints_celeba_test/')
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='arcface_mine_estimator_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
@@ -165,7 +165,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         accelerator="auto",
         devices=1,
         max_epochs=400,
-        min_epochs=250,
+        min_epochs=100,
         logger=logger,
         log_every_n_steps=50,
         precision=32,
@@ -181,8 +181,8 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
-    trainer.fit(arcfacemineestimator, data_module)
-
+    trainer.fit(arcfacemineestimator, data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\arcface_mine_estimator_race\checkpoints_celeba_test\saved_model\arcface_mine_512\last.ckpt')
+    # 记得要对celeba race 的训练集更改，更改成测试集
 
 if __name__ == '__main__':
     model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'

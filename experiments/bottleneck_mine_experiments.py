@@ -11,7 +11,7 @@ from model import BottleneckNets, Encoder, Decoder
 from matplotlib import pyplot as plt
 from torchvision import transforms
 from arcface_resnet50 import ArcfaceResnet50
-from data import CelebaInterface, LFWInterface, AdienceInterface
+from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.manifold import TSNE
 import torch.nn.functional as F
@@ -57,8 +57,8 @@ class BottleneckMineEstimator(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.mine_net.parameters(), lr=0.01, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=5, min_lr=1e-8, threshold=1e-2)
+        optim_train = optim.Adam(self.mine_net.parameters(), lr=0.001, betas=(b1, b2))
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=5, min_lr=1e-8, threshold=1e-4)
         return {'optimizer': optim_train, 'lr_scheduler':scheduler, 'monitor':'infor_loss'}
 
     def training_step(self, batch):
@@ -106,6 +106,8 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                sensitive_dim=1)
     '''
 
+    '''
+    
     data_module = AdienceInterface(num_workers=2,
                                    dataset='adience',
                                    data_dir='D:\datasets\Adience',
@@ -116,11 +118,22 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                    pin_memory=False,
                                    identity_nums=5749,
                                    sensitive_dim=1)
+    '''
+    data_module = CelebaRaceInterface(
+        num_workers=2,
+        dataset='celeba_data',
+        batch_size=256,
+        dim_img=224,
+        data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
+        sensitive_dim=1,
+        identity_nums=10177,
+        pin_memory=False
+    )
 
 
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/bottleneck_mine_estimator_adience/checkpoints_beta'+str(beta))
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/bottleneck_mine_estimator_celeba_train_race/checkpoints_beta'+str(beta))
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='bottleneck_mine_estimator_logger_beta' + str(beta))
 
@@ -145,7 +158,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
         accelerator="auto",
         devices=1,
         max_epochs=250,
-        min_epochs=150,
+        min_epochs=120,
         logger=logger,
         log_every_n_steps=10,
         precision=32,
