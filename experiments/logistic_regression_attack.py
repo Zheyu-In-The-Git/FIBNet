@@ -65,7 +65,10 @@ class LogisticRegression(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, u, s = batch
-        z = self.model
+
+        s = s.squeeze()
+        s = s.long()
+        print(s)
 
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x,u)
@@ -74,6 +77,8 @@ class LogisticRegression(pl.LightningModule):
             z, _, _, _ = self.pretrained_model(x, u)
 
         logits = self.forward(z)
+        logits = logits.to(torch.float32)
+        print(logits.shape)
         loss = F.cross_entropy(logits, s)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
 
@@ -84,6 +89,8 @@ class LogisticRegression(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, u, s = batch
+        s = s.squeeze()
+        s = s.to(torch.int64)
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
 
@@ -101,6 +108,8 @@ class LogisticRegression(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         x, u, s = batch
+        s = s.squeeze()
+        s = s.to(torch.int64)
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
 
@@ -129,7 +138,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
     celeba_data_module = CelebaAttackInterface(
         num_workers=2,
         dataset='celeba_data',
-        batch_size=256,
+        batch_size=64,
         dim_img=224,
         data_dir='D:\celeba',  # 'D:\datasets\celeba'
         sensitive_dim=1,
@@ -180,7 +189,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
         log_every_n_steps=10,
         precision=32,
         enable_checkpointing=True,
-        fast_dev_run=False,
+        fast_dev_run=True,
     )
 
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
