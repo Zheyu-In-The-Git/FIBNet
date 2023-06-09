@@ -57,15 +57,17 @@ class LogisticRegression(pl.LightningModule):
                                                          verbose=True, threshold=1e-4)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
-    def get_stats(self, decoded, labels):
-        preds = torch.argmax(decoded, 1).cpu().detach().numpy()
+    def get_stats(self, logits, labels):
+        preds = F.sigmoid(logits)
         accuracy = batch_accuracy(preds, labels.cpu().detach().numpy())
         misclass_rate = batch_misclass_rate(preds, labels.cpu().detach().numpy())
         return accuracy, misclass_rate
 
     def training_step(self, batch, batch_idx):
         x, u, s = batch
-        z = self.model
+
+        s = s.squeeze()
+        s = s.to(torch.float32)
 
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x,u)
@@ -74,6 +76,7 @@ class LogisticRegression(pl.LightningModule):
             z, _, _, _ = self.pretrained_model(x, u)
 
         logits = self.forward(z)
+        logits = logits.squeeze()
         loss = F.cross_entropy(logits, s)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
 
@@ -84,6 +87,8 @@ class LogisticRegression(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, u, s = batch
+        s = s.squeeze()
+        s = s.to(torch.float32)
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
 
@@ -91,6 +96,7 @@ class LogisticRegression(pl.LightningModule):
             z, _, _, _ = self.pretrained_model(x, u)
 
         logits = self.forward(z)
+        logits = logits.squeeze()
         loss = F.cross_entropy(logits, s)
         self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
 
@@ -101,6 +107,8 @@ class LogisticRegression(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         x, u, s = batch
+        s = s.squeeze()
+        s = s.to(torch.float32)
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
 
@@ -108,6 +116,7 @@ class LogisticRegression(pl.LightningModule):
             z, _, _, _ = self.pretrained_model(x, u)
 
         logits = self.forward(z)
+        logits = logits.squeeze()
         loss = F.cross_entropy(logits, s)
         self.log('test_loss'+self.dataset_name, loss, on_step=True, on_epoch=True, prog_bar=True)
 
@@ -129,7 +138,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
     celeba_data_module = CelebaAttackInterface(
         num_workers=2,
         dataset='celeba_data',
-        batch_size=256,
+        batch_size=64,
         dim_img=224,
         data_dir='D:\celeba',  # 'D:\datasets\celeba'
         sensitive_dim=1,
