@@ -57,8 +57,8 @@ class LogisticRegression(pl.LightningModule):
                                                          verbose=True, threshold=1e-4)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
-    def get_stats(self, decoded, labels):
-        preds = torch.argmax(decoded, 1).cpu().detach().numpy()
+    def get_stats(self, logits, labels):
+        preds = F.sigmoid(logits)
         accuracy = batch_accuracy(preds, labels.cpu().detach().numpy())
         misclass_rate = batch_misclass_rate(preds, labels.cpu().detach().numpy())
         return accuracy, misclass_rate
@@ -67,8 +67,7 @@ class LogisticRegression(pl.LightningModule):
         x, u, s = batch
 
         s = s.squeeze()
-        s = s.long()
-        print(s)
+        s = s.to(torch.float32)
 
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x,u)
@@ -77,8 +76,7 @@ class LogisticRegression(pl.LightningModule):
             z, _, _, _ = self.pretrained_model(x, u)
 
         logits = self.forward(z)
-        logits = logits.to(torch.float32)
-        print(logits.shape)
+        logits = logits.squeeze()
         loss = F.cross_entropy(logits, s)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
 
@@ -90,7 +88,7 @@ class LogisticRegression(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, u, s = batch
         s = s.squeeze()
-        s = s.to(torch.int64)
+        s = s.to(torch.float32)
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
 
@@ -98,6 +96,7 @@ class LogisticRegression(pl.LightningModule):
             z, _, _, _ = self.pretrained_model(x, u)
 
         logits = self.forward(z)
+        logits = logits.squeeze()
         loss = F.cross_entropy(logits, s)
         self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
 
@@ -109,7 +108,7 @@ class LogisticRegression(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         x, u, s = batch
         s = s.squeeze()
-        s = s.to(torch.int64)
+        s = s.to(torch.float32)
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
 
@@ -117,6 +116,7 @@ class LogisticRegression(pl.LightningModule):
             z, _, _, _ = self.pretrained_model(x, u)
 
         logits = self.forward(z)
+        logits = logits.squeeze()
         loss = F.cross_entropy(logits, s)
         self.log('test_loss'+self.dataset_name, loss, on_step=True, on_epoch=True, prog_bar=True)
 
@@ -189,7 +189,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
         log_every_n_steps=10,
         precision=32,
         enable_checkpointing=True,
-        fast_dev_run=True,
+        fast_dev_run=False,
     )
 
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
