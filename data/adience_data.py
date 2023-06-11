@@ -141,15 +141,16 @@ class AdienceRaceData(data.Dataset):
 
         x = self.trans(x)
 
-        to_img = transforms.ToPILImage()
-        img = to_img(x)
-        img.show()
+        #to_img = transforms.ToPILImage()
+        #img = to_img(x)
+        #img.show()
 
         u = face_id - 1
 
         u = torch.tensor(u)
 
         s = torch.tensor([race])
+        s = s.to(torch.float32)
 
         return x, u, s
 

@@ -119,6 +119,9 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                    identity_nums=5749,
                                    sensitive_dim=1)
     '''
+
+    '''
+    
     data_module = CelebaRaceInterface(
         num_workers=2,
         dataset='celeba_data',
@@ -129,11 +132,23 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
         identity_nums=10177,
         pin_memory=False
     )
+    '''
+
+    data_module = AdienceInterface(num_workers=2,
+                                   dataset='adience',
+                                   data_dir='D:\datasets\Adience',
+                                   batch_size=256,
+                                   dim_img=224,
+                                   sensitive_attr='Male',
+                                   purpose='race_extract',
+                                   pin_memory=False,
+                                   identity_nums=5749,
+                                   sensitive_dim=1)
 
 
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/bottleneck_mine_estimator_celeba_test_race/checkpoints_beta'+str(beta))
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/bottleneck_mine_estimator_adience_race/checkpoints_beta'+str(beta))
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='bottleneck_mine_estimator_logger_beta' + str(beta))
 
