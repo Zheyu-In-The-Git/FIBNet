@@ -120,7 +120,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                    sensitive_dim=1)
     '''
 
-    '''
+
     
     data_module = CelebaRaceInterface(
         num_workers=2,
@@ -132,8 +132,10 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
         identity_nums=10177,
         pin_memory=False
     )
-    '''
 
+
+    '''
+    
     data_module = AdienceInterface(num_workers=2,
                                    dataset='adience',
                                    data_dir='D:\datasets\Adience',
@@ -144,11 +146,12 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                    pin_memory=False,
                                    identity_nums=5749,
                                    sensitive_dim=1)
+    '''
 
 
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/bottleneck_mine_estimator_adience_race/checkpoints_beta'+str(beta))
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/bottleneck_mine_estimator_celeba_train_race/checkpoints_beta'+str(beta))
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='bottleneck_mine_estimator_logger_beta' + str(beta))
 
@@ -188,7 +191,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
-    trainer.fit(bottlenecknetsmineestimator, data_module)
+    trainer.fit(bottlenecknetsmineestimator, data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\bottleneck_mine_estimator_celeba_train_race\checkpoints_beta0.1\saved_model\bottleneck_mine_512_adience\last.ckpt')
 
 if __name__ == '__main__':
     arcface_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
@@ -196,7 +199,7 @@ if __name__ == '__main__':
     latent_dim = 512
     save_name = 'bottleneck_mine_512_adience'
 
-    beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
+    beta_arr = [0.1]
     for beta in beta_arr:
         bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
         BottleneckMineMain(arcface_model_path, bottleneck_model_path, latent_dim, beta, save_name)
