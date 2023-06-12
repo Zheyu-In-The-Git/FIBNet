@@ -28,7 +28,7 @@ class LFWData(data.Dataset):
         self.identity_nums = identity_nums
 
         fn = partial(os.path.join, self.data_dir)
-        self.lfw_dataset = pandas.read_csv(fn('lfw_att_40.csv'))
+        self.lfw_dataset = pandas.read_csv(fn('lfw_att_73.csv'))
 
         lfw_dataset_load_indices_train_test = mat73.loadmat(fn('indices_train_test.mat'))
 
@@ -143,9 +143,9 @@ class LFWRecognitionTestPairs(data.Dataset):
 
 
 if __name__ == '__main__':
-    #data_dir = '/Users/xiaozhe/datasets/lfw/lfw112'
-    data_dir = 'D:\datasets\lfw\lfw112'
-    loader = LFWData(dim_img=224, data_dir=data_dir, identity_nums=5749, sensitive_attr='Male', img_path_replace=True, split='train')
+    data_dir = '/Users/xiaozhe/datasets/lfw/lfw112'
+    #data_dir = 'D:\datasets\lfw\lfw112'
+    loader = LFWData(dim_img=224, data_dir=data_dir, identity_nums=5749, sensitive_attr='White', img_path_replace=True, split='train')
     train_loader = DataLoader(loader, batch_size=3, shuffle=False)
 
     for i, item in enumerate(train_loader):
