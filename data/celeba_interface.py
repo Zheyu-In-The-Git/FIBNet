@@ -47,7 +47,7 @@ class CelebaInterface(pl.LightningDataModule):
                                              data_dir=self.data_dir,
                                              sensitive_dim=self.sensitive_dim,
                                              identity_nums=self.identity_nums, sensitive_attr=self.sensitive_attr,
-                                             split='test_30%')
+                                             split='train_63%')
 
             valid_dataset = CelebaData(dim_img=self.dim_img,
                                        data_dir=self.data_dir,
