@@ -98,7 +98,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     '''
 
 
-    '''
+
     
     
     data_module = LFWInterface(num_workers=2,
@@ -106,12 +106,12 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                                data_dir='D:\datasets\lfw\lfw112',
                                batch_size=256,
                                dim_img=224,
-                               sensitive_attr='Male',
+                               sensitive_attr='White',
                                purpose='attr_extract',
                                pin_memory=False,
                                identity_nums=5749,
                                sensitive_dim=1)
-    '''
+
 
 
     '''
@@ -129,6 +129,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     '''
 
 
+    '''
     
     data_module = CelebaRaceInterface(
         num_workers=2,
@@ -140,11 +141,12 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         identity_nums=10177,
         pin_memory=False
     )
+    '''
 
 
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator_race/checkpoints_celeba_test/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator_race/checkpoints_lfw/')
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='arcface_mine_estimator_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
@@ -165,7 +167,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         accelerator="auto",
         devices=1,
         max_epochs=400,
-        min_epochs=100,
+        min_epochs=200,
         logger=logger,
         log_every_n_steps=50,
         precision=32,
@@ -181,7 +183,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
-    trainer.fit(arcfacemineestimator, data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\arcface_mine_estimator_race\checkpoints_celeba_test\saved_model\arcface_mine_512\last.ckpt')
+    trainer.fit(arcfacemineestimator, data_module)
     # 记得要对celeba race 的训练集更改，更改成测试集
 
 if __name__ == '__main__':
