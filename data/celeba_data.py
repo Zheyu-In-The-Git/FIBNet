@@ -42,8 +42,6 @@ class CelebaData(data.Dataset):
                  sensitive_attr: str,
                  split: str, # train, valid, test
                  ):
-        # Set all input args as attributes
-        self.__dict__.update(locals())
 
         self.sensitive_dim = sensitive_dim
         self.identity_nums = identity_nums
@@ -123,12 +121,6 @@ class CelebaData(data.Dataset):
 
     def __len__(self):
         return len(self.filename)
-
-    def to_one_hot(self, idx, class_num):
-        # 传入tensor，返回tensor
-        out = torch.zeros(class_num)
-        out[idx] = 1
-        return out
 
 
     def __getitem__(self, index):

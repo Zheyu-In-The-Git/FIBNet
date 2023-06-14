@@ -168,11 +168,11 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                 every_n_train_steps=50
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
             LearningRateMonitor("epoch"),
-            EarlyStopping(
-                monitor='infor_loss',
-                patience=5,
-                mode='min'
-            )
+            #EarlyStopping(
+            #    monitor='infor_loss',
+            #    patience=5,
+            #    mode='min'
+            #)
         ],  # Log learning rate every epoch
 
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
@@ -194,7 +194,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
-    trainer.fit(bottlenecknetsmineestimator, data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\bottleneck_mine_estimator_celeba_train\checkpoints_beta' +str(beta)+ r'\saved_model\bottleneck_mine_512_celeba_traindataset\last.ckpt')
+    trainer.fit(bottlenecknetsmineestimator, data_module)
 
 if __name__ == '__main__':
     arcface_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
@@ -202,7 +202,7 @@ if __name__ == '__main__':
     latent_dim = 512
     save_name = 'bottleneck_mine_512_celeba_traindataset'
 
-    beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
+    beta_arr = [ 0.0001, 0.001, 0.01, 0.1, 1.0]
     for beta in beta_arr:
         bottleneck_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
         BottleneckMineMain(arcface_model_path, bottleneck_model_path, latent_dim, beta, save_name)
