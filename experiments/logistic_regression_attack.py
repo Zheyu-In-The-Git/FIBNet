@@ -23,14 +23,16 @@ def batch_accuracy(y_pred, y_true):
 class LogisticRegression(pl.LightningModule):
     def __init__(self, latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name):
         super(LogisticRegression, self).__init__()
-        self.linear = nn.Linear(latent_dim, 1)
+        self.linear = nn.Linear(latent_dim, 2)
+
+        nn.init.xavier_uniform_(self.linear.weight)
 
         self.dataset_name = dataset_name
 
         self.pretrained_model_name = pretrained_model_name
         if pretrained_model_name == 'Arcface':
             arcface_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
-            self.pretrained_model = arcface_net.load_from_checkpoint(r'C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
+            self.pretrained_model = arcface_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
             self.pretrained_model.requires_grad_(False)
 
         elif pretrained_model_name == 'Bottleneck':
@@ -52,13 +54,13 @@ class LogisticRegression(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.linear.parameters(), lr=0.01, betas=(b1, b2))
+        optim_train = optim.Adam(self.linear.parameters(), lr=0.001, betas=(b1, b2))
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=5, min_lr=1e-8,
                                                          verbose=True, threshold=1e-4)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
     def get_stats(self, logits, labels):
-        preds = F.sigmoid(logits)
+        preds =  torch.argmax(logits, 1).cpu().detach().numpy()
         accuracy = batch_accuracy(preds, labels.cpu().detach().numpy())
         misclass_rate = batch_misclass_rate(preds, labels.cpu().detach().numpy())
         return accuracy, misclass_rate
@@ -67,7 +69,6 @@ class LogisticRegression(pl.LightningModule):
         x, u, s = batch
 
         s = s.squeeze()
-        s = s.to(torch.float32)
 
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x,u)
@@ -76,8 +77,7 @@ class LogisticRegression(pl.LightningModule):
             z, _, _, _ = self.pretrained_model(x, u)
 
         logits = self.forward(z)
-        logits = logits.squeeze()
-        loss = F.cross_entropy(logits, s)
+        loss = F.cross_entropy(logits, s.long())
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
 
         train_acc, train_misclass = self.get_stats(logits, s)
@@ -88,7 +88,6 @@ class LogisticRegression(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, u, s = batch
         s = s.squeeze()
-        s = s.to(torch.float32)
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
 
@@ -96,8 +95,7 @@ class LogisticRegression(pl.LightningModule):
             z, _, _, _ = self.pretrained_model(x, u)
 
         logits = self.forward(z)
-        logits = logits.squeeze()
-        loss = F.cross_entropy(logits, s)
+        loss = F.cross_entropy(logits, s.long())
         self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
 
         val_acc, val_misclass = self.get_stats(logits, s)
@@ -108,7 +106,7 @@ class LogisticRegression(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         x, u, s = batch
         s = s.squeeze()
-        s = s.to(torch.float32)
+
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
 
@@ -116,8 +114,7 @@ class LogisticRegression(pl.LightningModule):
             z, _, _, _ = self.pretrained_model(x, u)
 
         logits = self.forward(z)
-        logits = logits.squeeze()
-        loss = F.cross_entropy(logits, s)
+        loss = F.cross_entropy(logits, s.long())
         self.log('test_loss'+self.dataset_name, loss, on_step=True, on_epoch=True, prog_bar=True)
 
         test_acc, val_misclass = self.get_stats(logits, s)
@@ -138,9 +135,9 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
     celeba_data_module = CelebaAttackInterface(
         num_workers=2,
         dataset='celeba_data',
-        batch_size=64,
+        batch_size=256,
         dim_img=224,
-        data_dir='D:\celeba',  # 'D:\datasets\celeba'
+        data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
         sensitive_dim=1,
         identity_nums=10177,
         sensitive_attr='Male',
@@ -149,7 +146,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
 
     lfw_data_module = LFWInterface(num_workers=2,
                                dataset='lfw',
-                               data_dir='D:\lfw\lfw112',
+                               data_dir='D:\datasets\lfw\lfw112',
                                batch_size=256,
                                dim_img=224,
                                sensitive_attr='Male',
@@ -160,7 +157,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
 
     adience_data_module = AdienceInterface(num_workers=2,
                                    dataset='adience',
-                                   data_dir='D:\Adience',
+                                   data_dir='D:\datasets\Adience',
                                    batch_size=256,
                                    dim_img=224,
                                    sensitive_attr='Male',
@@ -179,14 +176,16 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
                 every_n_train_steps=50
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
             LearningRateMonitor("epoch"),
+            EarlyStopping(monitor="val_acc", min_delta=0.00, patience=3, verbose=False, mode="max")
         ],  # Log learning rate every epoch
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
         accelerator="auto",
         devices=1,
         max_epochs=400,
-        min_epochs=15,
+        min_epochs=20,
         logger=logger,
-        log_every_n_steps=10,
+        log_every_n_steps=50,
+        check_val_every_n_epoch=5,
         precision=32,
         enable_checkpointing=True,
         fast_dev_run=False,
@@ -198,7 +197,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(logistic_attack_model, celeba_data_module)
+    trainer.fit(logistic_attack_model, celeba_data_module,ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\logistic_regression_attack\checkpoints\ArcfaceNone\saved_model\last.ckpt')
     trainer.test(logistic_attack_model, celeba_data_module)
     #trainer.test(logistic_attack_model, lfw_data_module)
     #trainer.test(logistic_attack_model, adience_data_module)
