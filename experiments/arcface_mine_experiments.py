@@ -63,7 +63,7 @@ class ArcfaceMineEstimator(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
         optim_train = optim.Adam(self.mine_net.parameters(), lr=0.01, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=10, min_lr=1e-8,verbose=True,
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=5, min_lr=1e-8,verbose=True,
                                                          threshold=1e-4)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "infor_loss"}
 
@@ -83,7 +83,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     #arcfacemineestimator = arcfacemineestimator.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\arcface_mine_estimator2\checkpoints\saved_model\arcface_mine_512_celeba_traindataset\last.ckpt', latent_dim = latent_dim, s_dim = 1, pretrained_model = pretrained_model)
 
     # 数据
-    '''
+
     
     #celeba数据
     data_module = CelebaInterface(num_workers=2,
@@ -95,7 +95,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                                   identity_nums=10177,
                                   sensitive_attr='Male',
                                   pin_memory=False)
-    '''
+
 
 
 
@@ -144,7 +144,8 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         pin_memory=False
     )
     '''
-
+    '''
+    
     data_module = AdienceInterface(num_workers=2,
                                    dataset='adience',
                                    data_dir='D:\datasets\Adience',
@@ -155,10 +156,12 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                                    pin_memory=False,
                                    identity_nums=5749,
                                    sensitive_dim=1)
+    '''
 
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/arcface_mine_estimator_race/checkpoints_adience/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT',
+                                     'lightning_logs/arcface_mine_estimator_gender/checkpoints_celebatest/')
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='arcface_mine_estimator_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
@@ -178,8 +181,8 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=400,
-        min_epochs=200,
+        max_epochs=130,
+        min_epochs=120,
         logger=logger,
         log_every_n_steps=50,
         precision=32,

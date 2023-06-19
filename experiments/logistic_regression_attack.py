@@ -209,3 +209,8 @@ if __name__ == '__main__':
     beta = 'None'
 
     Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
+
+    latent_dim = 512
+    pretrained_model_name = 'Bottleneck'
+    pretrained_model_path = 'None'
+    beta = 'None'
