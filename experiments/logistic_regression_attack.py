@@ -182,7 +182,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
         accelerator="auto",
         devices=1,
         max_epochs=400,
-        min_epochs=20,
+        min_epochs=250,
         logger=logger,
         log_every_n_steps=50,
         check_val_every_n_epoch=5,
