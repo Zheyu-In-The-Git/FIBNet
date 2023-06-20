@@ -20,6 +20,16 @@ def batch_accuracy(y_pred, y_true):
     return np.sum(y_pred == y_true) / len(y_true)
 
 
+def standardize_tensor(x):
+    # 计算每个特征的均值和标准差
+    mean = torch.mean(x, dim=0)
+    std = torch.std(x, dim=0)
+
+    # 对张量进行标准化
+    standardized_x = (x - mean) / std
+
+    return standardized_x
+
 class LogisticRegression(pl.LightningModule):
     def __init__(self, latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name):
         super(LogisticRegression, self).__init__()
@@ -72,11 +82,13 @@ class LogisticRegression(pl.LightningModule):
 
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x,u)
-            z = F.normalize(z, p=2, dim=1)
+            #z = F.normalize(z, p=2, dim=1)
+            z = standardize_tensor(z)
 
         elif self.pretrained_model_name == 'Bottleneck':
             z, _, _, _ = self.pretrained_model(x, u)
-            z = F.normalize(z, p=2, dim=1)
+            #z = F.normalize(z, p=2, dim=1)
+            z = standardize_tensor(z)
 
         logits = self.forward(z)
         loss = F.cross_entropy(logits, s.long())
@@ -92,11 +104,13 @@ class LogisticRegression(pl.LightningModule):
         s = s.squeeze()
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
-            z = F.normalize(z, p=2, dim=1)
+            #z = F.normalize(z, p=2, dim=1)
+            z = standardize_tensor(z)
 
         elif self.pretrained_model_name == 'Bottleneck':
             z, _, _, _ = self.pretrained_model(x, u)
-            z = F.normalize(z, p=2, dim=1)
+            #z = F.normalize(z, p=2, dim=1)
+            z = standardize_tensor(z)
 
         logits = self.forward(z)
         loss = F.cross_entropy(logits, s.long())
@@ -113,11 +127,13 @@ class LogisticRegression(pl.LightningModule):
 
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
-            z = F.normalize(z, p=2, dim=1)
+            #z = F.normalize(z, p=2, dim=1)
+            z = standardize_tensor(z)
 
         elif self.pretrained_model_name == 'Bottleneck':
             z, _, _, _ = self.pretrained_model(x, u)
-            z = F.normalize(z, p=2, dim=1)
+            #z = F.normalize(z, p=2, dim=1)
+            z = standardize_tensor(z)
 
         logits = self.forward(z)
         loss = F.cross_entropy(logits, s.long())
