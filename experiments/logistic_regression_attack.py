@@ -37,7 +37,7 @@ class LogisticRegression(pl.LightningModule):
 
         elif pretrained_model_name == 'Bottleneck':
             arcface_resnet50_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.5)
-            arcface = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
+            arcface = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
             encoder = Encoder(latent_dim=latent_dim, arcface_model=arcface)
             decoder = Decoder(latent_dim=latent_dim, identity_nums=10177, s=64.0, m=0.5, easy_margin=False)
             bottlenecknets = BottleneckNets(model_name='bottleneck', encoder=encoder, decoder=decoder, beta=beta,
@@ -54,9 +54,9 @@ class LogisticRegression(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.linear.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=5, min_lr=1e-8,
-                                                         verbose=True, threshold=1e-4)
+        optim_train = optim.Adam(self.linear.parameters(), lr=0.1, betas=(b1, b2))
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=10, min_lr=1e-8,
+                                                         verbose=True, threshold=1e-3)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
     def get_stats(self, logits, labels):
@@ -182,7 +182,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
         accelerator="auto",
         devices=1,
         max_epochs=400,
-        min_epochs=250,
+        min_epochs=200,
         logger=logger,
         log_every_n_steps=50,
         check_val_every_n_epoch=5,
@@ -197,7 +197,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(logistic_attack_model, celeba_data_module,ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\logistic_regression_attack\checkpoints\ArcfaceNone\saved_model\last.ckpt')
+    trainer.fit(logistic_attack_model, celeba_data_module)
     trainer.test(logistic_attack_model, celeba_data_module)
     #trainer.test(logistic_attack_model, lfw_data_module)
     #trainer.test(logistic_attack_model, adience_data_module)
@@ -210,7 +210,10 @@ if __name__ == '__main__':
 
     Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
 
-    latent_dim = 512
+
     pretrained_model_name = 'Bottleneck'
-    pretrained_model_path = 'None'
-    beta = 'None'
+    beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
+    for beta in beta_arr:
+        pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
+
+        Attack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')
