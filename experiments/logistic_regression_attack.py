@@ -72,9 +72,11 @@ class LogisticRegression(pl.LightningModule):
 
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x,u)
+            z = F.normalize(z, p=2, dim=1)
 
         elif self.pretrained_model_name == 'Bottleneck':
             z, _, _, _ = self.pretrained_model(x, u)
+            z = F.normalize(z, p=2, dim=1)
 
         logits = self.forward(z)
         loss = F.cross_entropy(logits, s.long())
@@ -90,9 +92,11 @@ class LogisticRegression(pl.LightningModule):
         s = s.squeeze()
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
+            z = F.normalize(z, p=2, dim=1)
 
         elif self.pretrained_model_name == 'Bottleneck':
             z, _, _, _ = self.pretrained_model(x, u)
+            z = F.normalize(z, p=2, dim=1)
 
         logits = self.forward(z)
         loss = F.cross_entropy(logits, s.long())
@@ -109,9 +113,11 @@ class LogisticRegression(pl.LightningModule):
 
         if self.pretrained_model_name == 'Arcface':
             _, z = self.pretrained_model(x, u)
+            z = F.normalize(z, p=2, dim=1)
 
         elif self.pretrained_model_name == 'Bottleneck':
             z, _, _, _ = self.pretrained_model(x, u)
+            z = F.normalize(z, p=2, dim=1)
 
         logits = self.forward(z)
         loss = F.cross_entropy(logits, s.long())
