@@ -54,8 +54,8 @@ class LogisticRegression(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.linear.parameters(), lr=0.1, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=10, min_lr=1e-8,
+        optim_train = optim.Adam(self.linear.parameters(), lr=0.001, betas=(b1, b2))
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=5, min_lr=1e-8,
                                                          verbose=True, threshold=1e-3)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
 
@@ -188,7 +188,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
         accelerator="auto",
         devices=1,
         max_epochs=400,
-        min_epochs=200,
+        min_epochs=100,
         logger=logger,
         log_every_n_steps=50,
         check_val_every_n_epoch=5,
