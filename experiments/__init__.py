@@ -1,0 +1,2 @@
+from .logistic_regression_attack import LogisticRegression, Attack, LogisticRegressionRaceAttack
+from .multiple_layer_inception_attack import MultipleLayerInception, MLPGenderAttack, MLPRaceAttack

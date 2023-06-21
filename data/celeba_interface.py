@@ -140,68 +140,6 @@ class CelebaRaceInterface(pl.LightningDataModule):
         return DataLoader(self.Test_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, pin_memory=self.pin_memory)
 
 
-class CelebaRaceInterface(pl.LightningDataModule):
-    def __init__(self,
-                 num_workers : int,
-                 dataset: str,
-                 batch_size : int,
-                 dim_img : int,
-                 data_dir : str,
-                 sensitive_dim : int,
-                 identity_nums : int,
-                 **kargs):
-        super(CelebaRaceInterface).__init__()
-        self.save_hyperparameters()
-        self.num_workers = num_workers
-        self.dataset = dataset
-        self.batch_size = batch_size
-
-        # 数据集相关的参数
-        self.dim_img = dim_img
-        self.data_dir = data_dir
-        self.sensitive_dim = sensitive_dim
-        self.identity_nums = identity_nums
-        self.pin_memory = kargs['pin_memory']
-
-        self.prepare_data_per_node = True
-
-        self.allow_zero_length_dataloader_with_multiple_devices = True
-
-    def setup(self, stage=None):
-        # Assign train/val datasets for use in dataloaders
-        if stage == 'fit' or stage is None:
-            train_dataset = CelebaRaceDataset(dim_img=self.dim_img,
-                                             data_dir=self.data_dir,
-                                             sensitive_dim=self.sensitive_dim,
-                                             identity_nums=self.identity_nums,
-                                             split='train_63%')
-
-            valid_dataset = CelebaRaceDataset(dim_img=self.dim_img,
-                                       data_dir=self.data_dir,
-                                       sensitive_dim=self.sensitive_dim,
-                                       identity_nums=self.identity_nums,
-                                       split='valid_7%')
-
-            self.Train_Dataset = train_dataset
-            self.Valid_Dataset = valid_dataset
-
-        if stage == 'test' or stage is None:
-            self.Test_Dataset = CelebaRaceDataset(dim_img=self.dim_img,
-                                       data_dir=self.data_dir,
-                                       sensitive_dim=self.sensitive_dim,
-                                       identity_nums=self.identity_nums,
-                                       split='test_30%')
-
-
-    def train_dataloader(self):
-        # sampler = WeightedRandomSampler(self.sample_weight, len(self.trainset) * 20)
-        return DataLoader(self.Train_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, pin_memory=self.pin_memory)
-
-    def val_dataloader(self):
-        return DataLoader(self.Valid_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, pin_memory=self.pin_memory)
-
-    def test_dataloader(self):
-        return DataLoader(self.Test_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, pin_memory=self.pin_memory)
 
 
 class CelebaAttackInterface(pl.LightningDataModule):
@@ -280,8 +218,8 @@ class CelebaAttackInterface(pl.LightningDataModule):
 
 
 if __name__ == '__main__':
-    # data_dir = 'D:\celeba' # 'D:\datasets\celeba'
-    data_dir = '/Users/xiaozhe/datasets/celeba'
+    data_dir = 'D:\datasets\celeba'  #'D:\celeba' # 'D:\datasets\celeba'
+    #data_dir = '/Users/xiaozhe/datasets/celeba'
 
     '''
     
@@ -302,10 +240,32 @@ if __name__ == '__main__':
     for i, item in enumerate(dataloader.train_dataloader()):
         print('i', i)
         x, u, s = item
-        print(x)
-        print(u)
-        print(s)
+        #print(x)
+        #print(u)
+        print(s.dtype)
         break
+
+    dataloader2 = CelebaAttackInterface(
+        num_workers=2,
+        dataset='celeba_data',
+        batch_size=2,
+        dim_img=224,
+        data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
+        sensitive_dim=1,
+        identity_nums=10177,
+        sensitive_attr='Male',
+        pin_memory=False
+    )
+
+    dataloader2.setup(stage='fit')
+    for i, item in enumerate(dataloader2.train_dataloader()):
+        print('i', i)
+        x, u, s = item
+        #print(x)
+        #print(u)
+        print(s.dtype)
+        break
+
 
 
 

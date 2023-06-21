@@ -7,10 +7,11 @@ from arcface_resnet50 import ArcfaceResnet50
 from model import BottleneckNets, Encoder, Decoder
 import numpy as np
 import os
+import math
 from pytorch_lightning.loggers import TensorBoardLogger
 from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface, CelebaAttackInterface
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
-
+from logistic_regression_attack import LogisticRegression, Attack, LogisticRegressionRaceAttack
 
 def batch_misclass_rate(y_pred, y_true):
     return np.sum(y_pred != y_true) / len(y_true)
@@ -30,12 +31,32 @@ def standardize_tensor(x):
 
     return standardized_x
 
-class LogisticRegression(pl.LightningModule):
+class MultipleLayerInception(pl.LightningModule):
     def __init__(self, latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name):
-        super(LogisticRegression, self).__init__()
-        self.linear = nn.Linear(latent_dim, 2)
+        super(MultipleLayerInception, self).__init__()
 
-        nn.init.xavier_uniform_(self.linear.weight)
+        self.mlp = nn.Sequential(
+            nn.Linear(latent_dim, 256),
+            nn.ReLU(),
+            nn.Linear(256,256),
+            nn.ReLU(),
+            nn.Linear(256,2)
+        )
+
+        # 模型初始化
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, nn.Linear):
+                scale = math.sqrt(3. / m.in_features)
+                m.weight.data.uniform_(-scale, scale)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
 
         self.dataset_name = dataset_name
 
@@ -58,13 +79,13 @@ class LogisticRegression(pl.LightningModule):
 
 
     def forward(self, z):
-        logits = self.linear(z)
+        logits = self.mlp(z)
         return logits
 
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.linear.parameters(), lr=0.001, betas=(b1, b2))
+        optim_train = optim.Adam(self.mlp.parameters(), lr=0.01, betas=(b1, b2))
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="min", factor=0.1, patience=5, min_lr=1e-8,
                                                          verbose=True, threshold=1e-3)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "train_loss"}
@@ -146,13 +167,13 @@ class LogisticRegression(pl.LightningModule):
 
 
 
-def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name):
+def MLPGenderAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name):
 
-    logistic_attack_model = LogisticRegression(latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name)
+    mlp_attack_model = MultipleLayerInception(latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name)
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/logistic_regression_attack/checkpoints/'+ pretrained_model_name + beta)
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/MLP_gender_attack/checkpoints/'+ pretrained_model_name + beta)
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='logistic_regression_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='MLP_gender_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     celeba_data_module = CelebaAttackInterface(
         num_workers=2,
@@ -198,7 +219,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
                 every_n_train_steps=50
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
             LearningRateMonitor("epoch"),
-            EarlyStopping(monitor="val_acc", min_delta=0.00, patience=3, verbose=False, mode="max")
+            EarlyStopping(monitor="val_acc", min_delta=0.001, patience=3, verbose=False, mode="max")
         ],  # Log learning rate every epoch
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
         accelerator="auto",
@@ -219,23 +240,23 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(logistic_attack_model, celeba_data_module)
-    trainer.test(logistic_attack_model, celeba_data_module)
+    trainer.fit(mlp_attack_model, celeba_data_module)
+    trainer.test(mlp_attack_model, celeba_data_module)
     #trainer.test(logistic_attack_model, lfw_data_module)
     #trainer.test(logistic_attack_model, adience_data_module)
 
+def MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name):
+    mlp_attack_model = MultipleLayerInception(latent_dim, pretrained_model_name, pretrained_model_path, beta,
+                                              dataset_name)
 
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT',
+                                     'lightning_logs/MLP_race_attack/checkpoints/' + pretrained_model_name + beta)
 
-def LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name):
-
-    logistic_attack_model = LogisticRegression(latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name)
-
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/logistic_regression_race_attack/checkpoints/'+ pretrained_model_name + beta)
-
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='logistic_regression_race_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH,
+                               name='MLP_race_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     celeba_data_module = CelebaRaceInterface(
-        num_workers=2,
+        num_workers=1,
         dataset='celeba_data',
         batch_size=256,
         dim_img=224,
@@ -244,27 +265,28 @@ def LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_m
         identity_nums=10177,
         pin_memory=False)
 
+
     lfw_data_module = LFWInterface(num_workers=2,
-                                   dataset='lfw',
-                                   data_dir='D:\datasets\lfw\lfw112',
+                               dataset='lfw',
+                               data_dir='D:\datasets\lfw\lfw112',
+                               batch_size=256,
+                               dim_img=224,
+                               sensitive_attr='White',
+                               purpose='attr_extract',
+                               pin_memory=False,
+                               identity_nums=5749,
+                               sensitive_dim=1)
+
+    adience_data_module = AdienceInterface(num_workers=2,
+                                   dataset='adience',
+                                   data_dir='D:\datasets\Adience',
                                    batch_size=256,
                                    dim_img=224,
-                                   sensitive_attr='White',
-                                   purpose='attr_extract',
+                                   sensitive_attr='Male',
+                                   purpose='race_extract',
                                    pin_memory=False,
                                    identity_nums=5749,
                                    sensitive_dim=1)
-
-    adience_data_module = AdienceInterface(num_workers=2,
-                                           dataset='adience',
-                                           data_dir='D:\datasets\Adience',
-                                           batch_size=256,
-                                           dim_img=224,
-                                           sensitive_attr='Male',
-                                           purpose='race_extract',
-                                           pin_memory=False,
-                                           identity_nums=5749,
-                                           sensitive_dim=1)
 
     trainer = pl.Trainer(
         callbacks=[
@@ -276,7 +298,7 @@ def LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_m
                 every_n_train_steps=50
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
             LearningRateMonitor("epoch"),
-            EarlyStopping(monitor="val_acc", min_delta=0.00, patience=3, verbose=False, mode="max")
+            EarlyStopping(monitor="val_acc", min_delta=0.001, patience=3, verbose=False, mode="max")
         ],  # Log learning rate every epoch
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
         accelerator="auto",
@@ -297,13 +319,10 @@ def LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_m
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(logistic_attack_model, celeba_data_module)
-    trainer.test(logistic_attack_model, celeba_data_module)
-    #trainer.test(logistic_attack_model, lfw_data_module)
-    #trainer.test(logistic_attack_model, adience_data_module)
-
-
-
+    trainer.fit(mlp_attack_model, celeba_data_module)
+    trainer.test(mlp_attack_model, celeba_data_module)
+    # trainer.test(logistic_attack_model, lfw_data_module)
+    # trainer.test(logistic_attack_model, adience_data_module)
 
 if __name__ == '__main__':
     latent_dim = 512
@@ -311,12 +330,38 @@ if __name__ == '__main__':
     pretrained_model_path = 'None'
     beta = 'None'
 
-    Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
+    MLPGenderAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
+
+
+    MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
+    LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
 
 
     pretrained_model_name = 'Bottleneck'
     beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
     for beta in beta_arr:
         pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
+
+        MLPGenderAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')
+
+
+    beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
+    for beta in beta_arr:
+        pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(
+            beta) + '\checkpoints\saved_models\last.ckpt'
+
+        MLPRaceAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')
+
+    beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
+    for beta in beta_arr:
+        pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(
+            beta) + '\checkpoints\saved_models\last.ckpt'
+
+        LogisticRegressionRaceAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')
+
+    beta_arr = [0.1, 1.0]
+    for beta in beta_arr:
+        pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(
+            beta) + '\checkpoints\saved_models\last.ckpt'
 
         Attack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')

@@ -191,25 +191,35 @@ class CelebaRaceDataset(data.Dataset):
                                              transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
             self.dataset = imgpath_race_id[mask]
 
-
-
+        self.dataset_values = self.dataset.values
 
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba_mtcnn", self.dataset['img_path'][index]))
+        #print(self.dataset['img_path'][index])
+        #print(self.dataset.values[index][1])
+        #X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba\img_align_celeba_mtcnn", self.dataset['img_path'][index]))
+        X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba\img_align_celeba_mtcnn", self.dataset_values[index][0]))
+
         x = self.trans(X)
         #to_img = transforms.ToPILImage()
         #img = to_img(x)
         #img.show()
 
-        u = self.dataset['id'][index] - 1
+        #u = self.dataset['id'][index] - 1
+        #u = torch.tensor(u)
+        #u = u.long()
+
+        u = self.dataset_values[index][2] - 1
         u = torch.tensor(u)
         u = u.long()
 
 
-        s = self.dataset['white'][index]
+        #s = self.dataset['white'][index]
+        #s = torch.tensor([s]).to(torch.float32)
+
+        s = self.dataset_values[index][1]
         s = torch.tensor([s]).to(torch.float32)
 
         return x, u, s
@@ -324,8 +334,8 @@ class CelebaTSNEExperiment(data.Dataset):
 
 if __name__ == '__main__':
 
-    #data_dir = 'D:\datasets\celeba'
-    data_dir = '/Users/xiaozhe/datasets/celeba'
+    data_dir = 'D:\datasets\celeba'
+    #data_dir = '/Users/xiaozhe/datasets/celeba'
     #data_dir = 'D:\celeba'
 
 
