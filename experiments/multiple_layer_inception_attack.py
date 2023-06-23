@@ -326,19 +326,19 @@ def MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta
 
 if __name__ == '__main__':
     latent_dim = 512
-    pretrained_model_name = 'Arcface'
-    pretrained_model_path = 'None'
-    beta = 'None'
+    #pretrained_model_name = 'Arcface'
+    #pretrained_model_path = 'None'
+    #beta = 'None'
 
-    MLPGenderAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
+    #MLPGenderAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
 
 
-    MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
-    LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
+    #MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
+    #LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
 
 
     pretrained_model_name = 'Bottleneck'
-    beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
+    beta_arr = [1.0]
     for beta in beta_arr:
         pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
 
