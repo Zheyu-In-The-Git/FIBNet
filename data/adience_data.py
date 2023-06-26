@@ -175,7 +175,7 @@ class AdienceRecognitionTestPairs(data.Dataset):
 
 
         # 图像变换成张量
-        self.trans_first = transforms.Compose([transforms.CenterCrop((850, 850))]) # 175左右报错
+        self.trans_first = transforms.Compose([transforms.CenterCrop((300, 300))]) # 175左右报错
         self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
                                                 transforms.ToTensor(),
                                                 transforms.Normalize(mean=[0.5, 0.5, 0.5],
@@ -187,74 +187,18 @@ class AdienceRecognitionTestPairs(data.Dataset):
 
     def __getitem__(self, index):
 
-        try:
-
-            img_x = PIL.Image.open(os.path.join(self.data_dir, 'faces', self.adience_dataset_pairs['img_x'][index]))
-            img_x = self.trans_first(img_x)
-
-            boxes, probs, landmarks = mtcnn.detect(img_x, landmarks=True)
-
-            max_prob_idx = probs.argmax()
-            max_prob_box = boxes[max_prob_idx]
-
-            img_x_x1, img_x_y1, img_x_x2, img_x_y2 = max_prob_box.astype(int)
-
-            img_x_h = img_x_y2 - img_x_y1
-            img_x_w = img_x_x2 - img_x_x1
-
-            img_x = F.crop(img_x, img_x_x1, img_x_y1, img_x_h, img_x_w)
-            img_x = self.trans_second(img_x)
-
-            # img_x = self.trans(img_x)
-
-            #to_img = transforms.ToPILImage()
-            #img = to_img(img_x)
-            #img.show()
+        img_x = PIL.Image.open(os.path.join(self.data_dir, 'faces', self.adience_dataset_pairs['img_x'][index]))
+        img_x = self.trans_first(img_x)
+        img_x = self.trans_second(img_x)
 
 
-            img_y = PIL.Image.open(os.path.join(self.data_dir, 'faces', self.adience_dataset_pairs['img_y'][index]))
+        img_y = PIL.Image.open(os.path.join(self.data_dir, 'faces', self.adience_dataset_pairs['img_y'][index]))
+        img_y = self.trans_first(img_y)
+        img_y = self.trans_second(img_y)
 
-            # img_y = self.trans(img_y)
-            img_y = self.trans_first(img_y)
+        match = torch.tensor(self.adience_dataset_pairs['match'][index])
 
-            boxes, probs, landmarks = mtcnn.detect(img_y, landmarks=True)
-
-            max_prob_idx = probs.argmax()
-            max_prob_box = boxes[max_prob_idx]
-
-            img_y_x1, img_y_y1, img_y_x2, img_y_y2 = max_prob_box.astype(int)
-
-            img_y_h = img_y_y2 - img_y_y1
-            img_y_w = img_y_x2 - img_y_x1
-
-            img_y = F.crop(img_y, img_y_x1, img_y_y1, img_y_h, img_y_w)
-            img_y = self.trans_second(img_y)
-
-            #to_img = transforms.ToPILImage()
-            #img = to_img(img_y)
-            #img.show()
-
-            match = torch.tensor(self.adience_dataset_pairs['match'][index])
-            #print(self.adience_dataset_pairs['match'][index], type(self.adience_dataset_pairs['match'][index]))
-            #print(self.adience_dataset_pairs['match'][index] == 1.0)
-
-            return img_x, img_y, match
-
-        except Exception as e:
-            if self.adience_dataset_pairs['match'][index] == 1.0:
-                img_x = torch.zeros(3, self.dim_img, self.dim_img)
-                img_x = img_x.double()
-                img_y = torch.zeros(3, self.dim_img, self.dim_img)
-                img_y = img_y.double()
-            else:
-                img_x = torch.zeros(3, self.dim_img, self.dim_img)
-                img_x = img_x.double()
-                img_y = torch.ones(3, self.dim_img, self.dim_img)
-                img_y = img_y.double()
-
-            match = torch.tensor(self.adience_dataset_pairs['match'][index])
-
-            return img_x, img_y, match
+        return img_x, img_y, match
 
 
 
