@@ -348,7 +348,6 @@ def PFRNetExperiment():
 
 
 def PFRNetMINEGender():
-    PFRNet_MINE_gender_model = PFRNetMineEstimator(latent_dim=512, s_dim=1)
 
     celeba_data_module = CelebaInterface(num_workers=2,
                                   dataset='celeba_data',
@@ -360,11 +359,35 @@ def PFRNetMINEGender():
                                   sensitive_attr='Male',
                                   pin_memory=False)
 
+    lfw_data_module = LFWInterface(num_workers=2,
+                               dataset='lfw',
+                               data_dir='D:\datasets\lfw\lfw112',
+                               batch_size=256,
+                               dim_img=224,
+                               sensitive_attr='White',
+                               purpose='attr_extract',
+                               pin_memory=False,
+                               identity_nums=5749,
+                               sensitive_dim=1)
+
+    adience_data_module = AdienceInterface(num_workers=2,
+                                   dataset='adience',
+                                   data_dir='D:\datasets\Adience',
+                                   batch_size=256,
+                                   dim_img=224,
+                                   sensitive_attr='Male',
+                                   purpose='gender_extract',
+                                   pin_memory=False,
+                                   identity_nums=5749,
+                                   sensitive_dim=1)
+
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT','lightning_logs/PFRNet_mine_gender/checkpoints')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_celebA_train')
+    logger_celebA_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_celebA_train')
+    logger_lfw = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_lfw')
+    logger_Adience = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_adience')
 
-    trainer = pl.Trainer(
+    celeba_train_trainer = pl.Trainer(
         callbacks=[
             ModelCheckpoint(
                 mode="min",
@@ -386,27 +409,96 @@ def PFRNetMINEGender():
         devices=1,
         max_epochs=130,
         min_epochs=120,
-        logger=logger,
+        logger=logger_celebA_train,
         log_every_n_steps=10,
         precision=32,
         enable_checkpointing=True,
         fast_dev_run=False,
     )
 
-    trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
-    trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
+    lfw_trainer = pl.Trainer(
+        callbacks=[
+            ModelCheckpoint(
+                mode="min",
+                monitor="infor_loss",
+                dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model'),
+                save_last=True,
+                every_n_train_steps=50
+            ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
+            LearningRateMonitor("epoch"),
+            # EarlyStopping(
+            #    monitor='infor_loss',
+            #    patience=5,
+            #    mode='min'
+            # )
+        ],  # Log learning rate every epoch
+
+        default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
+        accelerator="auto",
+        devices=1,
+        max_epochs=220,
+        min_epochs=200,
+        logger=logger_lfw,
+        log_every_n_steps=10,
+        precision=32,
+        enable_checkpointing=True,
+        fast_dev_run=False,
+    )
+
+    adience_trainer = pl.Trainer(
+        callbacks=[
+            ModelCheckpoint(
+                mode="min",
+                monitor="infor_loss",
+                dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model'),
+                save_last=True,
+                every_n_train_steps=50
+            ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
+            LearningRateMonitor("epoch"),
+            # EarlyStopping(
+            #    monitor='infor_loss',
+            #    patience=5,
+            #    mode='min'
+            # )
+        ],  # Log learning rate every epoch
+
+        default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
+        accelerator="auto",
+        devices=1,
+        max_epochs=220,
+        min_epochs=200,
+        logger=logger_Adience,
+        log_every_n_steps=10,
+        precision=32,
+        enable_checkpointing=True,
+        fast_dev_run=False,
+    )
 
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
-    resume_checkpoint_path = os.path.join(resume_checkpoint_dir)
-    print('Model will be created')
-    trainer.fit(PFRNet_MINE_gender_model, celeba_data_module)
+    print('Model will be created celeba train')
+    PFRNet_MINE_gender_model_celeba_train = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    celeba_train_trainer.fit(PFRNet_MINE_gender_model_celeba_train, celeba_data_module)
+
+    print('Model will be created lfw')
+
+    PFRNet_MINE_gender_model_lfw = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    celeba_train_trainer.fit(PFRNet_MINE_gender_model_lfw, lfw_data_module)
+
+    print('Model will be created adience')
+
+    PFRNet_MINE_gender_model_adience = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    adience_trainer.fit(PFRNet_MINE_gender_model_adience, adience_data_module)
+
 
 
 
 
 if __name__ == '__main__':
     PFRNetExperiment()
+
+
+    #PFRNetMINEGender()
 
 
 
