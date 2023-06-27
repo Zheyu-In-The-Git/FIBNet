@@ -15,6 +15,7 @@ import torchmetrics
 from bottleneck_mine_experiments import MineNet
 
 
+
 def batch_misclass_rate(y_pred, y_true):
     return np.sum(y_pred != y_true) / len(y_true)
 
@@ -234,7 +235,7 @@ class PFRNet(pl.LightningModule):
 
         PFRNet_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_cos':thresholds_cos,'eer_cos':eer_cos}
         torch.save(PFRNet_confusion_cos,
-                   r'lightning_logs/PFRNet_gender/checkpoints_celebatest/roc/PFRNet_confusion_cos_celebatest.pt')
+                   r'lightning_logs/PFRNet_gender/checkpoints/PFRNet_confusion_cos_Adience.pt')
 
 
 
@@ -245,9 +246,15 @@ class PFRNetMineEstimator(pl.LightningModule):
         self.latent_dim = latent_dim
         self.s_dim = s_dim
         PFRNet_model = PFRNet(latent_dim=512)
-        PFRNet_model = PFRNet_model.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints_celebatest\saved_model\last.ckpt',latent_dim=512)
+        PFRNet_model = PFRNet_model.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints\saved_model\last.ckpt',latent_dim=512)
         self.model = PFRNet_model
         self.model.requires_grad_(False)
+
+
+        arcface_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
+        self.arcface_model = arcface_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt', latent_dim = latent_dim, s_dim = 1)
+        self.arcface_model.requires_grad_(False)
+
 
     def forward(self, z, s):
         loss = self.mine_net(z, s)
@@ -261,7 +268,8 @@ class PFRNetMineEstimator(pl.LightningModule):
 
     def training_step(self, batch):
         x, u, s =batch
-        z, _, _ = self.model(x)
+        _, z = self.arcface_model(x, u)
+        z, _, _ = self.model(z)
         infor_loss = self.mine_net(z, s)
         self.log('infor_loss', -infor_loss, on_step=True, on_epoch=True, prog_bar=True)
         return infor_loss
@@ -340,8 +348,9 @@ def PFRNetExperiment():
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
     PFRNet_model = PFRNet(latent_dim=512)
-    trainer.fit(PFRNet_model, data_module)
-    trainer.test(PFRNet_model, data_module)
+    #trainer.fit(PFRNet_model, data_module)
+    PFRNet_model = PFRNet_model.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints\saved_model\last.ckpt', latent_dim=512)
+    trainer.test(PFRNet_model, adience_data_module)
     #PFRNet_model = PFRNet(latent_dim=512)
     #PFRNet_model = PFRNet_model.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints_celebatest\saved_model\last.ckpt', latent_dim =512)
     #trainer.test(PFRNet_model, adience_data_module)
@@ -495,10 +504,10 @@ def PFRNetMINEGender():
 
 
 if __name__ == '__main__':
-    PFRNetExperiment()
+    #PFRNetExperiment()
 
 
-    #PFRNetMINEGender()
+    PFRNetMINEGender()
 
 
 
