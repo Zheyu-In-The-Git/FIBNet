@@ -123,6 +123,8 @@ class PFRNet(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, u, s = batch
 
+        s = s.squeeze()
+
         _, z = self.pretrained_model(x, u)
 
         z_new, z_ind, z_dep = self.forward(z)
@@ -154,8 +156,7 @@ class PFRNet(pl.LightningModule):
         beta_2_order_moment_m = self.alpha_order_moment(male_z_dep, 2)
 
 
-        l_2 = torch.exp(- torch.square(torch.abs(beta_1_order_moment_f - beta_1_order_moment_m))) + torch.exp(- torch.square(torch.abs(beta_2_order_moment_f - beta_2_order_moment_m)))
-
+        l_2 = torch.mean(torch.exp(- torch.square(torch.abs(beta_1_order_moment_f - beta_1_order_moment_m))) + torch.exp(- torch.square(torch.abs(beta_2_order_moment_f - beta_2_order_moment_m))))
 
         train_loss = self.MSE(z_new, z) + 0.01 * l_1 + 0.01 * l_2
 
@@ -165,6 +166,7 @@ class PFRNet(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, u, s = batch
+        s = s.squeeze()
 
         _, z = self.pretrained_model(x, u)
 
@@ -197,7 +199,7 @@ class PFRNet(pl.LightningModule):
         beta_2_order_moment_m = self.alpha_order_moment(male_z_dep, 2)
 
 
-        l_2 = torch.exp(- torch.square(torch.abs(beta_1_order_moment_f - beta_1_order_moment_m))) + torch.exp(- torch.square(torch.abs(beta_2_order_moment_f - beta_2_order_moment_m)))
+        l_2 = torch.mean(torch.exp(- torch.square(torch.abs(beta_1_order_moment_f - beta_1_order_moment_m))) + torch.exp(- torch.square(torch.abs(beta_2_order_moment_f - beta_2_order_moment_m))))
 
 
         valid_loss = self.MSE(z_new, z) + 0.01 * l_1 + 0.01 * l_2
@@ -208,8 +210,14 @@ class PFRNet(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         img_1, img_2, match = batch
-        z_1, _, _ = self.forward(img_1)
-        z_2, _, _ = self.resnet50(img_2)
+
+        arcface_model_resnet50 = self.pretrained_model.resnet50
+
+        z_1 = arcface_model_resnet50(img_1)
+        z_2 = arcface_model_resnet50(img_2)
+
+        z_1, _, _ = self.forward(z_1)
+        z_2, _, _ = self.forward(z_2)
         return {'z_1': z_1, 'z_2': z_2, 'match': match}
 
     def test_epoch_end(self, outputs):
@@ -235,7 +243,7 @@ def PFRNetExperiment():
 
     data_module = CelebaInterface(num_workers=2,
                                   dataset='celeba_data',
-                                  batch_size=256,
+                                  batch_size=100,
                                   dim_img=224,
                                   data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
                                   sensitive_dim=1,
@@ -276,7 +284,6 @@ def PFRNetExperiment():
 
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
-    resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
     trainer.fit(PFRNet_model, data_module)
     trainer.test(PFRNet_model, data_module)
