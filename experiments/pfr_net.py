@@ -12,6 +12,7 @@ from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInte
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
 import math
 import torchmetrics
+from bottleneck_mine_experiments import MineNet
 
 
 def batch_misclass_rate(y_pred, y_true):
@@ -232,14 +233,44 @@ class PFRNet(pl.LightningModule):
         self.log('eer_cos', eer_cos, prog_bar=True)
 
         PFRNet_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_cos':thresholds_cos,'eer_cos':eer_cos}
-        torch.save(PFRNet_confusion_cos, r'lightning_logs/PFRNet_confusion_cos.pt')
+        torch.save(PFRNet_confusion_cos,
+                   r'lightning_logs/PFRNet_gender/checkpoints_celebatest/roc/PFRNet_confusion_cos_celebatest.pt')
 
+
+
+class PFRNetMineEstimator(pl.LightningModule):
+    def __init__(self, latent_dim, s_dim):
+        super(PFRNetMineEstimator, self).__init__()
+        self.mine_net = MineNet(latent_dim, s_dim)
+        self.latent_dim = latent_dim
+        self.s_dim = s_dim
+        PFRNet_model = PFRNet(latent_dim=512)
+        PFRNet_model = PFRNet_model.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints_celebatest\saved_model\last.ckpt',latent_dim=512)
+        self.model = PFRNet_model
+        self.model.requires_grad_(False)
+
+    def forward(self, z, s):
+        loss = self.mine_net(z, s)
+
+    def configure_optimizers(self):
+        b1 = 0.5
+        b2 = 0.999
+        optim_train = optim.Adam(self.mine_net.parameters(), lr=0.001, betas=(b1, b2))
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=5, min_lr=1e-8, threshold=1e-4)
+        return {'optimizer': optim_train, 'lr_scheduler':scheduler, 'monitor':'infor_loss'}
+
+    def training_step(self, batch):
+        x, u, s =batch
+        z, _, _ = self.model(x)
+        infor_loss = self.mine_net(z, s)
+        self.log('infor_loss', -infor_loss, on_step=True, on_epoch=True, prog_bar=True)
+        return infor_loss
 
 
 
 
 def PFRNetExperiment():
-    PFRNet_model = PFRNet(512)
+
 
     data_module = CelebaInterface(num_workers=2,
                                   dataset='celeba_data',
@@ -251,7 +282,29 @@ def PFRNetExperiment():
                                   sensitive_attr='Male',
                                   pin_memory=False)
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_gender/checkpoints_celebatest/')
+    lfw_data_module = LFWInterface(num_workers=2,
+                                   dataset='lfw',
+                                   data_dir='D:\datasets\lfw\lfw112',
+                                   batch_size=256,
+                                   dim_img=224,
+                                   sensitive_attr='Male',
+                                   purpose='face_recognition',
+                                   pin_memory=False,
+                                   identity_nums=5749,
+                                   sensitive_dim=1)
+
+    adience_data_module = AdienceInterface(num_workers=2,
+                                           dataset='adience',
+                                           data_dir='D:\datasets\Adience',
+                                           batch_size=256,
+                                           dim_img=224,
+                                           sensitive_attr='Male',
+                                           purpose='face_recognition',
+                                           pin_memory=False,
+                                           identity_nums=5749,
+                                           sensitive_dim=1)
+
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_gender/checkpoints/')
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_gender_logger')
 
     trainer = pl.Trainer(
@@ -286,8 +339,71 @@ def PFRNetExperiment():
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
+    PFRNet_model = PFRNet(latent_dim=512)
     trainer.fit(PFRNet_model, data_module)
     trainer.test(PFRNet_model, data_module)
+    #PFRNet_model = PFRNet(latent_dim=512)
+    #PFRNet_model = PFRNet_model.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints_celebatest\saved_model\last.ckpt', latent_dim =512)
+    #trainer.test(PFRNet_model, adience_data_module)
+
+
+def PFRNetMINEGender():
+    PFRNet_MINE_gender_model = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+
+    celeba_data_module = CelebaInterface(num_workers=2,
+                                  dataset='celeba_data',
+                                  batch_size=256,
+                                  dim_img=224,
+                                  data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
+                                  sensitive_dim=1,
+                                  identity_nums=10177,
+                                  sensitive_attr='Male',
+                                  pin_memory=False)
+
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT','lightning_logs/PFRNet_mine_gender/checkpoints')
+
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_celebA_train')
+
+    trainer = pl.Trainer(
+        callbacks=[
+            ModelCheckpoint(
+                mode="min",
+                monitor="infor_loss",
+                dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model'),
+                save_last=True,
+                every_n_train_steps=50
+            ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
+            LearningRateMonitor("epoch"),
+            # EarlyStopping(
+            #    monitor='infor_loss',
+            #    patience=5,
+            #    mode='min'
+            # )
+        ],  # Log learning rate every epoch
+
+        default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
+        accelerator="auto",
+        devices=1,
+        max_epochs=130,
+        min_epochs=120,
+        logger=logger,
+        log_every_n_steps=10,
+        precision=32,
+        enable_checkpointing=True,
+        fast_dev_run=False,
+    )
+
+    trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
+    trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
+
+    resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
+    os.makedirs(resume_checkpoint_dir, exist_ok=True)
+    resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
+    print('Model will be created')
+    trainer.fit(PFRNet_MINE_gender_model, celeba_data_module)
+
+
+
 
 if __name__ == '__main__':
     PFRNetExperiment()

@@ -1,2 +1,4 @@
 from .logistic_regression_attack import LogisticRegression, Attack, LogisticRegressionRaceAttack
 from .multiple_layer_inception_attack import MultipleLayerInception, MLPGenderAttack, MLPRaceAttack
+
+from .bottleneck_mine_experiments import MineNet
