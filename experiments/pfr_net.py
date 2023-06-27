@@ -156,7 +156,7 @@ class PFRNet(pl.LightningModule):
         beta_2_order_moment_m = self.alpha_order_moment(male_z_dep, 2)
 
 
-        l_2 = torch.mean(torch.exp(- torch.square(torch.abs(beta_1_order_moment_f - beta_1_order_moment_m))) + torch.exp(- torch.square(torch.abs(beta_2_order_moment_f - beta_2_order_moment_m))))
+        l_2 = torch.mean(torch.exp(- torch.square(torch.abs(beta_1_order_moment_f - beta_1_order_moment_m)))) + torch.mean(torch.exp(- torch.square(torch.abs(beta_2_order_moment_f - beta_2_order_moment_m))))
 
         train_loss = self.MSE(z_new, z) + 0.01 * l_1 + 0.01 * l_2
 
@@ -199,7 +199,7 @@ class PFRNet(pl.LightningModule):
         beta_2_order_moment_m = self.alpha_order_moment(male_z_dep, 2)
 
 
-        l_2 = torch.mean(torch.exp(- torch.square(torch.abs(beta_1_order_moment_f - beta_1_order_moment_m))) + torch.exp(- torch.square(torch.abs(beta_2_order_moment_f - beta_2_order_moment_m))))
+        l_2 = torch.mean(torch.exp(- torch.square(torch.abs(beta_1_order_moment_f - beta_1_order_moment_m)))) + torch.mean(torch.exp(- torch.square(torch.abs(beta_2_order_moment_f - beta_2_order_moment_m))))
 
 
         valid_loss = self.MSE(z_new, z) + 0.01 * l_1 + 0.01 * l_2
@@ -258,7 +258,7 @@ def PFRNetExperiment():
         callbacks=[
             ModelCheckpoint(
                 mode="min",
-                monitor="loss",
+                monitor="train_loss",
                 dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model'),
                 save_last=True,
                 every_n_train_steps=50
@@ -277,6 +277,7 @@ def PFRNetExperiment():
         precision=32,
         enable_checkpointing=True,
         fast_dev_run=False,
+        check_val_every_n_epoch=5,
     )
 
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
