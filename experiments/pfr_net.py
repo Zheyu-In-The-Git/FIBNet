@@ -243,7 +243,7 @@ def PFRNetExperiment():
 
     data_module = CelebaInterface(num_workers=2,
                                   dataset='celeba_data',
-                                  batch_size=100,
+                                  batch_size=256,
                                   dim_img=224,
                                   data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
                                   sensitive_dim=1,
