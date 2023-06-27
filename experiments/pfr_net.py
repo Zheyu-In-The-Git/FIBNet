@@ -398,7 +398,7 @@ def PFRNetMINEGender():
 
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
-    resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
+    resume_checkpoint_path = os.path.join(resume_checkpoint_dir)
     print('Model will be created')
     trainer.fit(PFRNet_MINE_gender_model, celeba_data_module)
 
