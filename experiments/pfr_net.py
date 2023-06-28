@@ -395,6 +395,7 @@ def PFRNetMINEGender():
     logger_celebA_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_celebA_train')
     logger_lfw = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_lfw')
     logger_Adience = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_adience')
+    logger_celebA_test = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_test')
 
     celeba_train_trainer = pl.Trainer(
         callbacks=[
@@ -419,6 +420,35 @@ def PFRNetMINEGender():
         max_epochs=130,
         min_epochs=120,
         logger=logger_celebA_train,
+        log_every_n_steps=10,
+        precision=32,
+        enable_checkpointing=True,
+        fast_dev_run=False,
+    )
+
+    celeba_test_trainer = pl.Trainer(
+        callbacks=[
+            ModelCheckpoint(
+                mode="min",
+                monitor="infor_loss",
+                dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model'),
+                save_last=True,
+                every_n_train_steps=50
+            ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
+            LearningRateMonitor("epoch"),
+            # EarlyStopping(
+            #    monitor='infor_loss',
+            #    patience=5,
+            #    mode='min'
+            # )
+        ],  # Log learning rate every epoch
+
+        default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
+        accelerator="auto",
+        devices=1,
+        max_epochs=130,
+        min_epochs=120,
+        logger=logger_celebA_test,
         log_every_n_steps=10,
         precision=32,
         enable_checkpointing=True,
@@ -486,18 +516,23 @@ def PFRNetMINEGender():
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created celeba train')
-    PFRNet_MINE_gender_model_celeba_train = PFRNetMineEstimator(latent_dim=512, s_dim=1)
-    celeba_train_trainer.fit(PFRNet_MINE_gender_model_celeba_train, celeba_data_module)
+    #PFRNet_MINE_gender_model_celeba_train = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    #celeba_train_trainer.fit(PFRNet_MINE_gender_model_celeba_train, celeba_data_module)
 
     print('Model will be created lfw')
 
-    PFRNet_MINE_gender_model_lfw = PFRNetMineEstimator(latent_dim=512, s_dim=1)
-    celeba_train_trainer.fit(PFRNet_MINE_gender_model_lfw, lfw_data_module)
+    #PFRNet_MINE_gender_model_lfw = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    #lfw_trainer.fit(PFRNet_MINE_gender_model_lfw, lfw_data_module)
 
     print('Model will be created adience')
 
-    PFRNet_MINE_gender_model_adience = PFRNetMineEstimator(latent_dim=512, s_dim=1)
-    adience_trainer.fit(PFRNet_MINE_gender_model_adience, adience_data_module)
+    #PFRNet_MINE_gender_model_adience = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    #adience_trainer.fit(PFRNet_MINE_gender_model_adience, adience_data_module)
+
+    print('Model will be created celebatest')
+    PFRNet_MINE_gender_model_Celeba_test = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    celeba_test_trainer.fit(PFRNet_MINE_gender_model_Celeba_test, celeba_data_module)
+
 
 
 
