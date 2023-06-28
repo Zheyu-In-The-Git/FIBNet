@@ -144,7 +144,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                    data_dir='D:\datasets\Adience',
                                    batch_size=256,
                                    dim_img=224,
-                                   sensitive_attr='Male',
+                                   sensitive_attr='White',
                                    purpose='race_extract',
                                    pin_memory=False,
                                    identity_nums=5749,
