@@ -277,7 +277,7 @@ class PFRNetMineEstimator(pl.LightningModule):
 
 class PFRNetLogisticRegressionAttack(pl.LightningModule):
     def __init__(self, dataset_name):
-        super(PFRNetLogisticRegressionAttack).__init__()
+        super(PFRNetLogisticRegressionAttack, self).__init__()
 
         self.linear = nn.Linear(512, 2)
 
@@ -373,7 +373,7 @@ class PFRNetLogisticRegressionAttack(pl.LightningModule):
 
 class PFRNetMultipleLayerInceptionAttack(pl.LightningModule):
     def __init__(self, dataset_name):
-        super(PFRNetMultipleLayerInceptionAttack).__init__()
+        super(PFRNetMultipleLayerInceptionAttack, self).__init__()
 
         self.mlp = nn.Sequential(
             nn.Linear(512, 256),
@@ -420,7 +420,7 @@ class PFRNetMultipleLayerInceptionAttack(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.linear.parameters(), lr=0.001, betas=(b1, b2))
+        optim_train = optim.Adam(self.mlp.parameters(), lr=0.001, betas=(b1, b2))
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='min', factor=0.1, patience=5, min_lr=1e-8,
                                                          verbose=True, threshold=1e-3)
         return {'optimizer': optim_train, 'lr_scheduler': scheduler, 'monitor': 'train_loss'}
@@ -654,7 +654,7 @@ def PFRNetMINEGender():
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=130,
+        max_epochs=300,
         min_epochs=120,
         logger=logger_celebA_test,
         log_every_n_steps=10,
@@ -1202,9 +1202,9 @@ def PFRNetMultipleLayerInceptionRaceAttack():
 
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_logistic_regression_gender_attack/checkpoints/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_MLP_race_attack/checkpoints/')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_logistic_regression_gender_attack_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_MLP_race_attack_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     trainer = pl.Trainer(
         callbacks=[
@@ -1255,13 +1255,16 @@ if __name__ == '__main__':
 
     #PFRNetMINEGender()
 
-    #PFRNetMINERace() # celeba test 还没做
+    #PFRNetMINERace() # celeba test 做得不好
+
+
+    # ######################### 本周末的实验 ############
 
     PFRNetLogisticRegressionGenderAttack()
 
     PFRNetLogisticRegressionRaceAttack()
 
-    PFRNetLogisticRegressionGenderAttack()
+    PFRNetMultipleLayerInceptionGenderAttack()
 
     PFRNetMultipleLayerInceptionRaceAttack()
 
