@@ -573,7 +573,7 @@ def PFRNetMINERace():
     logger_celebA_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_race_celebA_train')
     logger_lfw = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_race_lfw')
     logger_Adience = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_race_adience')
-    logger_celebA_test = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_test')
+    logger_celebA_test = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_race_test')
 
     celeba_train_trainer = pl.Trainer(
         callbacks=[
@@ -699,17 +699,17 @@ def PFRNetMINERace():
 
     print('Model will be created lfw')
 
-    PFRNet_MINE_race_model_lfw = PFRNetMineEstimator(latent_dim=512, s_dim=1)
-    lfw_trainer.fit(PFRNet_MINE_race_model_lfw, lfw_data_module)
+    #PFRNet_MINE_race_model_lfw = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    #lfw_trainer.fit(PFRNet_MINE_race_model_lfw, lfw_data_module)
 
     print('Model will be created adience')
 
-    PFRNet_MINE_race_model_adience = PFRNetMineEstimator(latent_dim=512, s_dim=1)
-    adience_trainer.fit(PFRNet_MINE_race_model_adience, adience_data_module)
+    #PFRNet_MINE_race_model_adience = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    #adience_trainer.fit(PFRNet_MINE_race_model_adience, adience_data_module)
 
-    #print('Model will be created celebatest')
-    #PFRNet_MINE_gender_model_Celeba_test = PFRNetMineEstimator(latent_dim=512, s_dim=1)
-    #celeba_test_trainer.fit(PFRNet_MINE_gender_model_Celeba_test, celeba_data_module)
+    print('Model will be created celebatest')
+    PFRNet_MINE_race_model_Celeba_test = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    celeba_test_trainer.fit(PFRNet_MINE_race_model_Celeba_test, celeba_data_module)
 
 
 
