@@ -694,8 +694,8 @@ def PFRNetMINERace():
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created celeba train')
-    PFRNet_MINE_race_model_celeba_train = PFRNetMineEstimator(latent_dim=512, s_dim=1)
-    celeba_train_trainer.fit(PFRNet_MINE_race_model_celeba_train, celeba_data_module)
+    #PFRNet_MINE_race_model_celeba_train = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    #celeba_train_trainer.fit(PFRNet_MINE_race_model_celeba_train, celeba_data_module)
 
     print('Model will be created lfw')
 
