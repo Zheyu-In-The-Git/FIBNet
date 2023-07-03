@@ -25,8 +25,8 @@ def batch_accuracy(y_pred, y_true):
     return np.sum(y_pred == y_true) / len(y_true)
 
 # 加载预训练模型
-with open(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\resnet50_scratch_weight.pkl', 'rb') as f:
-#with open(r'C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\lightning_logs\resnet50_scratch_weight.pkl', 'rb') as f:
+#with open(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\resnet50_scratch_weight.pkl', 'rb') as f:
+with open(r'C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\lightning_logs\resnet50_scratch_weight.pkl', 'rb') as f:
     model_dict = pickle.load(f)
 state_dict = {}
 for k, v in model_dict.items():
