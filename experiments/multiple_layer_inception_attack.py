@@ -173,7 +173,7 @@ def MLPGenderAttack(latent_dim, pretrained_model_name, pretrained_model_path, be
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/MLP_gender_attack/checkpoints/'+ pretrained_model_name + beta)
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='MLP_gender_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='MLP_gender_logger'+str(dataset_name))  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     celeba_data_module = CelebaAttackInterface(
         num_workers=2,
@@ -240,10 +240,10 @@ def MLPGenderAttack(latent_dim, pretrained_model_name, pretrained_model_path, be
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(mlp_attack_model, celeba_data_module)
-    trainer.test(mlp_attack_model, celeba_data_module)
-    #trainer.test(logistic_attack_model, lfw_data_module)
-    #trainer.test(logistic_attack_model, adience_data_module)
+    #trainer.fit(mlp_attack_model, celeba_data_module)
+    #trainer.test(mlp_attack_model, celeba_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\MLP_gender_attack\checkpoints\Bottleneck0.1\saved_model\last.ckpt')
+    #trainer.test(mlp_attack_model, lfw_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\MLP_gender_attack\checkpoints\Bottleneck1.0\saved_model\last.ckpt')
+    trainer.test(mlp_attack_model, adience_data_module,  ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\MLP_gender_attack\checkpoints\Bottleneck1.0\saved_model\last.ckpt')
 
 def MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name):
     mlp_attack_model = MultipleLayerInception(latent_dim, pretrained_model_name, pretrained_model_path, beta,
@@ -253,7 +253,7 @@ def MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta
                                      'lightning_logs/MLP_race_attack/checkpoints/' + pretrained_model_name + beta)
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH,
-                               name='MLP_race_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+                               name='MLP_race_logger'+str(dataset_name))  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     celeba_data_module = CelebaRaceInterface(
         num_workers=1,
@@ -319,10 +319,10 @@ def MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(mlp_attack_model, celeba_data_module)
-    trainer.test(mlp_attack_model, celeba_data_module)
-    # trainer.test(logistic_attack_model, lfw_data_module)
-    # trainer.test(logistic_attack_model, adience_data_module)
+    #trainer.fit(mlp_attack_model, celeba_data_module)
+    #trainer.test(mlp_attack_model, celeba_data_module)
+    #trainer.test(mlp_attack_model, lfw_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\MLP_race_attack\checkpoints\Bottleneck0.001\saved_model\last.ckpt')
+    trainer.test(mlp_attack_model, adience_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\MLP_race_attack\checkpoints\Bottleneck1.0\saved_model\last.ckpt')
 
 if __name__ == '__main__':
     latent_dim = 512
@@ -330,38 +330,38 @@ if __name__ == '__main__':
     #pretrained_model_path = 'None'
     #beta = 'None'
 
-    #MLPGenderAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
+    #MLPGenderAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'Adience')
 
 
-    #MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
+    #MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'Adience')
     #LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
 
 
-    pretrained_model_name = 'Bottleneck'
+    #pretrained_model_name = 'Bottleneck'
+    #beta_arr = [1.0]
+    #for beta in beta_arr:
+    #    pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
+
+    #    MLPGenderAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'Adience')
+
+
     beta_arr = [1.0]
     for beta in beta_arr:
-        pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
-
-        MLPGenderAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')
-
-
-    beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
-    for beta in beta_arr:
         pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(
             beta) + '\checkpoints\saved_models\last.ckpt'
 
-        MLPRaceAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')
+        MLPRaceAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'Adience')
 
-    beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
-    for beta in beta_arr:
-        pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(
-            beta) + '\checkpoints\saved_models\last.ckpt'
+    #beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
+    #for beta in beta_arr:
+    #    pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(
+    #        beta) + '\checkpoints\saved_models\last.ckpt'
 
-        LogisticRegressionRaceAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')
+    #    LogisticRegressionRaceAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')
 
-    beta_arr = [0.1, 1.0]
-    for beta in beta_arr:
-        pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(
-            beta) + '\checkpoints\saved_models\last.ckpt'
+    #beta_arr = [0.1, 1.0]
+    #for beta in beta_arr:
+    #    pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(
+    #        beta) + '\checkpoints\saved_models\last.ckpt'
 
-        Attack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')
+    #    Attack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')

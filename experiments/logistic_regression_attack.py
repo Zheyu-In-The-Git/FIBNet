@@ -42,8 +42,8 @@ class LogisticRegression(pl.LightningModule):
         self.pretrained_model_name = pretrained_model_name
         if pretrained_model_name == 'Arcface':
             arcface_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
-            #self.pretrained_model = arcface_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt')
-            self.pretrained_model = arcface_net.load_from_checkpoint(r'C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
+            self.pretrained_model = arcface_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt')
+            #self.pretrained_model = arcface_net.load_from_checkpoint(r'C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
             self.pretrained_model.requires_grad_(False)
 
         elif pretrained_model_name == 'Bottleneck':
@@ -169,7 +169,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
 
     lfw_data_module = LFWInterface(num_workers=2,
                                dataset='lfw',
-                               data_dir='D:\lfw\lfw112', #'D:\datasets\lfw\lfw112'
+                               data_dir='D:\datasets\lfw\lfw112', #'D:\datasets\lfw\lfw112'
                                batch_size=256,
                                dim_img=224,
                                sensitive_attr='Male',
@@ -180,7 +180,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
 
     adience_data_module = AdienceInterface(num_workers=2,
                                    dataset='adience',
-                                   data_dir='D:\Adience', #'D:\datasets\Adience'
+                                   data_dir='D:\datasets\Adience', #'D:\datasets\Adience'
                                    batch_size=256,
                                    dim_img=224,
                                    sensitive_attr='Male',
@@ -222,8 +222,8 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
     print('Model will be created')
     #trainer.fit(logistic_attack_model, celeba_data_module)
     #trainer.test(logistic_attack_model, celeba_data_module)
-    trainer.test(logistic_attack_model, lfw_data_module, ckpt_path=r'C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\logistic_regression_attack\checkpoints\ArcfaceNone\saved_model\last.ckpt')
-    #trainer.test(logistic_attack_model, adience_data_module)
+    #trainer.test(logistic_attack_model, lfw_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\logistic_regression_attack\checkpoints\Bottleneck1.0\saved_model\last.ckpt')
+    trainer.test(logistic_attack_model, adience_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\logistic_regression_attack\checkpoints\Bottleneck1.0\saved_model\last.ckpt')
 
 
 
@@ -233,7 +233,7 @@ def LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_m
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/logistic_regression_race_attack/checkpoints/'+ pretrained_model_name + beta)
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='logistic_regression_race_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='logistic_regression_race_logger'+str(dataset_name))  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     celeba_data_module = CelebaRaceInterface(
         num_workers=2,
@@ -298,10 +298,10 @@ def LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_m
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(logistic_attack_model, celeba_data_module)
-    trainer.test(logistic_attack_model, celeba_data_module)
-    #trainer.test(logistic_attack_model, lfw_data_module)
-    #trainer.test(logistic_attack_model, adience_data_module)
+    #trainer.fit(logistic_attack_model, celeba_data_module)
+    #trainer.test(logistic_attack_model, celeba_data_module)
+    #trainer.test(logistic_attack_model, lfw_data_module,ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\logistic_regression_race_attack\checkpoints\Bottleneck1.0\saved_model\last.ckpt')
+    trainer.test(logistic_attack_model, adience_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\logistic_regression_race_attack\checkpoints\Bottleneck1.0\saved_model\last.ckpt')
 
 
 
@@ -310,9 +310,11 @@ if __name__ == '__main__':
     latent_dim = 512
     pretrained_model_name = 'Arcface'
     pretrained_model_path = 'None'
-    beta = 'None'
+    #beta = 'None'
 
-    Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'lfw')
+    #Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'Adience')
+    #LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'lfw')
+    #LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'Adience')
 
 
     #pretrained_model_name = 'Bottleneck'
@@ -320,4 +322,9 @@ if __name__ == '__main__':
     #for beta in beta_arr:
     #    pretrained_model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
 
-    #    Attack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'celeba')
+
+    #    Attack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'lfw')
+    beta = 1.0
+    #Attack(latent_dim, 'Bottleneck', r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt', str(beta), 'Adience')
+    #LogisticRegressionRaceAttack(latent_dim, 'Bottleneck', r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt', str(beta), 'lfw')
+    LogisticRegressionRaceAttack(latent_dim, 'Bottleneck',r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt', str(beta), 'Adience')

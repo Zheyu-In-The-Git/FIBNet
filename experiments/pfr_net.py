@@ -287,7 +287,7 @@ class PFRNetLogisticRegressionAttack(pl.LightningModule):
 
         PFRNet_model = PFRNet(latent_dim=512)
         PFRNet_model = PFRNet_model.load_from_checkpoint(
-            r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints\saved_model\last.ckpt',
+            r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\PFRNet_gender\checkpoints\saved_model\last.ckpt',
             latent_dim=512)
         self.model = PFRNet_model
         self.model.requires_grad_(False)
@@ -401,7 +401,7 @@ class PFRNetMultipleLayerInceptionAttack(pl.LightningModule):
 
         PFRNet_model = PFRNet(latent_dim=512)
         PFRNet_model = PFRNet_model.load_from_checkpoint(
-            r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints\saved_model\last.ckpt',
+            r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\PFRNet_gender\checkpoints\saved_model\last.ckpt',
             latent_dim=512)
         self.model = PFRNet_model
         self.model.requires_grad_(False)
@@ -958,7 +958,7 @@ def PFRNetLogisticRegressionGenderAttack():
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_logistic_regression_gender_attack/checkpoints/')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_logistic_regression_gender_attack_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_logistic_regression_gender_attack_logger_Adience')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     trainer = pl.Trainer(
         callbacks=[
@@ -988,20 +988,20 @@ def PFRNetLogisticRegressionGenderAttack():
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
 
-    logistic_attack_model = PFRNetLogisticRegressionAttack('CelebA')
-    resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
-    os.makedirs(resume_checkpoint_dir, exist_ok=True)
-    print('Model will be created')
-    trainer.fit(logistic_attack_model, celeba_data_module)
-    trainer.test(logistic_attack_model, celeba_data_module)
-
-    # 之后测试用
     #logistic_attack_model = PFRNetLogisticRegressionAttack('CelebA')
     #resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     #os.makedirs(resume_checkpoint_dir, exist_ok=True)
     #print('Model will be created')
     #trainer.fit(logistic_attack_model, celeba_data_module)
     #trainer.test(logistic_attack_model, celeba_data_module)
+
+    # 之后测试用
+    logistic_attack_model = PFRNetLogisticRegressionAttack('Adience')
+    #resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
+    #os.makedirs(resume_checkpoint_dir, exist_ok=True)
+    #print('Model will be created')
+    #trainer.fit(logistic_attack_model, celeba_data_module)
+    trainer.test(logistic_attack_model, adience_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\attack\PFRNet_logistic_regression_gender_attack\checkpoints\saved_model\last.ckpt')
 
 def PFRNetLogisticRegressionRaceAttack():
     celeba_data_module = CelebaRaceInterface(
@@ -1040,7 +1040,7 @@ def PFRNetLogisticRegressionRaceAttack():
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_logistic_regression_gender_attack/checkpoints/')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_logistic_regression_gender_attack_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_logistic_regression_race_attack_logger_adience')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     trainer = pl.Trainer(
         callbacks=[
@@ -1070,20 +1070,20 @@ def PFRNetLogisticRegressionRaceAttack():
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
 
-    logistic_attack_model = PFRNetLogisticRegressionAttack('CelebA')
-    resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
-    os.makedirs(resume_checkpoint_dir, exist_ok=True)
-    print('Model will be created')
-    trainer.fit(logistic_attack_model, celeba_data_module)
-    trainer.test(logistic_attack_model, celeba_data_module)
-
-    # 之后测试用
     #logistic_attack_model = PFRNetLogisticRegressionAttack('CelebA')
     #resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     #os.makedirs(resume_checkpoint_dir, exist_ok=True)
     #print('Model will be created')
     #trainer.fit(logistic_attack_model, celeba_data_module)
     #trainer.test(logistic_attack_model, celeba_data_module)
+
+    # 之后测试用
+    logistic_attack_model = PFRNetLogisticRegressionAttack('adience')
+    #resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
+    #os.makedirs(resume_checkpoint_dir, exist_ok=True)
+    #print('Model will be created')
+    #trainer.fit(logistic_attack_model, celeba_data_module)
+    trainer.test(logistic_attack_model, adience_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\attack\PFRNet_logistic_regression_race_attack\saved_model\last-v1.ckpt')
 
 def PFRNetMultipleLayerInceptionGenderAttack():
     celeba_data_module = CelebaAttackInterface(num_workers=2,
@@ -1122,7 +1122,7 @@ def PFRNetMultipleLayerInceptionGenderAttack():
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_MLP_gender_attack/checkpoints/')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_MLP_gender_attack_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_MLP_gender_attack_logger_adience')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     trainer = pl.Trainer(
         callbacks=[
@@ -1152,12 +1152,12 @@ def PFRNetMultipleLayerInceptionGenderAttack():
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
 
-    MLP_attack_model = PFRNetMultipleLayerInceptionAttack('CelebA')
+    MLP_attack_model = PFRNetMultipleLayerInceptionAttack('adience')
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(MLP_attack_model, celeba_data_module)
-    trainer.test(MLP_attack_model, celeba_data_module)
+    #trainer.fit(MLP_attack_model, celeba_data_module)
+    trainer.test(MLP_attack_model, adience_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\attack\PFRNet_MLP_gender_attack\checkpoints\saved_model\last.ckpt')
 
     # 之后测试用 LFW Adience
     #MLP_attack_model = PFRNetMultipleLayerInceptionAttack('CelebA')
@@ -1204,7 +1204,7 @@ def PFRNetMultipleLayerInceptionRaceAttack():
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_MLP_race_attack/checkpoints/')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_MLP_race_attack_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_MLP_race_attack_logger_adience')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     trainer = pl.Trainer(
         callbacks=[
@@ -1234,12 +1234,12 @@ def PFRNetMultipleLayerInceptionRaceAttack():
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
 
-    MLP_attack_model = PFRNetMultipleLayerInceptionAttack('CelebA')
-    resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
-    os.makedirs(resume_checkpoint_dir, exist_ok=True)
-    print('Model will be created')
-    trainer.fit(MLP_attack_model, celeba_data_module)
-    trainer.test(MLP_attack_model, celeba_data_module)
+    MLP_attack_model = PFRNetMultipleLayerInceptionAttack('lfw')
+    #resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
+    #os.makedirs(resume_checkpoint_dir, exist_ok=True)
+    #print('Model will be created')
+    #trainer.fit(MLP_attack_model, celeba_data_module)
+    trainer.test(MLP_attack_model, adience_data_module,ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\attack\PFRNet_MLP_race_attack\checkpoints\saved_model\last.ckpt')
 
     # 之后测试用
     #logistic_attack_model = PFRNetLogisticRegressionAttack('CelebA')
@@ -1260,11 +1260,11 @@ if __name__ == '__main__':
 
     # ######################### 本周末的实验 ############
 
-    PFRNetLogisticRegressionGenderAttack()
+    #PFRNetLogisticRegressionGenderAttack()
 
-    PFRNetLogisticRegressionRaceAttack()
+    #PFRNetLogisticRegressionRaceAttack()
 
-    PFRNetMultipleLayerInceptionGenderAttack()
+    #PFRNetMultipleLayerInceptionGenderAttack()
 
     PFRNetMultipleLayerInceptionRaceAttack()
 

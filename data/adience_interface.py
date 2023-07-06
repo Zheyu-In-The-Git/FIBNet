@@ -50,6 +50,7 @@ class AdienceInterface(pl.LightningDataModule):
 
         elif purpose == 'race_extract':
             self.trainset = AdienceRaceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity)
+            self.testset = AdienceRaceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=self.identity)
 
 
     def prepare_data(self):
