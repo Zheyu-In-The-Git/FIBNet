@@ -1,5 +1,33 @@
 import torch
 import torch.nn as nn
+import torchmetrics
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
+import torch.optim as optim
+import os
+import numpy as np
+from data import CelebaInterface
+from pytorch_lightning.loggers import TensorBoardLogger
+from model import ResNet50, ArcMarginProduct, FocalLoss
+import torchvision.models as models
+import pickle
+
+
+pl.seed_everything(83)
+import torch.nn.functional as F
+
+
+
+
+
+# password 全为1的向量 []
+# seed 全为0101的向量
+def xor(a, b):
+    return torch.logical_xor(a, b).int()
+
+
+
+
 
 
 class ConvBlock(nn.Module):
@@ -100,17 +128,64 @@ class Discriminator(nn.Module):
         x = x.view(x.size(0), x.size(1), 4*4)
 
         real = self.fc1_1(x)
-        real = real.view(real.size(0),1, real.size(1) * real.size(2)) # 不行的话这里改一下
+        real = real.view(real.size(0), real.size(1) * real.size(2)) # 不行的话这里改一下
         real = self.fc1_2(real)
         real = self.sigmoid(real) # 到时候用 torch.nn.BCELoss()看下可不可以
         print(real)
 
         sensitive_attribute = self.fc2_1(x)
-        sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), 1, sensitive_attribute.size(1) * sensitive_attribute.size(2))
+        sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(1) * sensitive_attribute.size(2))
         sensitive_attribute = self.fc2_2(sensitive_attribute)
 
 
         return real, sensitive_attribute
+
+
+
+
+class face_match(nn.Module):
+    pass
+
+
+
+class RAPP(pl.LightningModule):
+    def __init__(self):
+        super(RAPP, self).__init__()
+
+        self.generator = Generator()
+        self.discriminator = Discriminator()
+
+
+    def forward(self, x, s):
+        x_prime = self.generator(x)
+        real, sensitive_attribute = self.discriminator(x_prime)
+
+    def gradient_penalty(self, x, x_prime):
+        alpha = torch.rand(x.size(0), 1)
+        interpolated_x = alpha * x + (1-alpha)*x_prime
+        interpolated_x.requires_grad_(True)
+
+        score, _ = self.discriminator(interpolated_x)
+        gradients = torch.autograd.grad(outputs=score, inputs=interpolated_x, grad_outputs=torch.ones(score.size()), create_graph=True, retain_graph=True)
+
+        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+        return gradient_penalty
+
+
+
+    def training_step(self, batch, batch_idx):
+        x, u, s = batch
+
+
+        # 添加梯度惩罚项
+        lambda_value = 0.001
+
+
+
+
+
+
+
 
 
 
@@ -129,6 +204,17 @@ if __name__ == '__main__':
 
     discriminator = Discriminator()
     out = discriminator(out)
+
+    input1 = torch.tensor([0,0,1,1])
+    input2 = torch.tensor([0,1,0,1])
+    output = xor(input1, input2)
+    print(output)
+
+    # 这个拿去做b向量
+    vector_length = 40
+    pattern = torch.tensor([0,1,0,1])
+    vector = torch.cat([pattern[i % 4].unsqueeze(0) for i in range(vector_length)])
+    print(vector)
 
 
 
