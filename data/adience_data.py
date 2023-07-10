@@ -158,9 +158,6 @@ class AdienceRaceData(data.Dataset):
 
 
 
-
-
-
 class AdienceRecognitionTestPairs(data.Dataset):
     def __init__(self, dim_img : int, data_dir : str):
         # Set all input args as attributes

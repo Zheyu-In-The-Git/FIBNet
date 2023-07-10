@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torchmetrics
 import pytorch_lightning as pl
+import torchvision.utils
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
 import torch.optim as optim
 import os
@@ -11,10 +12,17 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from model import ResNet50, ArcMarginProduct, FocalLoss
 import torchvision.models as models
 import pickle
+from inception_resnet_v1 import InceptionResnetV1
+import itertools
 
+import math
 
 pl.seed_everything(83)
 import torch.nn.functional as F
+from RAPP_data_interface import CelebaRAPPDatasetInterface
+
+from data.lfw_interface import LFWInterface
+from data.adience_interface import AdienceInterface
 
 
 
@@ -26,6 +34,12 @@ def xor(a, b):
     return torch.logical_xor(a, b).int()
 
 
+def pattern():
+    vector_length = 10
+    pattern = torch.tensor([0, 1, 0, 1])
+    vector = torch.cat([pattern[i % 4].unsqueeze(0) for i in range(vector_length)])
+    vector = vector.to(torch.int32)
+    return vector
 
 
 
@@ -70,7 +84,7 @@ class Generator(nn.Module):
         self.left_conv4 = ConvBlock(in_channels=256, out_channels=512)
         self.left_conv5 = ConvBlock(in_channels=512, out_channels=1024)
 
-        self.right_conv5 = ConvTransporseBlock(in_channels=1024+40, out_channels=1024-512)
+        self.right_conv5 = ConvTransporseBlock(in_channels=1024+10, out_channels=1024-512) # 1024+40
         self.right_conv4 = ConvTransporseBlock(in_channels=1024, out_channels=512 - 256)
         self.right_conv3 = ConvTransporseBlock(in_channels=512, out_channels=256)
         self.right_conv2 = ConvTransporseBlock(in_channels=256, out_channels=128)
@@ -116,7 +130,7 @@ class Discriminator(nn.Module):
         self.fc1_1 = nn.Linear(16, 1)
         self.fc1_2 = nn.Linear(1024,1)
         self.fc2_1 = nn.Linear(16, 1)
-        self.fc2_2 = nn.Linear(1024, 40)
+        self.fc2_2 = nn.Linear(1024, 10)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -130,8 +144,7 @@ class Discriminator(nn.Module):
         real = self.fc1_1(x)
         real = real.view(real.size(0), real.size(1) * real.size(2)) # 不行的话这里改一下
         real = self.fc1_2(real)
-        real = self.sigmoid(real) # 到时候用 torch.nn.BCELoss()看下可不可以
-        print(real)
+        #real = self.sigmoid(real) # 到时候用 torch.nn.BCELoss()看下可不可以
 
         sensitive_attribute = self.fc2_1(x)
         sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(1) * sensitive_attribute.size(2))
@@ -141,10 +154,18 @@ class Discriminator(nn.Module):
         return real, sensitive_attribute
 
 
+class FaceMatch(nn.Module):
+    def __init__(self):
+        super(FaceMatch, self).__init__()
+        face_match_net = InceptionResnetV1(pretrained='vggface2')
+        facenet_vggface2_path = r'C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\RAPP\lightning_logs\facenet-vggface2.pt'
+        face_match_net.load_state_dict(torch.load(facenet_vggface2_path))
+        face_match_net.last_bn = nn.Sequential()
 
+        self.face_match_model = face_match_net
 
-class face_match(nn.Module):
-    pass
+    def forward(self, x):
+        return self.face_match_model(x)
 
 
 
@@ -154,39 +175,217 @@ class RAPP(pl.LightningModule):
 
         self.generator = Generator()
         self.discriminator = Discriminator()
+        self.face_match = FaceMatch()
 
+        self.bcewithlogits = nn.BCEWithLogitsLoss()
+        self.l1_norm = nn.L1Loss()
+
+        #self.automatic_optimization = False
 
     def forward(self, x, s):
-        x_prime = self.generator(x)
+        x_prime = self.generator(x, s)
         real, sensitive_attribute = self.discriminator(x_prime)
+        face_representation = self.face_match(x)
 
-    def gradient_penalty(self, x, x_prime):
-        alpha = torch.rand(x.size(0), 1)
-        interpolated_x = alpha * x + (1-alpha)*x_prime
-        interpolated_x.requires_grad_(True)
+        return face_representation, real, sensitive_attribute
 
-        score, _ = self.discriminator(interpolated_x)
-        gradients = torch.autograd.grad(outputs=score, inputs=interpolated_x, grad_outputs=torch.ones(score.size()), create_graph=True, retain_graph=True)
+    def gradient_penalty(self, x_prime):
+        x_prime.requires_grad_(True)
+
+        score, _ = self.discriminator(x_prime)
+        gradients = torch.autograd.grad(outputs=score, inputs=x_prime, grad_outputs=torch.ones(score.size()), create_graph=True, retain_graph=True)
 
         gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
         return gradient_penalty
 
 
+    def configure_optimizers(self):
+        n_critic = 5
 
-    def training_step(self, batch, batch_idx):
-        x, u, s = batch
+        lr = 0.0002
+        beta1 = 0.5
+        beta2 = 0.99
+
+        opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=lr, betas=(beta1, beta2))
+        opt_d = optim.Adam(self.discriminator.parameters(), lr=lr, betas=(beta1, beta2))
+
+        lr_g_fm = optim.lr_scheduler.ReduceLROnPlateau(opt_g_fm, mode="min", factor=0.1, patience=5, min_lr=1e-8,
+                                                         verbose=True, threshold=1e-3)
+        lr_d = optim.lr_scheduler.ReduceLROnPlateau(opt_d, mode="min", factor=0.1, patience=5, min_lr=1e-8,
+                                                         verbose=True, threshold=1e-3)
+
+        return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": {'scheduler':lr_g_fm, "monitor": "loss_total_G"}},
+                {'optimizer': opt_d, 'frequency': n_critic, "lr_scheduler": {'scheduler':lr_d, "monitor": "loss_total_D_C"}})
+
+    def calculate_eer(self, metrics, match):
+        fpr, tpr, thresholds = self.roc(metrics, match)
+        eer = 1.0
+        min_dist = 1.0
+        for i in range(len(fpr)):
+            dist = abs(fpr[i] - (1 - tpr[i]))
+            if dist < min_dist:
+                min_dist = dist
+                eer = (fpr[i] + (1 - tpr[i])) / 2
+        return fpr, tpr, thresholds, eer
+
+    def training_step(self, batch, batch_idx, optimizer_idx):
+        x, u, attribute = batch
+
+        a = attribute
+        c = pattern()
+        b = xor(a, c)
+
+        # 生成器的超参数
+        lambda_attr_g = 10
+        lambda_rec = 20
+        lambda_m = 10
+
+        # 判别器的超参数
+        lambda_gp = 10
+        lambda_attr_c = 1
+
+        if optimizer_idx == 0:
+
+            x_prime = self.generator(x, b)
+
+            sample_imgs = x_prime[:6]
+            grid = torchvision.utils.make_grid(sample_imgs)
+            self.logger.experiment.add_image('generated_imgs', grid, 0)
+
+            discriminator_output_fake, sensitive_attribute = self.discriminator(x_prime)
+            loss_adv_G = - torch.mean(discriminator_output_fake)
+
+            # 开始写 loss_attr_G
+            loss_attr_G = self.bcewithlogits(sensitive_attribute, b)
+
+            # identity loss
+            loss_m_G = torch.mean(1 - F.cosine_similarity(self.face_match(x), self.face_match(x_prime), dim=1))
+
+            # reconstruction loss
+            loss_rec_G = self.L1norm(x - self.generator(x_prime, a))
+
+            loss_total_G = loss_adv_G + lambda_attr_g * loss_attr_G + lambda_rec * loss_rec_G + lambda_m * loss_m_G
 
 
-        # 添加梯度惩罚项
-        lambda_value = 0.001
+            self.log('loss_adv_G', loss_adv_G, on_step=True, on_epoch=True, prog_bar=True)
+            self.log('loss_attr_G ', loss_attr_G, on_step=True, on_epoch=True, prog_bar=True)
+            self.log('loss_rec_G', loss_rec_G, on_step=True, on_epoch=True, prog_bar=True)
+            self.log('loss_m_G', loss_m_G, on_step=True, on_epoch=True, prog_bar=True)
+            self.log('loss_total_G', loss_total_G, on_step=True, on_epoch=True, prog_bar=True)
+
+            return loss_total_G
+
+
+        if optimizer_idx == 1: # 训练判别器
+
+            x_prime = self.generator(x, b)
+
+            # real image
+            real_validity, real_sensitive_attribute = self.discriminator(x)
+
+            # fake image
+            fake_validity, fake_sensitive_attribute = self.discriminator(x_prime)
+
+            # gradient penalty
+            gradient_penalty = self.gradient_penalty(x_prime)
+
+            # Adversarial loss
+            loss_adv_D = -torch.mean(real_validity) +torch.mean(fake_validity) +lambda_gp * gradient_penalty
+
+            # attribute classification loss
+            loss_attr_C = self.bcewithlogits(real_sensitive_attribute, a)
+
+            loss_total_D_C = loss_adv_D + lambda_attr_c * loss_attr_C
+
+
+            self.log('loss_adv_D', loss_adv_D, on_step=True, on_epoch=True, prog_bar=True)
+            self.log('loss_attr_C', loss_attr_C, on_step=True, on_epoch=True, prog_bar=True)
+            self.log('loss_total_D_C', loss_total_D_C, on_step=True, on_epoch=True, prog_bar=True)
+
+
+            return loss_total_D_C
 
 
 
+    def test_step(self, batch, batch_idx):
+        img_1, img_2, match = batch
+        z_1 = self.face_match(img_1)
+        z_2 = self.face_match(img_2)
+        return {'z_1': z_1, 'z_2': z_2, 'match': match}
+
+    def test_epoch_end(self, outputs):
+        match = torch.cat([x['match'] for x in outputs], dim=0)
+        z_1 = torch.cat([x['z_1'] for x in outputs], dim=0)
+        z_2 = torch.cat([x['z_2'] for x in outputs], dim=0)
+        cos = F.cosine_similarity(z_1, z_2, dim=1)
+        match = match.long()
+
+        fpr_cos, tpr_cos, thresholds_cos, eer_cos = self.calculate_eer(cos, match)
+
+        self.log('eer_cos', eer_cos, prog_bar=True)
+
+        RAPP_confusion_cos = {'fpr_cos': fpr_cos, 'tpr_cos': tpr_cos, 'thresholds_cos': thresholds_cos,
+                                 'eer_cos': eer_cos}
+        torch.save(RAPP_confusion_cos, 'RAPP_cos.pt')
 
 
 
+def train():
+    celeba_data_module = CelebaRAPPDatasetInterface(num_workers=1,
+                                  dataset='celeba_data',
+                                  batch_size=16,
+                                  dim_img=224,
+                                  data_dir='D:\celeba',  # 'D:\datasets\celeba'
+                                  sensitive_dim=1,
+                                  identity_nums=10177,
+                                  pin_memory=False)
+
+    lfw_data_module = LFWInterface(num_workers=2,
+                                   dataset='lfw',
+                                   data_dir='D:\lfw\lfw112',
+                                   batch_size=256,
+                                   dim_img=224,
+                                   sensitive_attr='Male',
+                                   purpose='face_recognition',
+                                   pin_memory=False,
+                                   identity_nums=5749,
+                                   sensitive_dim=1)
+
+    adience_data_module = AdienceInterface(num_workers=2,
+                                           dataset='adience',
+                                           data_dir='D:\Adience',
+                                           batch_size=256,
+                                           dim_img=224,
+                                           sensitive_attr='Male',
+                                           purpose='face_recognition',
+                                           pin_memory=False,
+                                           identity_nums=5749,
+                                           sensitive_dim=1)
 
 
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP/checkpoints/')
+
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='RAPP_logger')
+
+    trainer = pl.Trainer(
+        default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
+        accelerator="auto",
+        devices=1,
+        logger=logger,
+        log_every_n_steps=50,
+        precision=32,
+        enable_checkpointing=True,
+        fast_dev_run=True,
+    )
+    trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
+    trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
+    RAPP_model = RAPP()
+
+    resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
+    os.makedirs(resume_checkpoint_dir, exist_ok=True)
+    print('Model will be created')
+    trainer.fit(RAPP_model, celeba_data_module)
+    trainer.test(RAPP_model, celeba_data_module)
 
 
 
@@ -197,24 +396,41 @@ class RAPP(pl.LightningModule):
 
 if __name__ == '__main__':
     x = torch.rand(size=(8, 3, 128, 128))
-    s = torch.rand(size=(8, 40))
-    generator = Generator()
-    out = generator(x, s)
-    print(out.size())
+    s = torch.rand(size=(8, 10))
+    #generator = Generator()
+    #out = generator(x, s)
+    #print(out.size())
 
-    discriminator = Discriminator()
-    out = discriminator(out)
+    #discriminator = Discriminator()
+    #out = discriminator(out)
 
-    input1 = torch.tensor([0,0,1,1])
-    input2 = torch.tensor([0,1,0,1])
-    output = xor(input1, input2)
-    print(output)
+    #input1 = torch.tensor([0,0,1,1])
+    #input2 = torch.tensor([0,1,0,1])
+    #output = xor(input1, input2)
+    #print(output)
 
     # 这个拿去做b向量
-    vector_length = 40
-    pattern = torch.tensor([0,1,0,1])
-    vector = torch.cat([pattern[i % 4].unsqueeze(0) for i in range(vector_length)])
-    print(vector)
+    #vector_length = 40
+    #pattern = torch.tensor([0,1,0,1])
+    #vector = torch.cat([pattern[i % 4].unsqueeze(0) for i in range(vector_length)])
+    #vector = vector.to(torch.int32)
+    #print(vector)
+
+    #print(pattern())
+
+    #face_match_net = FaceMatch()
+    #output = face_match_net(x)
+    #print(output.size())
+
+
+    #RAPP_net = RAPP()
+    #face_representation, real, sensitive_attribute = RAPP_net(x, s)
+    #print(face_representation.size())
+    #print(real.size())
+    #bce = nn.BCEWithLogitsLoss()
+    #result = bce(sensitive_attribute, s)
+    #print(result)
+    train()
 
 
 
