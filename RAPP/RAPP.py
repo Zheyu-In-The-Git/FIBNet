@@ -127,6 +127,7 @@ class Discriminator(nn.Module):
         self.conv3 = ConvBlock(in_channels=128, out_channels=256)
         self.conv4 = ConvBlock(in_channels=256, out_channels=512)
         self.conv5 = ConvBlock(in_channels=512, out_channels=1024)
+        self.adaptive_avgpool = nn.AdaptiveAvgPool2d((4,4))
         self.fc1_1 = nn.Linear(16, 1)
         self.fc1_2 = nn.Linear(1024,1)
         self.fc2_1 = nn.Linear(16, 1)
@@ -139,6 +140,7 @@ class Discriminator(nn.Module):
         x = self.conv3(x)
         x = self.conv4(x)
         x = self.conv5(x)
+        x = self.adaptive_avgpool(x)
         x = x.view(x.size(0), x.size(1), 4*4)
 
         real = self.fc1_1(x)
@@ -180,7 +182,8 @@ class RAPP(pl.LightningModule):
         self.bcewithlogits = nn.BCEWithLogitsLoss()
         self.l1_norm = nn.L1Loss()
 
-        #self.automatic_optimization = False
+        self.roc = torchmetrics.ROC(task='binary')
+
 
     def forward(self, x, s):
         x_prime = self.generator(x, s)
@@ -235,6 +238,10 @@ class RAPP(pl.LightningModule):
         c = pattern()
         b = xor(a, c)
 
+        a = a.to(torch.int32)
+        c = c.to(torch.int32)
+        b = b.to(torch.int32)
+
         # 生成器的超参数
         lambda_attr_g = 10
         lambda_rec = 20
@@ -256,13 +263,13 @@ class RAPP(pl.LightningModule):
             loss_adv_G = - torch.mean(discriminator_output_fake)
 
             # 开始写 loss_attr_G
-            loss_attr_G = self.bcewithlogits(sensitive_attribute, b)
+            loss_attr_G = self.bcewithlogits(sensitive_attribute, b.float())
 
             # identity loss
             loss_m_G = torch.mean(1 - F.cosine_similarity(self.face_match(x), self.face_match(x_prime), dim=1))
 
             # reconstruction loss
-            loss_rec_G = self.L1norm(x - self.generator(x_prime, a))
+            loss_rec_G = self.l1_norm(self.generator(x_prime, a), x)
 
             loss_total_G = loss_adv_G + lambda_attr_g * loss_attr_G + lambda_rec * loss_rec_G + lambda_m * loss_m_G
 
@@ -293,7 +300,7 @@ class RAPP(pl.LightningModule):
             loss_adv_D = -torch.mean(real_validity) +torch.mean(fake_validity) +lambda_gp * gradient_penalty
 
             # attribute classification loss
-            loss_attr_C = self.bcewithlogits(real_sensitive_attribute, a)
+            loss_attr_C = self.bcewithlogits(real_sensitive_attribute, a.float())
 
             loss_total_D_C = loss_adv_D + lambda_attr_c * loss_attr_C
 
@@ -306,6 +313,8 @@ class RAPP(pl.LightningModule):
             return loss_total_D_C
 
 
+    def validation_step(self, batch, batch_idx, optimizer_idx):
+        pass
 
     def test_step(self, batch, batch_idx):
         img_1, img_2, match = batch
@@ -375,7 +384,7 @@ def train():
         log_every_n_steps=50,
         precision=32,
         enable_checkpointing=True,
-        fast_dev_run=True,
+        fast_dev_run=2,
     )
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
@@ -395,14 +404,19 @@ def train():
 
 
 if __name__ == '__main__':
-    x = torch.rand(size=(8, 3, 128, 128))
-    s = torch.rand(size=(8, 10))
+    x = torch.rand(size=(16, 3, 128, 128))
+    s = torch.rand(size=(16, 10))
+    #RAPP_net = RAPP()
+    #output1, output2, output3 = RAPP_net(x,s)
+    #print(output1.size())
+
     #generator = Generator()
     #out = generator(x, s)
     #print(out.size())
 
     #discriminator = Discriminator()
-    #out = discriminator(out)
+    #out = discriminator(x)
+    #print(out)
 
     #input1 = torch.tensor([0,0,1,1])
     #input2 = torch.tensor([0,1,0,1])
@@ -430,6 +444,11 @@ if __name__ == '__main__':
     #bce = nn.BCEWithLogitsLoss()
     #result = bce(sensitive_attribute, s)
     #print(result)
+
+
+
+
+
     train()
 
 
