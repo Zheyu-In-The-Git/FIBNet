@@ -198,7 +198,8 @@ class RAPP(pl.LightningModule):
         score, _ = self.discriminator(x_prime)
         gradients = torch.autograd.grad(outputs=score, inputs=x_prime, grad_outputs=torch.ones(score.size()), create_graph=True, retain_graph=True)
 
-        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+        gradient_norms = [grad.norm(2, dim=1) - 1 for grad in gradients]
+        gradient_penalty = torch.stack(gradient_norms).mean()
         return gradient_penalty
 
 
@@ -297,7 +298,7 @@ class RAPP(pl.LightningModule):
             gradient_penalty = self.gradient_penalty(x_prime)
 
             # Adversarial loss
-            loss_adv_D = -torch.mean(real_validity) +torch.mean(fake_validity) +lambda_gp * gradient_penalty
+            loss_adv_D = -torch.mean(real_validity) +torch.mean(fake_validity) + lambda_gp * gradient_penalty
 
             # attribute classification loss
             loss_attr_C = self.bcewithlogits(real_sensitive_attribute, a.float())
