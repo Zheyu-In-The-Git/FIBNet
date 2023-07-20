@@ -8,7 +8,7 @@ import torch.utils.data as data
 from functools import partial
 from facenet_pytorch import MTCNN
 import torchvision.transforms.functional as F
-
+import mat73
 from torchvision import transforms
 from torchvision.datasets.utils import verify_str_arg
 from torch.utils.data import DataLoader
@@ -154,23 +154,87 @@ class CelebaTSNERaceExperiment(data.Dataset):
         colored_people = colored_people.head(500)
         #print(colored_people)
 
-        self.dataset_samples = pd.concat([white_dataset, colored_people])
-        print(self.dataset_samples)
+        dataset_samples = pd.concat([white_dataset, colored_people])
+        dataset_samples = dataset_samples.reset_index()
+        self.dataset_samples = dataset_samples.drop('index', axis=1)
+        #print(self.dataset_samples)
 
 
 
+        self.trans = transforms.Compose([
+            transforms.Resize(self.dim_img),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5,0.5,0.5], std=[0.5,0.5,0.5])
+        ])
 
+    def __len__(self):
+        return len(self.dataset)
 
+    def __getitem__(self, index):
+        img_path = self.dataset_samples.loc[index, 'img_path']
+        print(img_path)
 
+        X = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba_mtcnn', img_path))
 
+        x = self.trans(X)
 
+        u = self.dataset_samples.loc[index, 'id']
+        u = torch.as_tensor(u) - 1.0
+        u = u.long()
 
+        s = torch.as_tensor(self.dataset_samples.loc[index, 'white'])
+        s = torch.div(s + 1, 2, rounding_mode='floor')
+        s = s.to(torch.float32)
+
+        return x, u, s
 
 
 
 
 class LFWTSNEExperiment(data.Dataset):
-    pass
+    def __init__(self,
+                 dim_img:int,
+                 data_dir:str,
+                 sensitive_attr:str,
+                 img_path_replace:bool,
+                 split:str):
+
+        self.dim_img = dim_img
+        self.data_dir = data_dir
+        self.sensitive_attr = sensitive_attr
+
+        fn = partial(os.path.join, self.data_dir)
+        self.lfw_dataset = pandas.read_csv(fn('lfw_att_73.csv'))
+        print(self.lfw_dataset.keys())
+
+        lfw_dataset_load_indices_train_test = mat73.loadmat(fn('indices_train_test.mat'))
+        self.lfw_dataset_id = pandas.read_csv(fn('lfw_train_test_id.csv'), index_col='name')
+
+        if split == 'train':
+            self.lfw_dataset_indices = lfw_dataset_load_indices_train_test['indices_img_train']
+        elif split == 'test':
+            self.lfw_dataset_indices = lfw_dataset_load_indices_train_test['indices_img_test']
+        elif split == 'all':
+            self.lfw_dataset_indices = np.append(lfw_dataset_load_indices_train_test['indices_img_train'],
+                                                 lfw_dataset_load_indices_train_test['indices_img_test'])
+        else:
+            'please input the correct lfw dataset split string'
+
+        self.lfw_dataset_img_path = self.lfw_dataset.iloc[:, 0]  # 路径这里需要重新思考
+
+        self.trans = transforms.Compose([
+            transforms.Resize(self.dim_img),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+        ])
+
+        self.img_path_replace = img_path_replace
+
+
+
+
+
+
 
 class AdienceTSNEExperiment(data.Dataset):
     pass
@@ -179,6 +243,7 @@ class AdienceTSNEExperiment(data.Dataset):
 
 if __name__ == '__main__':
     data_dir = 'D:\celeba'
+    lfw_data_dir = 'D:\lfw\lfw112'
     loader = CelebaTSNEExperiment(dim_img=112, data_dir=data_dir, split='test_30%',sensitive_attr='Male')
     train_loader = DataLoader(loader, batch_size=2)
     for i, item in enumerate(train_loader):
@@ -190,5 +255,14 @@ if __name__ == '__main__':
         break
 
     celeba_race_loader = CelebaTSNERaceExperiment(dim_img=112, data_dir = data_dir, split='test_30%')
-    #celeba_race_test_loader = DataLoader(celeba_race_loader, batch_size=2)
+    celeba_race_test_loader = DataLoader(celeba_race_loader, batch_size=2)
+    for i, item in enumerate(celeba_race_test_loader):
+        print('i', i)
+        x, u, s = item
+        print(x)
+        print(u)
+        print(s)
+        break
 
+    lfw_dataset = LFWTSNEExperiment(dim_img=112,  sensitive_attr='Male', img_path_replace=False, split='all', data_dir = lfw_data_dir)
+    lfw_loader = DataLoader(lfw_dataset, batch_size=2)
