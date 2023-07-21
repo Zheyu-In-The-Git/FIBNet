@@ -205,7 +205,22 @@ class LFWTSNEExperiment(data.Dataset):
 
         fn = partial(os.path.join, self.data_dir)
         self.lfw_dataset = pandas.read_csv(fn('lfw_att_73.csv'))
-        print(self.lfw_dataset.keys())
+
+
+        imgpath_white_male = self.lfw_dataset.where(self.lfw_dataset[self.sensitive_attr] == 1.0) # 男性的标签为1，白人的标签为1，而不是既是白人也是男性的意思
+        imgpath_white_male = imgpath_white_male.dropna(axis=0)
+        imgpath_white_male = imgpath_white_male.head(500)
+        #print(imgpath_white_male)
+
+        imgpath_colored_race_female = self.lfw_dataset.where(self.lfw_dataset[self.sensitive_attr] == 0.0) # 女性的标签为0，有色人种的标签为0，而不是既是女性也是有色人种的意思
+        imgpath_colored_race_female = imgpath_colored_race_female.dropna(axis=0)
+        imgpath_colored_race_female = imgpath_colored_race_female.head(500)
+        #print(imgpath_colored_race_female)
+
+        self.lfw_dataset = pd.concat([imgpath_white_male, imgpath_colored_race_female])
+        self.lfw_dataset = self.lfw_dataset.reset_index()
+        self.lfw_dataset = self.lfw_dataset.drop('index', axis=1)
+
 
         lfw_dataset_load_indices_train_test = mat73.loadmat(fn('indices_train_test.mat'))
         self.lfw_dataset_id = pandas.read_csv(fn('lfw_train_test_id.csv'), index_col='name')
@@ -220,7 +235,10 @@ class LFWTSNEExperiment(data.Dataset):
         else:
             'please input the correct lfw dataset split string'
 
+
+
         self.lfw_dataset_img_path = self.lfw_dataset.iloc[:, 0]  # 路径这里需要重新思考
+
 
         self.trans = transforms.Compose([
             transforms.Resize(self.dim_img),
@@ -229,6 +247,44 @@ class LFWTSNEExperiment(data.Dataset):
         ])
 
         self.img_path_replace = img_path_replace
+
+    def __len__(self):
+        return len(self.lfw_dataset_img_path)
+
+    def __getitem__(self, index):
+
+        img_path_name = self.lfw_dataset_img_path[index]
+
+        # print(img_path_name)
+
+        img_name = img_path_name.split('\\')
+        img_name = img_name[0]
+
+        u = self.lfw_dataset_id.loc[img_name]['face_id'] - 1
+        u = torch.tensor(u)
+        u = u.long()
+
+        if self.img_path_replace:
+            img_path_name = img_path_name.replace('\\', '/')
+        else:
+            img_path_name = img_path_name
+
+        x = PIL.Image.open(os.path.join(self.data_dir, "img/", img_path_name))
+        x = self.trans(x)
+
+
+        s = self.lfw_dataset.loc[index, self.sensitive_attr]
+        s = torch.tensor([s]).to(torch.float32)
+        return x, u, s
+
+
+
+
+
+
+
+
+
 
 
 
@@ -265,4 +321,15 @@ if __name__ == '__main__':
         break
 
     lfw_dataset = LFWTSNEExperiment(dim_img=112,  sensitive_attr='Male', img_path_replace=False, split='all', data_dir = lfw_data_dir)
-    lfw_loader = DataLoader(lfw_dataset, batch_size=2)
+    lfw_loader = DataLoader(lfw_dataset, batch_size=1)
+
+    
+    for i, item in enumerate(lfw_loader):
+        print('i', i)
+        x, u, s = item
+        print(x)
+        print(u)
+        print(s)
+        break
+        
+
