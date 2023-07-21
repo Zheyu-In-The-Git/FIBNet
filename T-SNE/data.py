@@ -279,6 +279,43 @@ class LFWTSNEExperiment(data.Dataset):
 
 
 
+class AdienceTSNEGenderExperiment(data.Dataset):
+    def __init__(self,
+                 dim_img:int,
+                 data_dir:str,
+                 sensitive_attr:str):
+
+        self.dim_img = dim_img
+        self.data_dir = data_dir
+        self.sensitive_attr = sensitive_attr
+
+        fn = partial(os.path.join, self.data_dir)
+        adience_dataset_fold_0 = pandas.read_table(fn('fold_0_data.txt'), index_col=False)
+        adience_dataset_fold_1 = pandas.read_table(fn('fold_1_data.txt'), index_col=False)
+        adience_dataset_fold_2 = pandas.read_table(fn('fold_2_data.txt'), index_col=False)
+        adience_dataset_fold_3 = pandas.read_table(fn('fold_3_data.txt'), index_col=False)
+        adience_dataset_fold_4 = pandas.read_table(fn('fold_4_data.txt'), index_col=False)
+
+        adience_dataset = pd.concat([adience_dataset_fold_0, adience_dataset_fold_1,
+                                     adience_dataset_fold_2, adience_dataset_fold_3,
+                                     adience_dataset_fold_4], ignore_index=True)
+
+        adience_dataset = adience_dataset.dropna(subset=['gender'])
+        adience_dataset = adience_dataset.reset_index()
+
+        self.adience_dataset = adience_dataset[['user_id', 'original_image', 'face_id', 'gender']]
+
+        self.trans_first = transforms.Compose([transforms.CenterCrop((1250, 1250))])
+        self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
+                                                transforms.ToTensor(),
+                                                transforms.Normalize(mean=[0.5, 0.5, 0.5],
+                                                                     std=[0.5, 0.5, 0.5]),
+                                                ])
+
+        self.trans = transforms.Compose([transforms.CenterCrop((250, 250)),
+                                         transforms.Resize((self.dim_img, self.dim_img)),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
 
 
@@ -288,12 +325,6 @@ class LFWTSNEExperiment(data.Dataset):
 
 
 
-
-
-
-
-class AdienceTSNEExperiment(data.Dataset):
-    pass
 
 
 
