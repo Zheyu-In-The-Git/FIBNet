@@ -305,6 +305,23 @@ class AdienceTSNEGenderExperiment(data.Dataset):
 
         self.adience_dataset = adience_dataset[['user_id', 'original_image', 'face_id', 'gender']]
 
+        male_samples = self.adience_dataset.where(self.adience_dataset['gender'] == 'm')
+        male_samples = male_samples.dropna(axis=0)
+        male_samples = male_samples.head(500)
+        #print(male_samples)
+
+        female_samples = self.adience_dataset.where(self.adience_dataset['gender'] == 'f')
+        female_samples = female_samples.dropna(axis=0)
+        female_samples = female_samples.head(500)
+        #print(female_samples)
+
+        self.adience_dataset = pd.concat([male_samples, female_samples])
+        self.adience_dataset = self.adience_dataset.reset_index()
+        self.adience_dataset = self.adience_dataset.drop('index', axis=1)
+        print(self.adience_dataset)
+
+
+
         self.trans_first = transforms.Compose([transforms.CenterCrop((1250, 1250))])
         self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
                                                 transforms.ToTensor(),
@@ -318,12 +335,117 @@ class AdienceTSNEGenderExperiment(data.Dataset):
                                          transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
 
-        # new
+
+    def __len__(self):
+        return self.adience_dataset.shape[0]
+
+    def __getitem__(self, index):
+
+        user_id_path = self.adience_dataset['user_id'][index]
+        original_image = self.adience_dataset['original_image'][index]
+        face_id = int(self.adience_dataset['face_id'][index])
+        gender = self.adience_dataset['gender'][index]
+
+        img_sub_path = 'coarse_tilt_aligned_face' + '.' + str(face_id) + '.' + original_image
+
+        img_path = os.path.join(self.data_dir, 'faces', user_id_path, img_sub_path)
+
+        x = PIL.Image.open(img_path)
+
+        x = self.trans(x)
+
+        #to_img = transforms.ToPILImage()
+        #img = to_img(x)
+        #img.show()
+
+        # x = self.trans(x)
+
+        u = face_id - 1
+
+        u = torch.tensor(u)
+
+        if gender == 'f':
+            s = torch.tensor([0.0])
+        else:
+            s = torch.tensor([1.0])
+
+
+        return x, u, s
+
+
+class AdienceTSNERaceExperiment(data.Dataset):
+    def __init__(self,
+                 dim_img:int,
+                 data_dir:str,
+                 identity_nums:int, # 2284?
+                 ):
+        self.dim_img = dim_img
+        self.data_dir = data_dir
+        self.identity_nums = identity_nums
+
+        fn = partial(os.path.join, self.data_dir)
+        adience_fold_0 = pandas.read_table(fn('fold_0_data.txt'), index_col=False)
+        adience_fold_1 = pandas.read_table(fn('fold_1_data.txt'), index_col=False)
+        adience_fold_2 = pandas.read_table(fn('fold_2_data.txt'), index_col=False)
+        adience_fold_3 = pandas.read_table(fn('fold_3_data.txt'), index_col=False)
+        adience_fold_4 = pandas.read_table(fn('fold_4_data.txt'), index_col=False)
+
+        self.adience_dataset = pd.concat([adience_fold_0,adience_fold_1,adience_fold_2,adience_fold_3,adience_fold_4], ignore_index=True)
+        #print(self.adience_dataset)
+
+        self.userid_imgsubpath_white_faceid = pandas.read_csv(fn('adience_imgpath_race_id.csv')).drop(labels='Unnamed: 0', axis=1)
+        #print(self.userid_imgsubpath_white_faceid['white'])
+
+        white_samples = self.userid_imgsubpath_white_faceid.where(self.userid_imgsubpath_white_faceid['white'] == 1.0)
+        white_samples = white_samples.dropna(axis=0)
+        white_samples = white_samples.head(500)
+        #print(white_samples)
+
+        colored_race_samples = self.userid_imgsubpath_white_faceid.where(self.userid_imgsubpath_white_faceid['white'] == 0.0)
+        colored_race_samples = colored_race_samples.dropna(axis=0)
+        colored_race_samples = colored_race_samples.head(500)
+        #print(colored_race_samples)
+
+
+        self.userid_imgsubpath_white_faceid = pd.concat([white_samples, colored_race_samples])
+        self.userid_imgsubpath_white_faceid = self.userid_imgsubpath_white_faceid.reset_index()
+        self.userid_imgsubpath_white_faceid = self.userid_imgsubpath_white_faceid.drop('index', axis=1)
+        print(self.userid_imgsubpath_white_faceid)
 
 
 
+        self.trans = transforms.Compose([transforms.CenterCrop((300, 300)),
+                                         transforms.Resize((self.dim_img, self.dim_img)),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
+    def __len__(self):
+        return len(self.userid_imgsubpath_white_faceid)
 
+    def __getitem__(self, index):
+        user_id_path = self.userid_imgsubpath_white_faceid.loc[index]['user_id']
+        img_sub_path = self.userid_imgsubpath_white_faceid.loc[index]['img_sub_path']
+        race = self.userid_imgsubpath_white_faceid.loc[index]['white']
+        face_id = self.userid_imgsubpath_white_faceid.loc[index]['face_id']
+
+        img_path = os.path.join(self.data_dir, 'faces', user_id_path, img_sub_path)
+
+        x = PIL.Image.open(img_path)
+
+        x = self.trans(x)
+
+        #to_img = transforms.ToPILImage()
+        #img = to_img(x)
+        #img.show()
+
+        u = face_id - 1
+
+        u = torch.tensor(u)
+
+        s = torch.tensor([race])
+        s = s.to(torch.float32)
+
+        return x, u, s
 
 
 
@@ -332,8 +454,11 @@ class AdienceTSNEGenderExperiment(data.Dataset):
 
 
 if __name__ == '__main__':
-    data_dir = 'D:\celeba'
-    lfw_data_dir = 'D:\lfw\lfw112'
+    #data_dir = 'D:\celeba'
+    #lfw_data_dir = 'D:\lfw\lfw112'
+
+    '''
+    
     loader = CelebaTSNEExperiment(dim_img=112, data_dir=data_dir, split='test_30%',sensitive_attr='Male')
     train_loader = DataLoader(loader, batch_size=2)
     for i, item in enumerate(train_loader):
@@ -353,6 +478,8 @@ if __name__ == '__main__':
         print(u)
         print(s)
         break
+        
+    
 
     lfw_dataset = LFWTSNEExperiment(dim_img=112,  sensitive_attr='Male', img_path_replace=False, split='all', data_dir = lfw_data_dir)
     lfw_loader = DataLoader(lfw_dataset, batch_size=1)
@@ -365,5 +492,26 @@ if __name__ == '__main__':
         print(u)
         print(s)
         break
-        
+    '''
+    Adience_data_dir = '/Users/xiaozhe/datasets/Adience'
+    Adience_dataset = AdienceTSNEGenderExperiment(dim_img=112, sensitive_attr='Male', data_dir=Adience_data_dir)
+    for i, item in enumerate(Adience_dataset):
+        print('i', i)
+        x, u, s  = item
+        print(x)
+        print(u)
+        print(s)
+        break
+
+    Adience_race_dataset = AdienceTSNERaceExperiment(dim_img=112, data_dir=Adience_data_dir, identity_nums=2284)
+    for i, item in enumerate(Adience_race_dataset):
+        print('i', i)
+        x,u,s = item
+        print(x)
+        print(u)
+        print(s)
+        break
+
+
+
 
