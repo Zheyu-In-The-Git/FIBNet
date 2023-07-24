@@ -27,11 +27,15 @@ from data.adience_interface import AdienceInterface
 
 
 
-
+device = torch.device('cuda' if torch.cuda.is_available() else "cpu") #******#
 # password 全为1的向量 []
 # seed 全为0101的向量
 def xor(a, b):
-    return torch.logical_xor(a, b).int()
+    a = a.to(device)
+    b = b.to(device)
+    c = torch.logical_xor(a, b).int()
+    c = c.to(device)
+    return c
 
 
 def pattern():
@@ -49,9 +53,14 @@ class ConvBlock(nn.Module):
         super(ConvBlock, self).__init__()
         Conv_BN_IN_LReLU = []
         Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1))
-        Conv_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels))
-        Conv_BN_IN_LReLU.append(nn.InstanceNorm2d(out_channels))
-        Conv_BN_IN_LReLU.append(nn.LeakyReLU())
+        #Conv_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels))
+        Conv_BN_IN_LReLU.append(nn.InstanceNorm2d(out_channels, affine=True, track_running_stats=True))
+        Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
+
+        Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1))
+        Conv_BN_IN_LReLU.append(nn.InstanceNorm2d(out_channels, affine=True, track_running_stats=True))
+        Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
+
         self.conv_bn_in_leakyrelu = nn.Sequential(*Conv_BN_IN_LReLU)
 
     def forward(self, x):
@@ -63,9 +72,15 @@ class ConvTransporseBlock(nn.Module):
         super(ConvTransporseBlock, self).__init__()
         ConvTransporse_BN_IN_LReLU = []
         ConvTransporse_BN_IN_LReLU.append(nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1))
-        ConvTransporse_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels))
-        ConvTransporse_BN_IN_LReLU.append(nn.InstanceNorm2d(out_channels))
-        ConvTransporse_BN_IN_LReLU.append(nn.LeakyReLU())
+        #ConvTransporse_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels))
+        ConvTransporse_BN_IN_LReLU.append(nn.InstanceNorm2d(out_channels, affine=True, track_running_stats=True))
+        ConvTransporse_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
+
+        #ConvTransporse_BN_IN_LReLU.append(nn.ConvTranspose2d(in_channels=out_channels, out_channels=out_channels, kernel_size=4, stride=1, padding=1))
+        #ConvTransporse_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels))
+        #ConvTransporse_BN_IN_LReLU.append(nn.LeakyReLU())
+
+
         self.convtransporse_bn_in_leakyrelu = nn.Sequential(*ConvTransporse_BN_IN_LReLU)
 
     def forward(self, x):
@@ -160,7 +175,7 @@ class FaceMatch(nn.Module):
     def __init__(self):
         super(FaceMatch, self).__init__()
         face_match_net = InceptionResnetV1(pretrained='vggface2')
-        facenet_vggface2_path = r'C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\RAPP\lightning_logs\facenet-vggface2.pt'
+        facenet_vggface2_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\RAPP\lightning_logs\facenet-vggface2.pt'
         face_match_net.load_state_dict(torch.load(facenet_vggface2_path))
         face_match_net.last_bn = nn.Sequential()
 
@@ -177,7 +192,28 @@ class RAPP(pl.LightningModule):
 
         self.generator = Generator()
         self.discriminator = Discriminator()
+
+
+        '''
+        
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.xavier_uniform_(m.weight)
+            elif isinstance(m, nn.Linear):
+                scale = math.sqrt(3. / m.in_features)
+                m.weight.data.uniform_(-scale, scale)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.ConvTranspose2d):
+                torch.nn.init.xavier_uniform_(m.weight)
+        '''
+
         self.face_match = FaceMatch()
+
+
 
         self.bcewithlogits = nn.BCEWithLogitsLoss()
         self.l1_norm = nn.L1Loss()
@@ -192,13 +228,24 @@ class RAPP(pl.LightningModule):
 
         return face_representation, real, sensitive_attribute
 
-    def gradient_penalty(self, x_prime):
-        x_prime.requires_grad_(True)
+    def gradient_penalty(self, x, x_prime):
 
-        score, _ = self.discriminator(x_prime)
-        gradients = torch.autograd.grad(outputs=score, inputs=x_prime, grad_outputs=torch.ones(score.size()), create_graph=True, retain_graph=True)
+        batch_size = x.size(0)
+        alpha = torch.rand(batch_size, 1, 1, 1, device=device)
+        interpolated_imgs = alpha * x + (1-alpha) * x_prime
+        interpolated_imgs.requires_grad_(True)
 
-        gradient_norms = [grad.norm(2, dim=1) - 1 for grad in gradients]
+        #x_prime.requires_grad_(True)
+
+
+        score, _ = self.discriminator(interpolated_imgs)
+
+        #x_prime = x_prime.to(device)
+        #score = score.to(device)
+
+        gradients = torch.autograd.grad(outputs=score, inputs=interpolated_imgs, grad_outputs=torch.ones(score.size()).to(device), create_graph=True, retain_graph=True)
+
+        gradient_norms = [(grad.norm(2, dim=1) - 1) ** 2 for grad in gradients]
         gradient_penalty = torch.stack(gradient_norms).mean()
         return gradient_penalty
 
@@ -254,11 +301,15 @@ class RAPP(pl.LightningModule):
 
         if optimizer_idx == 0:
 
+            original_imgs = x[:10]
+            grid = torchvision.utils.make_grid(original_imgs)
+            self.logger.experiment.add_image('original_imgs', grid, self.global_step)
+
             x_prime = self.generator(x, b)
 
-            sample_imgs = x_prime[:6]
+            sample_imgs = x_prime[:10]
             grid = torchvision.utils.make_grid(sample_imgs)
-            self.logger.experiment.add_image('generated_imgs', grid, 0)
+            self.logger.experiment.add_image('generated_imgs', grid, self.global_step)
 
             discriminator_output_fake, sensitive_attribute = self.discriminator(x_prime)
             loss_adv_G = - torch.mean(discriminator_output_fake)
@@ -292,10 +343,10 @@ class RAPP(pl.LightningModule):
             real_validity, real_sensitive_attribute = self.discriminator(x)
 
             # fake image
-            fake_validity, fake_sensitive_attribute = self.discriminator(x_prime)
+            fake_validity, fake_sensitive_attribute = self.discriminator(x_prime.detach())
 
             # gradient penalty
-            gradient_penalty = self.gradient_penalty(x_prime)
+            gradient_penalty = self.gradient_penalty(x, x_prime)
 
             # Adversarial loss
             loss_adv_D = -torch.mean(real_validity) +torch.mean(fake_validity) + lambda_gp * gradient_penalty
@@ -341,18 +392,18 @@ class RAPP(pl.LightningModule):
 
 
 def train():
-    celeba_data_module = CelebaRAPPDatasetInterface(num_workers=1,
+    celeba_data_module = CelebaRAPPDatasetInterface(num_workers=2,
                                   dataset='celeba_data',
                                   batch_size=16,
                                   dim_img=224,
-                                  data_dir='D:\celeba',  # 'D:\datasets\celeba'
+                                  data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
                                   sensitive_dim=1,
                                   identity_nums=10177,
                                   pin_memory=False)
 
     lfw_data_module = LFWInterface(num_workers=2,
                                    dataset='lfw',
-                                   data_dir='D:\lfw\lfw112',
+                                   data_dir='D:\datasets\lfw\lfw112',
                                    batch_size=256,
                                    dim_img=224,
                                    sensitive_attr='Male',
@@ -363,7 +414,7 @@ def train():
 
     adience_data_module = AdienceInterface(num_workers=2,
                                            dataset='adience',
-                                           data_dir='D:\Adience',
+                                           data_dir='D:\datasets\Adience',
                                            batch_size=256,
                                            dim_img=224,
                                            sensitive_attr='Male',
@@ -378,6 +429,14 @@ def train():
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='RAPP_logger')
 
     trainer = pl.Trainer(
+        callbacks=[
+            ModelCheckpoint(
+                dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model'),
+                save_last=True,
+                every_n_train_steps=50
+            ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
+            LearningRateMonitor("epoch"),
+        ],
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
         accelerator="auto",
         devices=1,
@@ -385,7 +444,9 @@ def train():
         log_every_n_steps=50,
         precision=32,
         enable_checkpointing=True,
-        fast_dev_run=2,
+        fast_dev_run=False,
+        min_epochs=8,
+        max_epochs=9
     )
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
@@ -416,6 +477,7 @@ if __name__ == '__main__':
     #print(out.size())
 
     #discriminator = Discriminator()
+    #print(discriminator)
     #out = discriminator(x)
     #print(out)
 

@@ -66,9 +66,9 @@ class CelebaRAPPData(data.Dataset):
         if split_ == 'train_63%':
             mask = slice(0, 127638, 1)
             self.trans = transforms.Compose([transforms.Resize(self.dim_img),
-                                             transforms.RandomHorizontalFlip(p=0.5),
-                                             transforms.ToTensor(),
-                                             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+                                             #transforms.RandomHorizontalFlip(p=0.5),
+                                             transforms.ToTensor(),])
+                                             #transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
         elif split_ == 'valid_7%':
             mask = slice(127638, 141819, 1)
@@ -79,8 +79,8 @@ class CelebaRAPPData(data.Dataset):
         elif split_ == 'test_30%':
             mask = slice(141819, 202599, 1)
             self.trans = transforms.Compose([transforms.Resize(self.dim_img),
-                                             transforms.ToTensor(),
-                                             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+                                             transforms.ToTensor(),])
+                                             #transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
         elif split_ is None:
             mask = slice(None)
             self.trans = transforms.Compose([transforms.Resize(self.dim_img),
