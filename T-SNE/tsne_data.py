@@ -67,7 +67,8 @@ class CelebaTSNEExperiment(data.Dataset):
 
         self.id = identity
 
-        self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+        self.trans = transforms.Compose([transforms.CenterCrop(150),
+                                         transforms.Resize(self.dim_img),
                                          transforms.ToTensor(),
                                          transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
@@ -76,9 +77,10 @@ class CelebaTSNEExperiment(data.Dataset):
 
     def __getitem__(self, index):
         img_path = self.dataset.index.values[index]
-        X = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba_mtcnn', img_path))
+        X = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba', img_path))
 
         x = self.trans(X)
+
 
         u = self.id.loc[img_path].values
         u = torch.as_tensor(u) - 1.0
@@ -137,7 +139,8 @@ class CelebaTSNERaceExperiment(data.Dataset):
 
         elif split_ == 'test_30%':
             mask = slice(131207, 187644, 1)
-            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+            self.trans = transforms.Compose([transforms.CenterCrop(150),
+                                             transforms.Resize(self.dim_img),
                                              transforms.ToTensor(),
                                              transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
             self.dataset = imgpath_race_id[mask]
@@ -157,7 +160,8 @@ class CelebaTSNERaceExperiment(data.Dataset):
         dataset_samples = pd.concat([white_dataset, colored_people])
         dataset_samples = dataset_samples.reset_index()
         self.dataset_samples = dataset_samples.drop('index', axis=1)
-        #print(self.dataset_samples)
+        self.dataset_samples = self.dataset_samples.values
+        print(self.dataset_samples)
 
 
 
@@ -168,23 +172,20 @@ class CelebaTSNERaceExperiment(data.Dataset):
         ])
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.dataset_samples)
 
     def __getitem__(self, index):
-        img_path = self.dataset_samples.loc[index, 'img_path']
-        print(img_path)
 
-        X = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba_mtcnn', img_path))
+        X = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba', self.dataset_samples[index][0]))
 
         x = self.trans(X)
 
-        u = self.dataset_samples.loc[index, 'id']
+        u = self.dataset_samples[index][2]
         u = torch.as_tensor(u) - 1.0
         u = u.long()
 
-        s = torch.as_tensor(self.dataset_samples.loc[index, 'white'])
-        s = torch.div(s + 1, 2, rounding_mode='floor')
-        s = s.to(torch.float32)
+        s = torch.as_tensor(self.dataset_samples[index][1])
+        s = torch.tensor([s]).to(torch.float32)
 
         return x, u, s
 
@@ -454,10 +455,10 @@ class AdienceTSNERaceExperiment(data.Dataset):
 
 
 if __name__ == '__main__':
-    #data_dir = 'D:\celeba'
-    #lfw_data_dir = 'D:\lfw\lfw112'
+    data_dir = 'D:\datasets\celeba'
+    lfw_data_dir = 'D:\datasets\lfw\lfw112'
 
-    '''
+
     
     loader = CelebaTSNEExperiment(dim_img=112, data_dir=data_dir, split='test_30%',sensitive_attr='Male')
     train_loader = DataLoader(loader, batch_size=2)
@@ -469,6 +470,9 @@ if __name__ == '__main__':
         print(s)
         break
 
+
+    '''
+    
     celeba_race_loader = CelebaTSNERaceExperiment(dim_img=112, data_dir = data_dir, split='test_30%')
     celeba_race_test_loader = DataLoader(celeba_race_loader, batch_size=2)
     for i, item in enumerate(celeba_race_test_loader):
@@ -492,7 +496,7 @@ if __name__ == '__main__':
         print(u)
         print(s)
         break
-    '''
+
     Adience_data_dir = '/Users/xiaozhe/datasets/Adience'
     Adience_dataset = AdienceTSNEGenderExperiment(dim_img=112, sensitive_attr='Male', data_dir=Adience_data_dir)
     for i, item in enumerate(Adience_dataset):
@@ -511,6 +515,7 @@ if __name__ == '__main__':
         print(u)
         print(s)
         break
+    '''
 
 
 
