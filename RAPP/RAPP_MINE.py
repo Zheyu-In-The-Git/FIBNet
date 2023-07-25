@@ -26,7 +26,7 @@ from data.adience_interface import AdienceInterface
 from experiments.bottleneck_mine_experiments import MineNet
 from .RAPP import RAPP, Generator, Discriminator
 from arcface_resnet50 import ArcfaceResnet50
-from .RAPP import
+
 
 def batch_misclass_rate(y_pred, y_true):
     return np.sum(y_pred != y_true) / len(y_true)
@@ -70,7 +70,7 @@ class RAPPMineExperiment(pl.LightningModule):
 
         # 创建RAPP网络 #
         RAPP_model = RAPP()
-        RAPP_model = RAPP_model.load_from_checkpoint(r'') # TODO:RAPP的引用路径要写
+        RAPP_model = RAPP_model.load_from_checkpoint(os.path.abspath(r'RAPP/lightning_logs/RAPP/checkpoints/saved_model/last.ckpt')) # TODO:RAPP的引用路径要写
         self.RAPP_model = RAPP_model
         self.RAPP_model.requires_grad_(False)
 
@@ -115,7 +115,7 @@ class RAPPMineExperiment(pl.LightningModule):
 
 # TODO先把RAPP Mine 写完吧
 class RAPPMineGender():
-    celeba_data_module =
+    pass
 
 
 
