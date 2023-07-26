@@ -95,7 +95,7 @@ class RAPPMineExperiment(pl.LightningModule):
 
 
     def training_step(self, batch):
-        x, u, a, s = batch # TODO：数据集要这样设计
+        x, u, a, s = batch
 
         a = a.to(torch.int32)
         c = pattern()
