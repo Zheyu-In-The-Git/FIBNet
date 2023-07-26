@@ -205,7 +205,7 @@ class CelebaRAPPMineRaceData(data.Dataset):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        X = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba\img_align_celeba_mtcnn', self.dataset_values[index][0]))
+        X = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba_mtcnn', self.dataset_values[index][0]))
 
         x = self.trans(X)
 

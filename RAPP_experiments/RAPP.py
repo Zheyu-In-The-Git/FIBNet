@@ -14,7 +14,7 @@ import torchvision.models as models
 import pickle
 from inception_resnet_v1 import InceptionResnetV1
 import itertools
-
+from torchvision import transforms
 import math
 
 pl.seed_everything(83)
@@ -158,14 +158,17 @@ class Discriminator(nn.Module):
         x = self.adaptive_avgpool(x)
         x = x.view(x.size(0), x.size(1), 4*4)
 
+
         real = self.fc1_1(x)
-        real = real.view(real.size(0), real.size(1) * real.size(2)) # 不行的话这里改一下
+        real = real.view(real.size(0), real.size(2),  real.size(1)) # 不行的话这里改一下
         real = self.fc1_2(real)
+        real = real.view(real.size(0), real.size(1) * real.size(2))
         #real = self.sigmoid(real) # 到时候用 torch.nn.BCELoss()看下可不可以
 
         sensitive_attribute = self.fc2_1(x)
-        sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(1) * sensitive_attribute.size(2))
+        sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(2), sensitive_attribute.size(1))
         sensitive_attribute = self.fc2_2(sensitive_attribute)
+        sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(2)*sensitive_attribute.size(1))
 
 
         return real, sensitive_attribute
@@ -214,6 +217,10 @@ class RAPP(pl.LightningModule):
         self.face_match = FaceMatch()
 
 
+        mean = [0.5, 0.5, 0.5]
+        std = [0.5, 0.5, 0.5]
+        self.unnormalize_img = transforms.Normalize(mean=[-m/s for m,s in zip(mean, std)], std=[1/s for s in std])
+
 
         self.bcewithlogits = nn.BCEWithLogitsLoss()
         self.l1_norm = nn.L1Loss()
@@ -260,9 +267,9 @@ class RAPP(pl.LightningModule):
         opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=lr, betas=(beta1, beta2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=lr, betas=(beta1, beta2))
 
-        lr_g_fm = optim.lr_scheduler.ReduceLROnPlateau(opt_g_fm, mode="min", factor=0.1, patience=5, min_lr=1e-8,
+        lr_g_fm = optim.lr_scheduler.ReduceLROnPlateau(opt_g_fm, mode="min", factor=0.5, patience=3, min_lr=1e-6,
                                                          verbose=True, threshold=1e-3)
-        lr_d = optim.lr_scheduler.ReduceLROnPlateau(opt_d, mode="min", factor=0.1, patience=5, min_lr=1e-8,
+        lr_d = optim.lr_scheduler.ReduceLROnPlateau(opt_d, mode="min", factor=0.5, patience=3, min_lr=1e-6,
                                                          verbose=True, threshold=1e-3)
 
         return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": {'scheduler':lr_g_fm, "monitor": "loss_total_G"}},
@@ -301,14 +308,20 @@ class RAPP(pl.LightningModule):
 
         if optimizer_idx == 0:
 
-            original_imgs = x[:10]
-            grid = torchvision.utils.make_grid(original_imgs)
+            # 挑5张原图，并且反归一化
+            original_imgs = x[:5]
+            original_imgs_rgb = original_imgs.clone()
+            original_imgs_rgb = self.unnormalize_img(original_imgs_rgb)
+            grid = torchvision.utils.make_grid(original_imgs_rgb)
             self.logger.experiment.add_image('original_imgs', grid, self.global_step)
 
             x_prime = self.generator(x, b)
 
-            sample_imgs = x_prime[:10]
-            grid = torchvision.utils.make_grid(sample_imgs)
+            # 挑5张生成，并且反归一化
+            generated_imgs = x_prime[:5]
+            generated_imgs_rgb = generated_imgs.clone()
+            generated_imgs_rgb = self.unnormalize_img(generated_imgs_rgb)
+            grid = torchvision.utils.make_grid(generated_imgs_rgb)
             self.logger.experiment.add_image('generated_imgs', grid, self.global_step)
 
             discriminator_output_fake, sensitive_attribute = self.discriminator(x_prime)
@@ -424,7 +437,7 @@ def train():
                                            sensitive_dim=1)
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP/checkpoints/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP_experiments/checkpoints/')
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='RAPP_logger')
 
@@ -445,8 +458,8 @@ def train():
         precision=32,
         enable_checkpointing=True,
         fast_dev_run=False,
-        min_epochs=8,
-        max_epochs=9
+        min_epochs=12,
+        max_epochs=13
     )
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
@@ -468,7 +481,7 @@ def train():
 if __name__ == '__main__':
     x = torch.rand(size=(16, 3, 128, 128))
     s = torch.rand(size=(16, 10))
-    #RAPP_net = RAPP()
+    #RAPP_net = RAPP_experiments()
     #output1, output2, output3 = RAPP_net(x,s)
     #print(output1.size())
 
@@ -478,8 +491,9 @@ if __name__ == '__main__':
 
     #discriminator = Discriminator()
     #print(discriminator)
-    #out = discriminator(x)
-    #print(out)
+    #out1, out2  = discriminator(x)
+    #print(out1.size())
+    #print(out2.size())
 
     #input1 = torch.tensor([0,0,1,1])
     #input2 = torch.tensor([0,1,0,1])
@@ -500,7 +514,7 @@ if __name__ == '__main__':
     #print(output.size())
 
 
-    #RAPP_net = RAPP()
+    #RAPP_net = RAPP_experiments()
     #face_representation, real, sensitive_attribute = RAPP_net(x, s)
     #print(face_representation.size())
     #print(real.size())

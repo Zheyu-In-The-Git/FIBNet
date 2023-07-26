@@ -258,7 +258,7 @@ class InceptionResnetV1(nn.Module):
         if pretrained is not None:
             self.logits = nn.Linear(512, tmp_classes)
             # load_weights(self, pretrained)
-            #state_dict = torch.load('C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\RAPP\lightning_logs\facenet-vggface2.pt')
+            #state_dict = torch.load('C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\RAPP_experiments\lightning_logs\facenet-vggface2.pt')
             #mdl.load_state_dict(state_dict)
 
         if self.classify and self.num_classes is not None:

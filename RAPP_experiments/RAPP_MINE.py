@@ -70,7 +70,7 @@ class RAPPMineExperiment(pl.LightningModule):
 
         # 创建RAPP网络 #
         RAPP_model = RAPP()
-        RAPP_model = RAPP_model.load_from_checkpoint(os.path.abspath(r'RAPP/lightning_logs/RAPP/checkpoints/saved_model/last.ckpt')) # TODO:RAPP的引用路径要写
+        RAPP_model = RAPP_model.load_from_checkpoint(os.path.abspath(r'RAPP_experiments/lightning_logs/RAPP_experiments/checkpoints/saved_model/last.ckpt')) # TODO:RAPP的引用路径要写
         self.RAPP_model = RAPP_model
         self.RAPP_model.requires_grad_(False)
 
