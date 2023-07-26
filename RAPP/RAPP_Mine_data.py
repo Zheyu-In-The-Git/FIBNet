@@ -22,7 +22,9 @@ import mat73
 
 
 
-
+######################################################################
+###################### CelebA  #######################################
+######################################################################
 class CelebaRAPPMineGenderData(data.Dataset):
     def __init__(self,
                  dim_img: int,
@@ -223,6 +225,12 @@ class CelebaRAPPMineRaceData(data.Dataset):
 
 # 开始写LFW吧
 
+
+######################################################################
+###################### LFW  #######################################
+######################################################################
+
+
 class LFWRAPPMineGenderData(data.Dataset):
     def __init__(self,
                  dim_img: int,
@@ -389,11 +397,167 @@ class LFWRAPPMineRaceData(data.Dataset):
 
 
 
+def pattern():
+    vector_length = 10
+    pattern = torch.tensor([0, 1, 0, 1])
+    vector = torch.cat([pattern[i % 4].unsqueeze(0) for i in range(vector_length)])
+    vector = vector.to(torch.int32)
+    return vector
+
+######################################################################
+###################### Adience  #######################################
+######################################################################
+
+class AdienceMineGenderData(data.Dataset):
+    def __init__(self,
+                 dim_img:int,
+                 data_dir:str,
+                 identity_nums:int, # 2284?
+                 ):
+
+        self.dim_img = dim_img
+        self.data_dir = data_dir
+        self.identity_nums = identity_nums
+
+        fn = partial(os.path.join, self.data_dir)
+        adience_dataset_fold_0 = pandas.read_table(fn('fold_0_data.txt'), index_col=False)
+        adience_dataset_fold_1 = pandas.read_table(fn('fold_1_data.txt'), index_col=False)
+        adience_dataset_fold_2 = pandas.read_table(fn('fold_2_data.txt'), index_col=False)
+        adience_dataset_fold_3 = pandas.read_table(fn('fold_3_data.txt'), index_col=False)
+        adience_dataset_fold_4 = pandas.read_table(fn('fold_4_data.txt'), index_col=False)
+
+        adience_dataset = pd.concat([adience_dataset_fold_0, adience_dataset_fold_1,
+                                          adience_dataset_fold_2, adience_dataset_fold_3,
+                                          adience_dataset_fold_4],  ignore_index=True)
+
+        adience_dataset = adience_dataset.dropna(subset=['gender'])
+        adience_dataset = adience_dataset.reset_index()
+
+        self.adience_dataset = adience_dataset[['user_id', 'original_image', 'face_id', 'gender']]
+
+        self.trans_first = transforms.Compose([transforms.CenterCrop((1250, 1250))])
+        self.trans_second = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),
+                                                transforms.ToTensor(),
+                                                transforms.Normalize(mean=[0.5, 0.5, 0.5],
+                                                                     std=[0.5, 0.5, 0.5]),
+                                                ])
+
+        self.trans = transforms.Compose([transforms.CenterCrop((250,250)),
+                                         transforms.Resize((self.dim_img, self.dim_img)),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize(mean=[0.5,0.5,0.5], std=[0.5,0.5,0.5])])
+
+        self.a = pattern()
+
+
+    def __len__(self):
+        return self.adience_dataset.shape[0]
+
+    def __getitem__(self, index):
+
+        user_id_path = self.adience_dataset['user_id'][index]
+        original_image = self.adience_dataset['original_image'][index]
+        face_id = self.adience_dataset['face_id'][index]
+        gender = self.adience_dataset['gender'][index]
+
+        img_sub_path = 'coarse_tilt_aligned_face' + '.' + str(face_id) + '.' + original_image
+
+        img_path = os.path.join(self.data_dir, 'faces', user_id_path, img_sub_path)
+
+        x = PIL.Image.open(img_path)
+
+        x = self.trans(x)
+
+        #to_img = transforms.ToPILImage()
+        #img = to_img(x)
+        #img.show()
+
+        # x = self.trans(x)
+
+        u = face_id - 1
+
+        u = torch.tensor(u)
+
+        if gender == 'f':
+            s = torch.tensor([0.0])
+            s = s.to(torch.int32)
+        else:
+            s = torch.tensor([1.0])
+            s = s.to(torch.int32)
+
+        a = self.a
+        a = a.to(torch.int32)
+
+        return x, u, a, s
+
+
+class AdienceMineRaceData(data.Dataset):
+    def __init__(self,
+                 dim_img:int,
+                 data_dir:str,
+                 identity_nums:int, # 2284?
+                 ):
+        self.dim_img = dim_img
+        self.data_dir = data_dir
+        self.identity_nums = identity_nums
+
+        fn = partial(os.path.join, self.data_dir)
+        adience_fold_0 = pandas.read_table(fn('fold_0_data.txt'), index_col=False)
+        adience_fold_1 = pandas.read_table(fn('fold_1_data.txt'), index_col=False)
+        adience_fold_2 = pandas.read_table(fn('fold_2_data.txt'), index_col=False)
+        adience_fold_3 = pandas.read_table(fn('fold_3_data.txt'), index_col=False)
+        adience_fold_4 = pandas.read_table(fn('fold_4_data.txt'), index_col=False)
+
+        self.adience_dataset = pd.concat([adience_fold_0,adience_fold_1,adience_fold_2,adience_fold_3,adience_fold_4], ignore_index=True)
+        #print(self.adience_dataset)
+
+        self.userid_imgsubpath_white_faceid = pandas.read_csv(fn('adience_imgpath_race_id.csv')).drop(labels='Unnamed: 0', axis=1)
+        #print(self.userid_imgsubpath_white_faceid)
+
+        self.trans = transforms.Compose([transforms.CenterCrop((300, 300)),
+                                         transforms.Resize((self.dim_img, self.dim_img)),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+
+        self.a = pattern()
+
+    def __len__(self):
+        return len(self.userid_imgsubpath_white_faceid)
+
+    def __getitem__(self, index):
+        user_id_path = self.userid_imgsubpath_white_faceid.loc[index]['user_id']
+        img_sub_path = self.userid_imgsubpath_white_faceid.loc[index]['img_sub_path']
+        race = self.userid_imgsubpath_white_faceid.loc[index]['white']
+        face_id = self.userid_imgsubpath_white_faceid.loc[index]['face_id']
+
+        img_path = os.path.join(self.data_dir, 'faces', user_id_path, img_sub_path)
+
+        x = PIL.Image.open(img_path)
+
+        x = self.trans(x)
+
+        #to_img = transforms.ToPILImage()
+        #img = to_img(x)
+        #img.show()
+
+        u = face_id - 1
+
+        u = torch.tensor(u)
+
+        s = torch.tensor([race])
+        s = s.to(torch.float32)
+
+        a = self.a
+        a = a.to(torch.int32)
+
+        return x, u, a, s
+
 
 
 if __name__ == '__main__':
     data_dir = 'D:\celeba'
     lfw_data_dir = 'D:\lfw\lfw112'
+    adience_data_dir = '/Users/xiaozhe/datasets/Adience'
 
 
     '''
@@ -425,7 +589,7 @@ if __name__ == '__main__':
         x, u, a, s = item
         print(a)
         break
-    '''
+    
 
 
     LFW_race_data = LFWRAPPMineRaceData(dim_img=112, data_dir=lfw_data_dir, identity_nums=5000, split='all', sensitive_attr='White',img_path_replace=True)
@@ -435,4 +599,24 @@ if __name__ == '__main__':
         x, u, a, s = item
         print(a)
         break
+    '''
+
+    adience_gender_datasets = AdienceMineGenderData(dim_img=112, data_dir=adience_data_dir, identity_nums=2284)
+    loader_adience_gender = DataLoader(adience_gender_datasets, batch_size=1)
+    for i, item in enumerate(loader_adience_gender):
+        print('i', i)
+        x, u, a, s = item
+        print(a)
+        break
+
+    adience_race_datasets = AdienceMineRaceData(dim_img=112, data_dir=adience_data_dir, identity_nums=2284)
+    loader_adience_race = DataLoader(adience_race_datasets, batch_size=1)
+    for i, item in enumerate(loader_adience_race):
+        print('i', i)
+        x, u, a, s = item
+        print(a)
+        break
+
+
+
 
