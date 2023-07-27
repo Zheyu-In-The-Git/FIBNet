@@ -42,9 +42,11 @@ class CelebaRAPPMineTrainingDatasetInterface(pl.LightningDataModule):
 
         if self.sensitive_attr == 'Male':
             self.training_dataset = CelebaRAPPMineGenderData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=10177, split='train_63%')
+            self.valid_dataset = CelebaRAPPMineGenderData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=10177, split='valid_7%')
             self.test_dataset = CelebaRAPPMineGenderData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=10177, split='test_30%')
         elif self.sensitive_attr == 'Race':
             self.training_dataset = CelebaRAPPMineRaceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=10177, split='train_63%')
+            self.valid_dataset = CelebaRAPPMineRaceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=10177, split='valid_7%')
             self.test_dataset = CelebaRAPPMineRaceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=10177, split='test_30%')
         else:
             print('the dataset has not define')
@@ -52,11 +54,14 @@ class CelebaRAPPMineTrainingDatasetInterface(pl.LightningDataModule):
         # Assign train/val datasets for use in dataloaders
         if stage == 'fit' or stage is None:
             self.Train_Dataset = self.training_dataset
+            self.Valid_Dataset = self.valid_dataset
         if stage == 'test' or stage is None:
             self.Test_Dataset = self.test_dataset
     def train_dataloader(self):
         # sampler = WeightedRandomSampler(self.sample_weight, len(self.trainset) * 20)
         return DataLoader(self.Train_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, pin_memory=self.pin_memory)
+    def val_dataloader(self):
+        return DataLoader(self.Valid_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, pin_memory=self.pin_memory)
     def test_dataloader(self):
         return DataLoader(self.Test_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, pin_memory=self.pin_memory)
 
@@ -151,17 +156,24 @@ class LFWRAPPMineDatasetInterface(pl.LightningDataModule):
 
         if self.sensitive_attr == 'Male':
             self.training_dataset = LFWRAPPMineGenderData(dim_img=self.dim_img, data_dir=self.data_dir, split='all', sensitive_attr='Male', img_path_replace=self.LFWData_img_path_replace, identity_nums=2088)
+            self.test_dataset = LFWRAPPMineGenderData(dim_img=self.dim_img, data_dir=self.data_dir, split='all', identity_nums=2088, img_path_replace=self.LFWData_img_path_replace, sensitive_attr='Male')
         elif self.sensitive_attr == 'Race':
             self.training_dataset = LFWRAPPMineRaceData(dim_img=self.dim_img, data_dir=self.data_dir, split='all', sensitive_attr='White', img_path_replace=self.LFWData_img_path_replace, identity_nums=2088)
+            self.test_dataset = LFWRAPPMineRaceData(dim_img=self.dim_img, data_dir=self.data_dir, split='all', sensitive_attr='White', img_path_replace=self.LFWData_img_path_replace, identity_nums=2088)
         else:
             print('the dataset has not define')
 
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
             self.Train_Dataset = self.training_dataset
+        if stage == 'test' or stage is None:
+            self.Test_Dataset = self.test_dataset
 
     def train_dataloader(self):
         return DataLoader(self.Train_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, pin_memory=self.pin_memory)
+
+    def test_dataloader(self):
+        return DataLoader(self.Test_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, pin_memory=self.pin_memory)
 
 ###################################################################
 ###################### Adience  #######################################
@@ -196,8 +208,10 @@ class AdienceRAPPMineDatasetInterface(pl.LightningDataModule):
 
         if self.sensitive_attr == 'Male':
             self.training_dataset = AdienceMineGenderData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=2284)
+            self.test_dataset = AdienceMineGenderData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=2284)
         elif self.sensitive_attr == 'Race':
             self.training_dataset = AdienceMineRaceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=2284)
+            self.test_dataset = AdienceMineRaceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=2284)
         else:
             print('the dataset has not defined')
 
@@ -205,8 +219,14 @@ class AdienceRAPPMineDatasetInterface(pl.LightningDataModule):
         if stage == 'fit' or stage is None:
             self.Train_Dataset = self.training_dataset
 
+        if stage == 'test' or stage is None:
+            self.Test_Dataset = self.test_dataset
+
     def train_dataloader(self):
         return DataLoader(self.Train_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, pin_memory=self.pin_memory)
+
+    def test_dataloader(self):
+        return DataLoader(self.Test_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, pin_memory=self.pin_memory)
 
 
 
