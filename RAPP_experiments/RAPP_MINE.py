@@ -7,25 +7,16 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, Ea
 import torch.optim as optim
 import os
 import numpy as np
-from data import CelebaInterface
 from pytorch_lightning.loggers import TensorBoardLogger
-from model import ResNet50, ArcMarginProduct, FocalLoss
-import torchvision.models as models
-import pickle
-from inception_resnet_v1 import InceptionResnetV1
-import itertools
-
-import math
 
 pl.seed_everything(83)
-import torch.nn.functional as F
-from RAPP_data_interface import CelebaRAPPDatasetInterface
 
-from data.lfw_interface import LFWInterface
-from data.adience_interface import AdienceInterface
 from experiments.bottleneck_mine_experiments import MineNet
 from .RAPP import RAPP, Generator, Discriminator
-from arcface_resnet50 import ArcfaceResnet50
+
+from .RAPP_Mine_data_interface import CelebaRAPPMineTrainingDatasetInterface, CelebaRAPPMineTestDatasetInterface, LFWRAPPMineDatasetInterface, AdienceRAPPMineDatasetInterface
+
+
 
 
 def batch_misclass_rate(y_pred, y_true):
@@ -70,7 +61,7 @@ class RAPPMineExperiment(pl.LightningModule):
 
         # 创建RAPP网络 #
         RAPP_model = RAPP()
-        RAPP_model = RAPP_model.load_from_checkpoint(os.path.abspath(r'RAPP_experiments/lightning_logs/RAPP_experiments/checkpoints/saved_model/last.ckpt')) # TODO:RAPP的引用路径要写
+        RAPP_model = RAPP_model.load_from_checkpoint(os.path.abspath(r'RAPP_experiments/lightning_logs/RAPP_experiments/checkpoints/saved_model/last.ckpt'))
         self.RAPP_model = RAPP_model
         self.RAPP_model.requires_grad_(False)
 
@@ -114,8 +105,185 @@ class RAPPMineExperiment(pl.LightningModule):
         return infor_loss
 
 # TODO先把RAPP Mine 写完吧
-class RAPPMineGender():
-    pass
+def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_nums, sensitive_attr, pin_memory, fast_dev_run):
+
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP_Mine_'+ sensitive_attr + '/checkpoints' )
+
+    if dataset_name == 'CelebA_training_dataset':
+        data_module_celeba_training = CelebaRAPPMineTrainingDatasetInterface(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_nums, sensitive_attr, pin_memory=pin_memory)
+        logger_celeba_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='CelebA_training_RAPP_Mine_'+ sensitive_attr + '_logger')
+        trainer_celeba_training = pl.Trainer(
+            callbacks=[
+                ModelCheckpoint(
+                    mode='min',
+                    monitor='infor_loss',
+                    dirpath=os.path.join(CHECKPOINT_PATH, 'CelebA_training_RAPP_Mine_'+ sensitive_attr + '_models'),
+                    save_last=True,
+                    every_n_train_steps=50
+                ),
+                LearningRateMonitor('epoch'),
+                EarlyStopping(
+                    monitor='infor_loss',
+                    patience=5,
+                    mode='max'
+                )
+            ],
+
+            default_root_dir=os.path.join(CHECKPOINT_PATH, 'CelebA_training_RAPP_Mine_'+ sensitive_attr + '_models'),
+            accelerator='auto',
+            devices=1,
+            max_epochs=150,
+            min_epochs=120,
+            logger=logger_celeba_train,
+            log_every_n_steps=10,
+            precision=32,
+            enable_checkpointing=True,
+            fast_dev_run=fast_dev_run
+
+        )
+
+        print('CelebA training' + sensitive_attr + ' dataset for RAPP MINE will be testing, the model will be create!')
+        model = RAPPMineExperiment(latent_dim=512,s_dim=1, patience=5)
+        trainer_celeba_training.fit(model, data_module_celeba_training)
+
+    elif dataset_name == 'CelebA_test_dataset':
+        data_module_celeba_test = CelebaRAPPMineTestDatasetInterface(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_nums, sensitive_attr, pin_memory=pin_memory)
+        logger_celeba_test = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='CelebA_test_RAPP_Mine_'+ sensitive_attr + '_logger')
+        trainer_celeba_test = pl.Trainer(
+            callbacks=[
+                ModelCheckpoint(
+                    mode='min',
+                    monitor='infor_loss',
+                    dirpath=os.path.join(CHECKPOINT_PATH, 'CelebA_test_RAPP_Mine_' + sensitive_attr + '_models'),
+                    save_last=True,
+                    every_n_train_steps=50
+                ),
+                LearningRateMonitor('epoch'),
+                EarlyStopping(
+                    monitor='infor_loss',
+                    patience=5,
+                    mode='max'
+                )
+            ],
+
+            default_root_dir=os.path.join(CHECKPOINT_PATH, 'CelebA_test_RAPP_Mine_' + sensitive_attr + '_models'),
+            accelerator='auto',
+            devices=1,
+            max_epochs=150,
+            min_epochs=120,
+            logger=logger_celeba_test,
+            log_every_n_steps=10,
+            precision=32,
+            enable_checkpointing=True,
+            fast_dev_run=fast_dev_run
+        )
+        print('CelebA test ' + sensitive_attr + ' dataset for RAPP MINE will be testing, the model will be create!')
+        model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=5)
+        trainer_celeba_test.fit(model, data_module_celeba_test)
+
+    elif dataset_name == 'LFW_dataset':
+        data_module_lfw = LFWRAPPMineDatasetInterface(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_nums, sensitive_attr, pin_memory=pin_memory)
+        logger_lfw = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='LFW_RAPP_Mine' + sensitive_attr + '_logger')
+        trainer_lfw = pl.Trainer(
+            callbacks=[
+                ModelCheckpoint(
+                    mode='min',
+                    monitor='infor_loss',
+                    dirpath=os.path.join(CHECKPOINT_PATH, 'LFW_RAPP_Mine_' + sensitive_attr + '_models'),
+                    save_last=True,
+                    every_n_train_steps=50
+                ),
+                LearningRateMonitor('epoch'),
+                EarlyStopping(
+                    monitor='infor_loss',
+                    patience=5,
+                    mode='max'
+                )
+            ],
+
+            default_root_dir=os.path.join(CHECKPOINT_PATH, 'LFW_RAPP_Mine_' + sensitive_attr + '_models'),
+            accelerator='auto',
+            devices=1,
+            max_epochs=500,
+            min_epochs=350,
+            logger=logger_lfw,
+            log_every_n_steps=10,
+            precision=32,
+            enable_checkpointing=True,
+            fast_dev_run=fast_dev_run
+        )
+        print('LFW ' + sensitive_attr + ' dataset for RAPP MINE will be testing, the model will be create!')
+        model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=15)
+        trainer_lfw.fit(model, data_module_lfw)
+
+
+    elif dataset_name == 'Adience_dataset':
+        data_module_adience = AdienceRAPPMineDatasetInterface(num_workers, dataset_name, batch_size, dim_img, data_dir,identity_nums, sensitive_attr, pin_memory=pin_memory)
+        logger_adience = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='Adience_RAPP_Mine' + sensitive_attr + '_logger')
+        trainer_adience = pl.Trainer(
+            callbacks=[
+                ModelCheckpoint(
+                    mode='min',
+                    monitor='infor_loss',
+                    dirpath=os.path.join(CHECKPOINT_PATH, 'Adience_RAPP_Mine_' + sensitive_attr + '_models'),
+                    save_last=True,
+                    every_n_train_steps=50
+                ),
+                LearningRateMonitor('epoch'),
+                EarlyStopping(
+                    monitor='infor_loss',
+                    patience=5,
+                    mode='max'
+                )
+            ],
+
+            default_root_dir=os.path.join(CHECKPOINT_PATH, 'Adience_RAPP_Mine_' + sensitive_attr + '_models'),
+            accelerator='auto',
+            devices=1,
+            max_epochs=500,
+            min_epochs=350,
+            logger=logger_adience,
+            log_every_n_steps=10,
+            precision=32,
+            enable_checkpointing=True,
+            fast_dev_run=fast_dev_run
+        )
+        print('LFW ' + sensitive_attr + ' dataset for RAPP MINE will be testing, the model will be create!')
+        model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=15)
+        trainer_adience.fit(model, data_module_adience)
+
+    else:
+        print('please check the correct datasets name: CelebA_training_dataset, CelebA_test_dataset, LFW_dataset, Adience_dataset')
+
+
+
+
+
+
+if __name__ == '__main__':
+    celeba_data_dir = '/Volumes/xiaozhe_SSD/datasets/celeba'
+    lfw_data_dir = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
+    adience_data_dir = '/Volumes/xiaozhe_SSD/datasets/Adience'
+
+    # gender
+    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=True)
+    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=True)
+    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=True)
+    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=True)
+
+    # race
+    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=True)
+    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=True)
+    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=True)
+    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=True)
+
+
+
+
+
+
+
+
 
 
 
