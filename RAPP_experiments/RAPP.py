@@ -247,10 +247,10 @@ class RAPP(pl.LightningModule):
         opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=lr, betas=(beta1, beta2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=lr, betas=(beta1, beta2))
 
-        lr_g_fm = optim.lr_scheduler.ReduceLROnPlateau(opt_g_fm, mode="min", factor=0.5, patience=5, min_lr=1e-6,
-                                                         verbose=True, threshold=1e-3)
-        lr_d = optim.lr_scheduler.ReduceLROnPlateau(opt_d, mode="min", factor=0.5, patience=1, min_lr=1e-6,
-                                                         verbose=True, threshold=1e-3)
+        lr_g_fm = optim.lr_scheduler.ReduceLROnPlateau(opt_g_fm, mode="min", factor=0.5, patience=2, min_lr=1e-7,
+                                                         verbose=True, threshold=1e-2)
+        lr_d = optim.lr_scheduler.ReduceLROnPlateau(opt_d, mode="min", factor=0.5, patience=2, min_lr=1e-7,
+                                                         verbose=True, threshold=1e-2)
 
         return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": {'scheduler':lr_g_fm, "monitor": "loss_total_G"}},
                 {'optimizer': opt_d, 'frequency': n_critic, "lr_scheduler": {'scheduler':lr_d, "monitor": "loss_total_D_C"}})
@@ -395,9 +395,9 @@ def train():
                                   data_dir='E:\datasets\celeba',  # 'D:\datasets\celeba'
                                   sensitive_dim=1,
                                   identity_nums=10177,
-                                  pin_memory=False)
+                                  pin_memory=True)
 
-    lfw_data_module = LFWInterface(num_workers=2,
+    lfw_data_module = LFWInterface(num_workers=0,
                                    dataset='lfw',
                                    data_dir='E:\datasets\lfw\lfw112',
                                    batch_size=256,
@@ -408,7 +408,7 @@ def train():
                                    identity_nums=5749,
                                    sensitive_dim=1)
 
-    adience_data_module = AdienceInterface(num_workers=2,
+    adience_data_module = AdienceInterface(num_workers=0,
                                            dataset='adience',
                                            data_dir='E:\datasets\Adience',
                                            batch_size=256,
