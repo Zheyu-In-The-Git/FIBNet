@@ -8,7 +8,7 @@ import os
 import numpy as np
 import torch.nn.functional as F
 from pytorch_lightning.loggers import TensorBoardLogger
-
+import math
 
 from .RAPP import RAPP, Generator, Discriminator
 
@@ -45,18 +45,34 @@ def pattern():
     return vector
 
 
-class RAPPLogisticRegressionAttack(pl.LightningModule):
-
+class RAPPMultipleLayerPerceptron(pl.LightningModule):
     def __init__(self, dataset_name):
-        super(RAPPLogisticRegressionAttack, self).__init__()
+        super(RAPPMultipleLayerPerceptron).__init__()
+
+        self.mlp = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, 2)
+        )
+
+        # 模型初始化
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, nn.Linear):
+                scale = math.sqrt(3. / m.in_features)
+                m.weight.data.uniform_(-scale, scale)
+                if m.bias is not None:
+                    m.bias.data.zero_()
 
         self.dataset_name = dataset_name
 
-        self.linear = nn.Linear(512, 2)
-
-        # 创建RAPP 网络
         RAPP_model = RAPP()
-        RAPP_model = RAPP_model.load_from_checkpoint(os.path.abspath(r'RAPP_experiments/lightning_logs/RAPP_experiments/checkpoints/saved_model/last.ckpt'))
+        RAPP_model = RAPP_model.load_from_checkpoint(os.path.abspath(r''))
+
         self.RAPP_model = RAPP_model
         self.RAPP_model.requires_grad_(False)
 
@@ -70,8 +86,9 @@ class RAPPLogisticRegressionAttack(pl.LightningModule):
 
 
     def forward(self, z):
-        logits = self.linear(z)
+        logits = self.mlp(z)
         return logits
+
 
     def configure_optimizers(self):
         b1 = 0.5
@@ -85,7 +102,6 @@ class RAPPLogisticRegressionAttack(pl.LightningModule):
         accuracy = batch_accuracy(preds, labels.cpu().detach().numpy())
         misclass_rate = batch_misclass_rate(preds, labels.cpu().detach().numpy())
         return accuracy, misclass_rate
-
 
     def training_step(self, batch):
         x, u, a, s = batch
@@ -156,21 +172,20 @@ class RAPPLogisticRegressionAttack(pl.LightningModule):
         self.log('test_acc_'+self.dataset_name, acc, on_step=True, on_epoch=True, prog_bar=True)
         return {'test_loss', loss, 'test_s_accuracy', acc}
 
-def GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory, fast_dev_run):
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP_LR_Gender/checkpoints')
-
+def GenderMLPAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory, fast_dev_run):
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP_MLP_Gender/checkpoints')
 
     data_module_celeba_training = CelebaRAPPMineTrainingDatasetInterface(num_workers=0, dataset_name='CelebA', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=pin_memory)
     data_module_lfw = LFWRAPPMineDatasetInterface(num_workers=0, dataset_name='LFW', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=pin_memory)
     data_module_adience = AdienceRAPPMineDatasetInterface(num_workers=0, dataset_name='Adience', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=pin_memory)
-    logger_celeba_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='gender_LR_attack_logger_celeba')
+    logger_celeba_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='gender_MLP_attack_logger_celeba')
 
     trainer_celeba_training = pl.Trainer(
         callbacks=[
             ModelCheckpoint(
                 mode='min',
                 monitor='train_loss',
-                dirpath=os.path.join(CHECKPOINT_PATH, 'gender_LR_attack_models'),
+                dirpath=os.path.join(CHECKPOINT_PATH, 'gender_MLP_attack_models'),
                 save_last=True,
                 every_n_train_steps=50
             ),
@@ -182,7 +197,7 @@ def GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_d
             )
         ],
 
-        default_root_dir=os.path.join(CHECKPOINT_PATH, 'gender_LR_attack_models'),
+        default_root_dir=os.path.join(CHECKPOINT_PATH, 'gender_MLP_attack_models'),
         accelerator='auto',
         devices=1,
         max_epochs=100,
@@ -195,37 +210,38 @@ def GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_d
 
     )
 
-    print('RAPP models on Logistic Regression Gender ')
-    model = RAPPLogisticRegressionAttack(dataset_name='CelebA_LFW_Adience')
+    print('RAPP models on Multiple Layer Perceptron Gender ')
+    model = RAPPMultipleLayerPerceptron(dataset_name='CelebA_LFW_Adience')
     trainer_celeba_training.fit(model, data_module_celeba_training)
     trainer_celeba_training.test(model, data_module_celeba_training)
     trainer_celeba_training.test(model, data_module_lfw)
     trainer_celeba_training.test(model, data_module_adience)
 
 
-def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir, pin_memory, fast_dev_run):
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP_LR_Race/checkpoints')
+def RaceMLPAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory, fast_dev_run):
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP_MLP_Race/checkpoints')
 
     data_module_celeba_training = CelebaRAPPMineTrainingDatasetInterface(num_workers=0, dataset_name='CelebA',
                                                                          batch_size=256, dim_img=224,
                                                                          data_dir=celeba_data_dir, identity_nums=10177,
                                                                          sensitive_attr='Race', pin_memory=pin_memory)
-
-    data_module_lfw = LFWRAPPMineDatasetInterface(num_workers=0, dataset_name='CelebA', batch_size=256, dim_img=224,
+    data_module_lfw = LFWRAPPMineDatasetInterface(num_workers=0, dataset_name='LFW', batch_size=256, dim_img=224,
                                                   data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Race',
                                                   pin_memory=pin_memory)
-    data_module_adience = AdienceRAPPMineDatasetInterface(num_workers=0, dataset_name='CelebA', batch_size=256,
+    data_module_adience = AdienceRAPPMineDatasetInterface(num_workers=0, dataset_name='Adience', batch_size=256,
                                                           dim_img=224, data_dir=adience_data_dir, identity_nums=10177,
                                                           sensitive_attr='Race', pin_memory=pin_memory)
 
-    logger_celeba_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='race_LR_attack_logger_celeba')
+
+
+    logger_celeba_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='race_MLP_attack_logger_celeba')
 
     trainer_celeba_training = pl.Trainer(
         callbacks=[
             ModelCheckpoint(
                 mode='min',
                 monitor='train_loss',
-                dirpath=os.path.join(CHECKPOINT_PATH, 'race_LR_attack_models'),
+                dirpath=os.path.join(CHECKPOINT_PATH, 'race_MLP_attack_models'),
                 save_last=True,
                 every_n_train_steps=50
             ),
@@ -237,7 +253,7 @@ def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir,
             )
         ],
 
-        default_root_dir=os.path.join(CHECKPOINT_PATH, 'race_LR_attack_models'),
+        default_root_dir=os.path.join(CHECKPOINT_PATH, 'race_MLP_attack_models'),
         accelerator='auto',
         devices=1,
         max_epochs=100,
@@ -250,8 +266,8 @@ def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir,
 
     )
 
-    print('RAPP models on Logistic Regression Race ')
-    model = RAPPLogisticRegressionAttack(dataset_name='CelebA_LFW_Adience')
+    print('RAPP models on Multiple Layer Perceptron Race ')
+    model = RAPPMultipleLayerPerceptron(dataset_name='CelebA_LFW_Adience')
     trainer_celeba_training.fit(model, data_module_celeba_training)
     trainer_celeba_training.test(model, data_module_celeba_training)
     trainer_celeba_training.test(model, data_module_lfw)
@@ -262,36 +278,9 @@ if __name__ == '__main__':
     lfw_data_dir = 'E:\datasets\celeba'
     adience_data_dir = 'E:\datasets\celeba'
 
-    GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=True)
-    RaceLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory=False, fast_dev_run=True)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    GenderMLPAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=True)
+    RaceMLPAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=True)
 
 
 
