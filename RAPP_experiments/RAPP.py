@@ -244,16 +244,19 @@ class RAPP(pl.LightningModule):
         beta1 = 0.5
         beta2 = 0.99
 
+        max_epochs = self.trainer.max_epochs
+
         opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=lr, betas=(beta1, beta2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=lr, betas=(beta1, beta2))
 
-        lr_g_fm = optim.lr_scheduler.ReduceLROnPlateau(opt_g_fm, mode="min", factor=0.5, patience=2, min_lr=1e-7,
-                                                         verbose=True, threshold=1e-2)
-        lr_d = optim.lr_scheduler.ReduceLROnPlateau(opt_d, mode="min", factor=0.5, patience=2, min_lr=1e-7,
-                                                         verbose=True, threshold=1e-2)
+        lr_g_fm = optim.lr_scheduler.CosineAnnealingLR(opt_g_fm, T_max=max_epochs)
 
-        return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": {'scheduler':lr_g_fm, "monitor": "loss_total_G"}},
-                {'optimizer': opt_d, 'frequency': n_critic, "lr_scheduler": {'scheduler':lr_d, "monitor": "loss_total_D_C"}})
+        lr_d = optim.lr_scheduler.CosineAnnealingLR(opt_g_fm, T_max=max_epochs)
+
+
+        return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": lr_g_fm},
+                {'optimizer': opt_d, 'frequency': n_critic, "lr_scheduler": lr_d})
+
 
     def calculate_eer(self, metrics, match):
         fpr, tpr, thresholds = self.roc(metrics, match)
