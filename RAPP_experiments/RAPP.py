@@ -254,8 +254,8 @@ class RAPP(pl.LightningModule):
         lr_d = optim.lr_scheduler.CosineAnnealingLR(opt_g_fm, T_max=max_epochs)
 
 
-        return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": lr_g_fm},
-                {'optimizer': opt_d, 'frequency': n_critic, "lr_scheduler": lr_d})
+        return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": lr_g_fm,'opt_idx': 0},
+                {'optimizer': opt_d, 'frequency': n_critic, "lr_scheduler": lr_d, 'opt_idx': 1})
 
 
     def calculate_eer(self, metrics, match):
