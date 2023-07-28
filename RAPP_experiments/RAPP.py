@@ -178,7 +178,7 @@ class FaceMatch(nn.Module):
     def __init__(self):
         super(FaceMatch, self).__init__()
         face_match_net = InceptionResnetV1(pretrained='vggface2')
-        facenet_vggface2_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\RAPP\lightning_logs\facenet-vggface2.pt'
+        facenet_vggface2_path = r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\facenet-vggface2.pt'
         face_match_net.load_state_dict(torch.load(facenet_vggface2_path))
         face_match_net.last_bn = nn.Sequential()
 
@@ -197,22 +197,7 @@ class RAPP(pl.LightningModule):
         self.discriminator = Discriminator()
 
 
-        '''
-        
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                torch.nn.init.xavier_uniform_(m.weight)
-            elif isinstance(m, nn.Linear):
-                scale = math.sqrt(3. / m.in_features)
-                m.weight.data.uniform_(-scale, scale)
-                if m.bias is not None:
-                    m.bias.data.zero_()
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-            elif isinstance(m, nn.ConvTranspose2d):
-                torch.nn.init.xavier_uniform_(m.weight)
-        '''
+
 
         self.face_match = FaceMatch()
 
@@ -242,13 +227,8 @@ class RAPP(pl.LightningModule):
         interpolated_imgs = alpha * x + (1-alpha) * x_prime
         interpolated_imgs.requires_grad_(True)
 
-        #x_prime.requires_grad_(True)
-
-
         score, _ = self.discriminator(interpolated_imgs)
 
-        #x_prime = x_prime.to(device)
-        #score = score.to(device)
 
         gradients = torch.autograd.grad(outputs=score, inputs=interpolated_imgs, grad_outputs=torch.ones(score.size()).to(device), create_graph=True, retain_graph=True)
 
@@ -267,9 +247,9 @@ class RAPP(pl.LightningModule):
         opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=lr, betas=(beta1, beta2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=lr, betas=(beta1, beta2))
 
-        lr_g_fm = optim.lr_scheduler.ReduceLROnPlateau(opt_g_fm, mode="min", factor=0.5, patience=3, min_lr=1e-6,
+        lr_g_fm = optim.lr_scheduler.ReduceLROnPlateau(opt_g_fm, mode="min", factor=0.5, patience=5, min_lr=1e-6,
                                                          verbose=True, threshold=1e-3)
-        lr_d = optim.lr_scheduler.ReduceLROnPlateau(opt_d, mode="min", factor=0.5, patience=3, min_lr=1e-6,
+        lr_d = optim.lr_scheduler.ReduceLROnPlateau(opt_d, mode="min", factor=0.5, patience=1, min_lr=1e-6,
                                                          verbose=True, threshold=1e-3)
 
         return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": {'scheduler':lr_g_fm, "monitor": "loss_total_G"}},
@@ -308,21 +288,24 @@ class RAPP(pl.LightningModule):
 
         if optimizer_idx == 0:
 
-            # 挑5张原图，并且反归一化
-            original_imgs = x[:5]
-            original_imgs_rgb = original_imgs.clone()
-            original_imgs_rgb = self.unnormalize_img(original_imgs_rgb)
-            grid = torchvision.utils.make_grid(original_imgs_rgb)
-            self.logger.experiment.add_image('original_imgs', grid, self.global_step)
+
+            if self.global_step % 50 == 0:
+                # 挑5张原图，并且反归一化
+                original_imgs = x[:5]
+                original_imgs_rgb = original_imgs.clone()
+                original_imgs_rgb = self.unnormalize_img(original_imgs_rgb)
+                grid = torchvision.utils.make_grid(original_imgs_rgb)
+                self.logger.experiment.add_image('original_imgs', grid, self.global_step)
 
             x_prime = self.generator(x, b)
 
-            # 挑5张生成，并且反归一化
-            generated_imgs = x_prime[:5]
-            generated_imgs_rgb = generated_imgs.clone()
-            generated_imgs_rgb = self.unnormalize_img(generated_imgs_rgb)
-            grid = torchvision.utils.make_grid(generated_imgs_rgb)
-            self.logger.experiment.add_image('generated_imgs', grid, self.global_step)
+            if self.global_step % 50 == 0:
+                # 挑5张生成，并且反归一化
+                generated_imgs = x_prime[:5]
+                generated_imgs_rgb = generated_imgs.clone()
+                generated_imgs_rgb = self.unnormalize_img(generated_imgs_rgb)
+                grid = torchvision.utils.make_grid(generated_imgs_rgb)
+                self.logger.experiment.add_image('generated_imgs', grid, self.global_step)
 
             discriminator_output_fake, sensitive_attribute = self.discriminator(x_prime)
             loss_adv_G = - torch.mean(discriminator_output_fake)
@@ -409,14 +392,14 @@ def train():
                                   dataset='celeba_data',
                                   batch_size=16,
                                   dim_img=224,
-                                  data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
+                                  data_dir='E:\datasets\celeba',  # 'D:\datasets\celeba'
                                   sensitive_dim=1,
                                   identity_nums=10177,
                                   pin_memory=False)
 
     lfw_data_module = LFWInterface(num_workers=2,
                                    dataset='lfw',
-                                   data_dir='D:\datasets\lfw\lfw112',
+                                   data_dir='E:\datasets\lfw\lfw112',
                                    batch_size=256,
                                    dim_img=224,
                                    sensitive_attr='Male',
@@ -427,7 +410,7 @@ def train():
 
     adience_data_module = AdienceInterface(num_workers=2,
                                            dataset='adience',
-                                           data_dir='D:\datasets\Adience',
+                                           data_dir='E:\datasets\Adience',
                                            batch_size=256,
                                            dim_img=224,
                                            sensitive_attr='Male',
@@ -458,8 +441,8 @@ def train():
         precision=32,
         enable_checkpointing=True,
         fast_dev_run=False,
-        min_epochs=12,
-        max_epochs=13
+        min_epochs=16,
+        max_epochs=16
     )
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need

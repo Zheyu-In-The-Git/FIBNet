@@ -261,9 +261,9 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
 
 
 if __name__ == '__main__':
-    celeba_data_dir = '/Volumes/xiaozhe_SSD/datasets/celeba'
-    lfw_data_dir = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
-    adience_data_dir = '/Volumes/xiaozhe_SSD/datasets/Adience'
+    celeba_data_dir = 'E:\datasets\celeba'
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    adience_data_dir = 'E:\datasets\Adience'
 
     # gender
     RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=True)

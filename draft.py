@@ -378,5 +378,8 @@ if __name__ == '__main__':
      print(mu, log_var)
 '''
 
-
+import numpy as np
 print(pl.__version__)
+print(np.__version__)
+import torch
+print(torch.__version__)
