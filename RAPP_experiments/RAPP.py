@@ -146,7 +146,8 @@ class Discriminator(nn.Module):
         self.fc1_1 = nn.Linear(16, 1)
         self.fc1_2 = nn.Linear(1024,1)
         self.fc2_1 = nn.Linear(16, 1)
-        self.fc2_2 = nn.Linear(1024, 10)
+        self.fc2_2 = nn.Linear(1024, 1024)
+        self.fc2_3 = nn.Linear(1024, 10)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -168,6 +169,7 @@ class Discriminator(nn.Module):
         sensitive_attribute = self.fc2_1(x)
         sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(2), sensitive_attribute.size(1))
         sensitive_attribute = self.fc2_2(sensitive_attribute)
+        sensitive_attribute = self.fc2_3(sensitive_attribute)
         sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(2)*sensitive_attribute.size(1))
 
 
@@ -195,8 +197,6 @@ class RAPP(pl.LightningModule):
 
         self.generator = Generator()
         self.discriminator = Discriminator()
-
-
 
 
         self.face_match = FaceMatch()
@@ -246,14 +246,12 @@ class RAPP(pl.LightningModule):
         beta1 = 0.5
         beta2 = 0.99
 
-        max_epochs = self.trainer.max_epochs
-
         opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=lr, betas=(beta1, beta2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=lr, betas=(beta1, beta2))
 
-        lr_g_fm = optim.lr_scheduler.StepLR(opt_g_fm, step_size=2, gamma=0.5)
+        lr_g_fm = optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5)
 
-        lr_d = optim.lr_scheduler.StepLR(opt_d, step_size=2, gamma=0.5)
+        lr_d = optim.lr_scheduler.StepLR(opt_d, step_size=1, gamma=0.5)
 
 
         return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": lr_g_fm,'opt_idx': 0},
