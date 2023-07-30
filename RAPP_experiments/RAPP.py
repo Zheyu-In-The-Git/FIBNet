@@ -212,6 +212,8 @@ class RAPP(pl.LightningModule):
 
         self.roc = torchmetrics.ROC(task='binary')
 
+        self.counter = 0
+
 
     def forward(self, x, s):
         x_prime = self.generator(x, s)
@@ -249,9 +251,9 @@ class RAPP(pl.LightningModule):
         opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=lr, betas=(beta1, beta2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=lr, betas=(beta1, beta2))
 
-        lr_g_fm = optim.lr_scheduler.CosineAnnealingLR(opt_g_fm, T_max=max_epochs)
+        lr_g_fm = optim.lr_scheduler.StepLR(opt_g_fm, step_size=2, gamma=0.5)
 
-        lr_d = optim.lr_scheduler.CosineAnnealingLR(opt_d, T_max=max_epochs)
+        lr_d = optim.lr_scheduler.StepLR(opt_d, step_size=2, gamma=0.5)
 
 
         return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": lr_g_fm,'opt_idx': 0},
@@ -292,23 +294,25 @@ class RAPP(pl.LightningModule):
         if optimizer_idx == 0:
 
 
-            if self.global_step % 50 == 0:
+            if self.counter % 50 == 0:
                 # 挑5张原图，并且反归一化
                 original_imgs = x[:5]
                 original_imgs_rgb = original_imgs.clone()
                 original_imgs_rgb = self.unnormalize_img(original_imgs_rgb)
                 grid = torchvision.utils.make_grid(original_imgs_rgb)
-                self.logger.experiment.add_image('original_imgs', grid, self.global_step)
+                self.logger.experiment.add_image('original_imgs', grid, self.counter)
 
             x_prime = self.generator(x, b)
 
-            if self.global_step % 50 == 0:
+            if self.counter % 50 == 0:
                 # 挑5张生成，并且反归一化
                 generated_imgs = x_prime[:5]
                 generated_imgs_rgb = generated_imgs.clone()
                 generated_imgs_rgb = self.unnormalize_img(generated_imgs_rgb)
                 grid = torchvision.utils.make_grid(generated_imgs_rgb)
-                self.logger.experiment.add_image('generated_imgs', grid, self.global_step)
+                self.logger.experiment.add_image('generated_imgs', grid, self.counter)
+
+            self.counter += 1
 
             discriminator_output_fake, sensitive_attribute = self.discriminator(x_prime)
             loss_adv_G = - torch.mean(discriminator_output_fake)
