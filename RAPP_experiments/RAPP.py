@@ -149,6 +149,7 @@ class Discriminator(nn.Module):
         self.fc2_2 = nn.Linear(1024, 1024)
         self.fc2_3 = nn.Linear(1024, 10)
         self.sigmoid = nn.Sigmoid()
+        self.leakyrelu = nn.LeakyReLU()
 
     def forward(self, x):
         x = self.conv1(x)
@@ -162,13 +163,16 @@ class Discriminator(nn.Module):
 
         real = self.fc1_1(x)
         real = real.view(real.size(0), real.size(2),  real.size(1)) # 不行的话这里改一下
+        real = self.leakyrelu(real)
         real = self.fc1_2(real)
         real = real.view(real.size(0), real.size(1) * real.size(2))
         #real = self.sigmoid(real) # 到时候用 torch.nn.BCELoss()看下可不可以
 
         sensitive_attribute = self.fc2_1(x)
         sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(2), sensitive_attribute.size(1))
+        sensitive_attribute = self.leakyrelu(sensitive_attribute)
         sensitive_attribute = self.fc2_2(sensitive_attribute)
+        sensitive_attribute = self.leakyrelu(sensitive_attribute)
         sensitive_attribute = self.fc2_3(sensitive_attribute)
         sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(2)*sensitive_attribute.size(1))
 
@@ -246,16 +250,19 @@ class RAPP(pl.LightningModule):
         beta1 = 0.5
         beta2 = 0.99
 
+        num_epoch = self.trainer.max_epochs
+        num_epoch = num_epoch * 2
+
         opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=lr, betas=(beta1, beta2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=lr, betas=(beta1, beta2))
 
-        lr_g_fm = optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5)
+        lr_g_fm = optim.lr_scheduler.StepLR(opt_g_fm , step_size=1, gamma=0.9)
 
-        lr_d = optim.lr_scheduler.StepLR(opt_d, step_size=1, gamma=0.5)
+        lr_d = optim.lr_scheduler.StepLR(opt_d, step_size=1, gamma=0.9)
 
 
-        return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": lr_g_fm,'opt_idx': 0},
-                {'optimizer': opt_d, 'frequency': n_critic, "lr_scheduler": lr_d, 'opt_idx': 1})
+        return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": lr_g_fm},
+                {'optimizer': opt_d, 'frequency': n_critic, "lr_scheduler": lr_d})
 
 
     def calculate_eer(self, metrics, match):
@@ -292,9 +299,9 @@ class RAPP(pl.LightningModule):
         if optimizer_idx == 0:
 
 
-            if self.counter % 50 == 0:
+            if self.counter % 100 == 0:
                 # 挑5张原图，并且反归一化
-                original_imgs = x[:5]
+                original_imgs = x[:10]
                 original_imgs_rgb = original_imgs.clone()
                 original_imgs_rgb = self.unnormalize_img(original_imgs_rgb)
                 grid = torchvision.utils.make_grid(original_imgs_rgb)
@@ -302,9 +309,9 @@ class RAPP(pl.LightningModule):
 
             x_prime = self.generator(x, b)
 
-            if self.counter % 50 == 0:
+            if self.counter % 100 == 0:
                 # 挑5张生成，并且反归一化
-                generated_imgs = x_prime[:5]
+                generated_imgs = x_prime[:10]
                 generated_imgs_rgb = generated_imgs.clone()
                 generated_imgs_rgb = self.unnormalize_img(generated_imgs_rgb)
                 grid = torchvision.utils.make_grid(generated_imgs_rgb)
@@ -436,7 +443,7 @@ def train():
                 save_last=True,
                 every_n_train_steps=50
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
-            LearningRateMonitor("epoch"),
+            LearningRateMonitor(logging_interval='step'),
         ],
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
         accelerator="auto",
