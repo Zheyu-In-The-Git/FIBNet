@@ -246,13 +246,12 @@ class RAPP(pl.LightningModule):
     def configure_optimizers(self):
         n_critic = 5
 
-        lr = 0.0002
         beta1 = 0.5
         beta2 = 0.99
 
 
-        opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=lr, betas=(beta1, beta2))
-        opt_d = optim.Adam(self.discriminator.parameters(), lr=lr, betas=(beta1, beta2))
+        opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=0.0001, betas=(beta1, beta2))
+        opt_d = optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(beta1, beta2))
 
         lr_g_fm = optim.lr_scheduler.StepLR(opt_g_fm , step_size=1, gamma=0.9)
 
