@@ -65,20 +65,23 @@ class CelebaRAPPData(data.Dataset):
 
         if split_ == 'train_63%':
             mask = slice(0, 127638, 1)
-            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+            self.trans = transforms.Compose([transforms.CenterCrop(170),
+                                             transforms.Resize(self.dim_img),
                                              #transforms.RandomHorizontalFlip(p=0.5)
                                              transforms.ToTensor(),
                                              transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
         elif split_ == 'valid_7%':
             mask = slice(127638, 141819, 1)
-            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+            self.trans = transforms.Compose([transforms.CenterCrop(170),
+                                             transforms.Resize(self.dim_img),
                                              transforms.ToTensor(),
                                              transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
         elif split_ == 'test_30%':
             mask = slice(141819, 202599, 1)
-            self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+            self.trans = transforms.Compose([transforms.CenterCrop(170),
+                                             transforms.Resize(self.dim_img),
                                              transforms.ToTensor(),
                                              transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
         elif split_ is None:
@@ -106,7 +109,7 @@ class CelebaRAPPData(data.Dataset):
 
 
     def __getitem__(self, index):
-        X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba_mtcnn", self.filename[index]))
+        X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba", self.filename[index]))
 
         #X = PIL.Image.open(os.path.join(self.data_dir, "img_align_celeba/img_align_celeba", self.filename[index]))
 
@@ -133,7 +136,8 @@ class CelebaRecognitionTestDataSet(data.Dataset):
         print(self.celeba_test_dataset)
 
         # 图像变换成张量
-        self.trans = transforms.Compose([transforms.Resize(self.dim_img),
+        self.trans = transforms.Compose([transforms.CenterCrop(170),
+                                         transforms.Resize(self.dim_img),
                                          transforms.ToTensor(),
                                          transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
@@ -141,10 +145,10 @@ class CelebaRecognitionTestDataSet(data.Dataset):
         return self.celeba_test_dataset.shape[0]
 
     def __getitem__(self, index):
-        img_x = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba_mtcnn', self.celeba_test_dataset['img_x'][index]))
+        img_x = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba', self.celeba_test_dataset['img_x'][index]))
         img_x = self.trans(img_x)
 
-        img_y = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba_mtcnn', self.celeba_test_dataset['img_y'][index]))
+        img_y = PIL.Image.open(os.path.join(self.data_dir, 'img_align_celeba/img_align_celeba', self.celeba_test_dataset['img_y'][index]))
         img_y = self.trans(img_y)
 
         match = torch.tensor(self.celeba_test_dataset['match'][index])

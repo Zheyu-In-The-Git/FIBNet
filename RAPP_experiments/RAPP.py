@@ -250,8 +250,6 @@ class RAPP(pl.LightningModule):
         beta1 = 0.5
         beta2 = 0.99
 
-        num_epoch = self.trainer.max_epochs
-        num_epoch = num_epoch * 2
 
         opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=lr, betas=(beta1, beta2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=lr, betas=(beta1, beta2))
