@@ -40,7 +40,7 @@ def xor(a, b):
 
 def pattern():
     vector_length = 10
-    pattern = torch.tensor([0, 1, 0, 1])
+    pattern = torch.tensor([1, 1, 1, 1])
     vector = torch.cat([pattern[i % 4].unsqueeze(0) for i in range(vector_length)])
     vector = vector.to(torch.int32)
     return vector
@@ -250,16 +250,33 @@ class RAPP(pl.LightningModule):
         beta2 = 0.99
 
 
-        opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=0.0001, betas=(beta1, beta2))
+        opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=0.0002, betas=(beta1, beta2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(beta1, beta2))
 
-        lr_g_fm = optim.lr_scheduler.StepLR(opt_g_fm , step_size=1, gamma=0.9)
+        lr_g_fm = {
+            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
+            'interval':'epoch',
+            'frequency':1,
+            'param_name': 'Generator'
+        }
 
-        lr_d = optim.lr_scheduler.StepLR(opt_d, step_size=1, gamma=0.9)
+        lr_d = {
+            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
+            'interval':'epoch',
+            'frequency':n_critic,
+            'param_name':'Discriminator'
+        }
+
+        return [opt_g_fm, opt_d], [lr_g_fm, lr_d]
 
 
-        return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": lr_g_fm},
-                {'optimizer': opt_d, 'frequency': n_critic, "lr_scheduler": lr_d})
+        #lr_g_fm = optim.lr_scheduler.StepLR(opt_g_fm , step_size=1, gamma=0.5)
+
+        #lr_d = optim.lr_scheduler.StepLR(opt_d, step_size=1, gamma=0.5)
+
+
+        #return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": lr_g_fm},
+        #        {'optimizer': opt_d, 'frequency': n_critic, "lr_scheduler": lr_d})
 
 
     def calculate_eer(self, metrics, match):
@@ -450,7 +467,7 @@ def train():
         precision=32,
         enable_checkpointing=True,
         fast_dev_run=False,
-        min_epochs=16,
+        min_epochs=8,
         max_epochs=16
     )
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
@@ -460,7 +477,7 @@ def train():
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(RAPP_model, celeba_data_module)
+    trainer.fit(RAPP_model, celeba_data_module, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_experiments\checkpoints\saved_model\last.ckpt')
     trainer.test(RAPP_model, celeba_data_module)
 
 
