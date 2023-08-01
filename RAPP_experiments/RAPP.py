@@ -133,21 +133,41 @@ class Generator(nn.Module):
         return x
 
 
+
+class DiscriminatorConvBlock(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(DiscriminatorConvBlock, self).__init__()
+        Conv_BN_IN_LReLU = []
+        Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1))
+        Conv_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels))
+        Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
+
+        Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1))
+        Conv_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels, affine=True, track_running_stats=True))
+        Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
+
+        self.conv_bn_in_leakyrelu = nn.Sequential(*Conv_BN_IN_LReLU)
+
+    def forward(self, x):
+        out = self.conv_bn_in_leakyrelu(x)
+        return out
+
+
+
 class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
 
-        self.conv1 = ConvBlock(in_channels=3, out_channels=64)
-        self.conv2 = ConvBlock(in_channels=64, out_channels=128)
-        self.conv3 = ConvBlock(in_channels=128, out_channels=256)
-        self.conv4 = ConvBlock(in_channels=256, out_channels=512)
-        self.conv5 = ConvBlock(in_channels=512, out_channels=1024)
+        self.conv1 = DiscriminatorConvBlock(in_channels=3, out_channels=64)
+        self.conv2 = DiscriminatorConvBlock(in_channels=64, out_channels=128)
+        self.conv3 = DiscriminatorConvBlock(in_channels=128, out_channels=256)
+        self.conv4 = DiscriminatorConvBlock(in_channels=256, out_channels=512)
+        self.conv5 = DiscriminatorConvBlock(in_channels=512, out_channels=1024)
         self.adaptive_avgpool = nn.AdaptiveAvgPool2d((4,4))
         self.fc1_1 = nn.Linear(16, 1)
         self.fc1_2 = nn.Linear(1024,1)
         self.fc2_1 = nn.Linear(16, 1)
-        self.fc2_2 = nn.Linear(1024, 1024)
-        self.fc2_3 = nn.Linear(1024, 10)
+        self.fc2_2 = nn.Linear(1024, 10)
         self.sigmoid = nn.Sigmoid()
         self.leakyrelu = nn.LeakyReLU()
 
@@ -172,8 +192,6 @@ class Discriminator(nn.Module):
         sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(2), sensitive_attribute.size(1))
         sensitive_attribute = self.leakyrelu(sensitive_attribute)
         sensitive_attribute = self.fc2_2(sensitive_attribute)
-        sensitive_attribute = self.leakyrelu(sensitive_attribute)
-        sensitive_attribute = self.fc2_3(sensitive_attribute)
         sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(2)*sensitive_attribute.size(1))
 
 
@@ -414,7 +432,7 @@ class RAPP(pl.LightningModule):
 
 
 def train():
-    celeba_data_module = CelebaRAPPDatasetInterface(num_workers=2,
+    celeba_data_module = CelebaRAPPDatasetInterface(num_workers=3,
                                   dataset='celeba_data',
                                   batch_size=16,
                                   dim_img=224,
@@ -477,7 +495,7 @@ def train():
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(RAPP_model, celeba_data_module, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_experiments\checkpoints\saved_model\last.ckpt')
+    trainer.fit(RAPP_model, celeba_data_module)
     trainer.test(RAPP_model, celeba_data_module)
 
 
