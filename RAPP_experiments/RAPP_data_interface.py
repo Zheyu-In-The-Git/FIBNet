@@ -58,10 +58,8 @@ class CelebaRAPPData(data.Dataset):
         splits = pandas.read_csv(fn("list_eval_partition.txt"), delim_whitespace=True, header=None, index_col=0)
         identity = pandas.read_csv(fn("identity_CelebA.txt"), delim_whitespace=True, header=None, index_col=0)
         attr = pandas.read_csv(fn("list_attr_celeba.txt"), delim_whitespace=True, header=1)
-        #sensitive_attr = attr[self.sensitive_attr]
 
         sensitive_attr = attr[self.sensitive_attr]
-        print(sensitive_attr)
 
         if split_ == 'train_63%':
             mask = slice(0, 127638, 1)
@@ -104,6 +102,7 @@ class CelebaRAPPData(data.Dataset):
         self.s = self.s.to(torch.float32)
 
 
+
     def __len__(self):
         return len(self.filename)
 
@@ -131,9 +130,17 @@ class CelebaRecognitionTestDataSet(data.Dataset):
         self.dim_img = dim_img
         self.data_dir = data_dir
 
+        sensitive_attr = ['Male', 'Young', 'Pale_Skin', 'Bushy_Eyebrows', 'Mouth_Slightly_Open',
+                               'Narrow_Eyes', 'Bags_Under_Eyes', 'Black_Hair', 'Mustache', 'Big_Nose']
+
         fn = partial(os.path.join, self.data_dir)
         self.celeba_test_dataset = pandas.read_csv(fn('celeba_face_verify_test_dataset.csv'), sep=',')
         print(self.celeba_test_dataset)
+        attr = pandas.read_csv(fn("list_attr_celeba.txt"), delim_whitespace=True, header=1)
+
+        self.sensitive_attr = attr[sensitive_attr]
+        print(self.sensitive_attr.loc['202599.jpg']['Male'])
+
 
         # 图像变换成张量
         self.trans = transforms.Compose([transforms.CenterCrop(170),
@@ -152,7 +159,14 @@ class CelebaRecognitionTestDataSet(data.Dataset):
         img_y = self.trans(img_y)
 
         match = torch.tensor(self.celeba_test_dataset['match'][index])
-        return img_x, img_y, match
+
+        img_path = self.celeba_test_dataset['img_x'][index]
+        s = self.sensitive_attr.loc[img_path].values
+        s = torch.as_tensor(s)
+        s = torch.div(s+1,2,rounding_mode='floor')
+        s = s.to(torch.float32)
+
+        return img_x, img_y, match, s
 
 
 
@@ -208,8 +222,10 @@ class CelebaRAPPDatasetInterface(pl.LightningDataModule):
 
 
 if __name__ == '__main__':
-    data_dir = 'D:\celeba'
-    loader = CelebaRAPPData(dim_img=112, data_dir=data_dir,  identity_nums=10177, split='train_63%')
+    data_dir = 'E:\datasets\celeba'
+    '''
+    
+    loader = CelebaRAPPData(dim_img=112, data_dir=data_dir,  identity_nums=10177, split='test_30%')
     train_loader = DataLoader(loader, batch_size=2)
     for i, item in enumerate(train_loader):
         print('i', i)
@@ -218,17 +234,21 @@ if __name__ == '__main__':
         print(u)
         print(s)
         break
+    '''
 
+    
     dataloader = CelebaRAPPDatasetInterface(dim_img=224, dataset='celeba_data', data_dir=data_dir,
                                      identity_nums=10177, batch_size=2,  pin_memory=False, num_workers=1)
     dataloader.setup(stage='test')
     for i, item in enumerate(dataloader.test_dataloader()):
         print('i', i)
-        x, u, s = item
+        x, u, match, s = item
         # print(x)
         # print(u)
-        print(s.dtype)
+        print(s)
         break
+        
+
 
 
 

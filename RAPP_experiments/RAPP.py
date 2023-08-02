@@ -57,9 +57,9 @@ class ConvBlock(nn.Module):
         Conv_BN_IN_LReLU.append(nn.InstanceNorm2d(out_channels, affine=True, track_running_stats=True))
         Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
 
-        Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1))
-        Conv_BN_IN_LReLU.append(nn.InstanceNorm2d(out_channels, affine=True, track_running_stats=True))
-        Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
+        #Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1))
+        #Conv_BN_IN_LReLU.append(nn.InstanceNorm2d(out_channels, affine=True, track_running_stats=True))
+        #Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
 
         self.conv_bn_in_leakyrelu = nn.Sequential(*Conv_BN_IN_LReLU)
 
@@ -142,9 +142,9 @@ class DiscriminatorConvBlock(nn.Module):
         Conv_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels))
         Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
 
-        Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1))
-        Conv_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels, affine=True, track_running_stats=True))
-        Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
+        #Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1))
+        #Conv_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels, affine=True, track_running_stats=True))
+        #onv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
 
         self.conv_bn_in_leakyrelu = nn.Sequential(*Conv_BN_IN_LReLU)
 
@@ -163,11 +163,11 @@ class Discriminator(nn.Module):
         self.conv3 = DiscriminatorConvBlock(in_channels=128, out_channels=256)
         self.conv4 = DiscriminatorConvBlock(in_channels=256, out_channels=512)
         self.conv5 = DiscriminatorConvBlock(in_channels=512, out_channels=1024)
-        self.adaptive_avgpool = nn.AdaptiveAvgPool2d((4,4))
-        self.fc1_1 = nn.Linear(16, 1)
-        self.fc1_2 = nn.Linear(1024,1)
-        self.fc2_1 = nn.Linear(16, 1)
-        self.fc2_2 = nn.Linear(1024, 10)
+        self.adaptive_avgpool = nn.AdaptiveAvgPool2d((1,1))
+        self.fc1_1 = nn.Linear(1024, 1)
+        self.fc1_2 = nn.Linear(1,1)
+        self.fc2_1 = nn.Linear(1024, 1)
+        self.fc2_2 = nn.Linear(1, 10)
         self.sigmoid = nn.Sigmoid()
         self.leakyrelu = nn.LeakyReLU()
 
@@ -178,22 +178,13 @@ class Discriminator(nn.Module):
         x = self.conv4(x)
         x = self.conv5(x)
         x = self.adaptive_avgpool(x)
-        x = x.view(x.size(0), x.size(1), 4*4)
-
+        x = x.view(x.size(0), -1)
 
         real = self.fc1_1(x)
-        real = real.view(real.size(0), real.size(2),  real.size(1)) # 不行的话这里改一下
-        real = self.leakyrelu(real)
         real = self.fc1_2(real)
-        real = real.view(real.size(0), real.size(1) * real.size(2))
-        #real = self.sigmoid(real) # 到时候用 torch.nn.BCELoss()看下可不可以
 
         sensitive_attribute = self.fc2_1(x)
-        sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(2), sensitive_attribute.size(1))
-        sensitive_attribute = self.leakyrelu(sensitive_attribute)
         sensitive_attribute = self.fc2_2(sensitive_attribute)
-        sensitive_attribute = sensitive_attribute.view(sensitive_attribute.size(0), sensitive_attribute.size(2)*sensitive_attribute.size(1))
-
 
         return real, sensitive_attribute
 
@@ -286,15 +277,6 @@ class RAPP(pl.LightningModule):
         }
 
         return [opt_g_fm, opt_d], [lr_g_fm, lr_d]
-
-
-        #lr_g_fm = optim.lr_scheduler.StepLR(opt_g_fm , step_size=1, gamma=0.5)
-
-        #lr_d = optim.lr_scheduler.StepLR(opt_d, step_size=1, gamma=0.5)
-
-
-        #return ({'optimizer': opt_g_fm, 'frequency':1, "lr_scheduler": lr_g_fm},
-        #        {'optimizer': opt_d, 'frequency': n_critic, "lr_scheduler": lr_d})
 
 
     def calculate_eer(self, metrics, match):
@@ -409,7 +391,15 @@ class RAPP(pl.LightningModule):
         pass
 
     def test_step(self, batch, batch_idx):
-        img_1, img_2, match = batch
+        img_1, img_2, match, attribute = batch
+
+        a = attribute
+        c = pattern()
+        b = xor(a, c)
+
+        img_1 = self.generator(self.generator(img_1, b), a)
+        img_2 = self.generator(self.generator(img_2, b), a)
+
         z_1 = self.face_match(img_1)
         z_2 = self.face_match(img_2)
         return {'z_1': z_1, 'z_2': z_2, 'match': match}
@@ -506,7 +496,7 @@ def train():
 
 
 if __name__ == '__main__':
-    x = torch.rand(size=(16, 3, 128, 128))
+    x = torch.rand(size=(16, 3, 224, 224))
     s = torch.rand(size=(16, 10))
     #RAPP_net = RAPP_experiments()
     #output1, output2, output3 = RAPP_net(x,s)
@@ -518,7 +508,7 @@ if __name__ == '__main__':
 
     #discriminator = Discriminator()
     #print(discriminator)
-    #out1, out2  = discriminator(x)
+    #out1, out2 = discriminator(x)
     #print(out1.size())
     #print(out2.size())
 
