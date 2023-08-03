@@ -53,13 +53,8 @@ class ConvBlock(nn.Module):
         super(ConvBlock, self).__init__()
         Conv_BN_IN_LReLU = []
         Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1))
-        #Conv_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels))
         Conv_BN_IN_LReLU.append(nn.InstanceNorm2d(out_channels, affine=True, track_running_stats=True))
         Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
-
-        #Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1))
-        #Conv_BN_IN_LReLU.append(nn.InstanceNorm2d(out_channels, affine=True, track_running_stats=True))
-        #Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
 
         self.conv_bn_in_leakyrelu = nn.Sequential(*Conv_BN_IN_LReLU)
 
@@ -72,13 +67,8 @@ class ConvTransporseBlock(nn.Module):
         super(ConvTransporseBlock, self).__init__()
         ConvTransporse_BN_IN_LReLU = []
         ConvTransporse_BN_IN_LReLU.append(nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1))
-        #ConvTransporse_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels))
         ConvTransporse_BN_IN_LReLU.append(nn.InstanceNorm2d(out_channels, affine=True, track_running_stats=True))
         ConvTransporse_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
-
-        #ConvTransporse_BN_IN_LReLU.append(nn.ConvTranspose2d(in_channels=out_channels, out_channels=out_channels, kernel_size=4, stride=1, padding=1))
-        #ConvTransporse_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels))
-        #ConvTransporse_BN_IN_LReLU.append(nn.LeakyReLU())
 
 
         self.convtransporse_bn_in_leakyrelu = nn.Sequential(*ConvTransporse_BN_IN_LReLU)
@@ -141,10 +131,6 @@ class DiscriminatorConvBlock(nn.Module):
         Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1))
         Conv_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels))
         Conv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
-
-        #Conv_BN_IN_LReLU.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1))
-        #Conv_BN_IN_LReLU.append(nn.BatchNorm2d(out_channels, affine=True, track_running_stats=True))
-        #onv_BN_IN_LReLU.append(nn.LeakyReLU(negative_slope=1e-2, inplace=True))
 
         self.conv_bn_in_leakyrelu = nn.Sequential(*Conv_BN_IN_LReLU)
 
@@ -263,14 +249,16 @@ class RAPP(pl.LightningModule):
         opt_d = optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(beta1, beta2))
 
         lr_g_fm = {
-            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
+            #'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
+            'scheduler':optim.lr_scheduler.CosineAnnealingLR(opt_g_fm,T_max=16),
             'interval':'epoch',
             'frequency':1,
             'param_name': 'Generator'
         }
 
         lr_d = {
-            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
+            #'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
+            'scheduler': optim.lr_scheduler.CosineAnnealingLR(opt_g_fm, T_max=16),
             'interval':'epoch',
             'frequency':n_critic,
             'param_name':'Discriminator'
@@ -485,7 +473,7 @@ def train():
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(RAPP_model, celeba_data_module, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_experiments\checkpoints\saved_model\last.ckpt')
+    trainer.fit(RAPP_model, celeba_data_module)
     trainer.test(RAPP_model, celeba_data_module)
 
 
