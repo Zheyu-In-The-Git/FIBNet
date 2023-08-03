@@ -251,7 +251,7 @@ class RAPP(pl.LightningModule):
         lr_g_fm = {
             #'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
             'scheduler':optim.lr_scheduler.CosineAnnealingLR(opt_g_fm,T_max=16),
-            'interval':'epoch',
+            #'interval':'step',
             'frequency':1,
             'param_name': 'Generator'
         }
@@ -259,7 +259,7 @@ class RAPP(pl.LightningModule):
         lr_d = {
             #'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
             'scheduler': optim.lr_scheduler.CosineAnnealingLR(opt_g_fm, T_max=16),
-            'interval':'epoch',
+            #'interval':'step',
             'frequency':n_critic,
             'param_name':'Discriminator'
         }
@@ -413,7 +413,7 @@ def train():
     celeba_data_module = CelebaRAPPDatasetInterface(num_workers=3,
                                   dataset='celeba_data',
                                   batch_size=16,
-                                  dim_img=224,
+                                  dim_img=128,
                                   data_dir='E:\datasets\celeba',  # 'D:\datasets\celeba'
                                   sensitive_dim=1,
                                   identity_nums=10177,
