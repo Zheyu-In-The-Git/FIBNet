@@ -485,7 +485,7 @@ def train():
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(RAPP_model, celeba_data_module)
+    trainer.fit(RAPP_model, celeba_data_module, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_experiments\checkpoints\saved_model\last.ckpt')
     trainer.test(RAPP_model, celeba_data_module)
 
 
