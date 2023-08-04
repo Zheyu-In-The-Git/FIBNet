@@ -249,17 +249,17 @@ class RAPP(pl.LightningModule):
         opt_d = optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(beta1, beta2))
 
         lr_g_fm = {
-            #'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
-            'scheduler':optim.lr_scheduler.CosineAnnealingLR(opt_g_fm,T_max=16),
-            #'interval':'step',
+            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
+            #'scheduler':optim.lr_scheduler.CosineAnnealingLR(opt_g_fm,T_max=16),
+            'interval':'epoch',
             'frequency':1,
             'param_name': 'Generator'
         }
 
         lr_d = {
-            #'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
-            'scheduler': optim.lr_scheduler.CosineAnnealingLR(opt_g_fm, T_max=16),
-            #'interval':'step',
+            'scheduler':optim.lr_scheduler.StepLR(opt_d, step_size=1, gamma=0.5),
+            #'scheduler': optim.lr_scheduler.CosineAnnealingLR(opt_g_fm, T_max=16),
+            'interval':'epoch',
             'frequency':n_critic,
             'param_name':'Discriminator'
         }
@@ -412,7 +412,7 @@ class RAPP(pl.LightningModule):
 def train():
     celeba_data_module = CelebaRAPPDatasetInterface(num_workers=3,
                                   dataset='celeba_data',
-                                  batch_size=16,
+                                  batch_size=64,
                                   dim_img=128,
                                   data_dir='E:\datasets\celeba',  # 'D:\datasets\celeba'
                                   sensitive_dim=1,
