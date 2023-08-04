@@ -463,8 +463,8 @@ def train():
         precision=32,
         enable_checkpointing=True,
         fast_dev_run=False,
-        min_epochs=8,
-        max_epochs=16
+        min_epochs=20,
+        max_epochs=20
     )
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
@@ -473,7 +473,7 @@ def train():
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(RAPP_model, celeba_data_module)
+    trainer.fit(RAPP_model, celeba_data_module,ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_experiments\checkpoints\saved_model\last.ckpt')
     trainer.test(RAPP_model, celeba_data_module)
 
 
