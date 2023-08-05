@@ -249,19 +249,19 @@ class RAPP(pl.LightningModule):
         opt_d = optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(beta1, beta2))
 
         lr_g_fm = {
-            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.5),
+            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.9),
             #'scheduler':optim.lr_scheduler.CosineAnnealingLR(opt_g_fm,T_max=16),
-            'interval':'epoch',
+            #'interval':'epoch',
             'frequency':1,
-            'param_name': 'Generator'
+            'name': 'Generator_lr'
         }
 
         lr_d = {
-            'scheduler':optim.lr_scheduler.StepLR(opt_d, step_size=1, gamma=0.5),
+            'scheduler':optim.lr_scheduler.ExponentialLR(opt_d, gamma=0.5),
             #'scheduler': optim.lr_scheduler.CosineAnnealingLR(opt_g_fm, T_max=16),
-            'interval':'epoch',
+            #'interval':'epoch',
             'frequency':n_critic,
-            'param_name':'Discriminator'
+            'name':'Discriminator_lr'
         }
 
         return [opt_g_fm, opt_d], [lr_g_fm, lr_d]
@@ -417,7 +417,7 @@ def train():
                                   data_dir='E:\datasets\celeba',  # 'D:\datasets\celeba'
                                   sensitive_dim=1,
                                   identity_nums=10177,
-                                  pin_memory=True)
+                                  pin_memory=False)
 
     lfw_data_module = LFWInterface(num_workers=0,
                                    dataset='lfw',
@@ -442,7 +442,7 @@ def train():
                                            sensitive_dim=1)
 
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP_experiments/checkpoints/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP_checkpoints/')
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='RAPP_logger')
 
@@ -473,7 +473,7 @@ def train():
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(RAPP_model, celeba_data_module,ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_experiments\checkpoints\saved_model\last.ckpt')
+    trainer.fit(RAPP_model, celeba_data_module)
     trainer.test(RAPP_model, celeba_data_module)
 
 
