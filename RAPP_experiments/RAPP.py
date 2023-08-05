@@ -249,7 +249,7 @@ class RAPP(pl.LightningModule):
         opt_d = optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(beta1, beta2))
 
         lr_g_fm = {
-            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=1, gamma=0.9),
+            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=3, gamma=0.9),
             #'scheduler':optim.lr_scheduler.CosineAnnealingLR(opt_g_fm,T_max=16),
             #'interval':'epoch',
             'frequency':1,
