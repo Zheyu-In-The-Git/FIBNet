@@ -268,7 +268,7 @@ class RAPP(pl.LightningModule):
         '''
 
         #return [opt_g_fm, opt_d], [lr_g_fm, lr_d]
-        return [opt_g_fm, opt_d], []
+        return ({'optimizer':opt_g_fm, 'frequency':1}, {'optimizer':opt_d, 'frequency':n_critic})
 
 
     def calculate_eer(self, metrics, match):
