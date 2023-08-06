@@ -248,6 +248,8 @@ class RAPP(pl.LightningModule):
         opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=0.0002, betas=(beta1, beta2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(beta1, beta2))
 
+        '''
+        
         lr_g_fm = {
             'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=2000, gamma=0.9),
             #'scheduler':optim.lr_scheduler.CosineAnnealingLR(opt_g_fm,T_max=16),
@@ -263,8 +265,10 @@ class RAPP(pl.LightningModule):
             'frequency':n_critic,
             'name':'Discriminator_lr'
         }
+        '''
 
-        return [opt_g_fm, opt_d], [lr_g_fm, lr_d]
+        #return [opt_g_fm, opt_d], [lr_g_fm, lr_d]
+        return [opt_g_fm, opt_d], []
 
 
     def calculate_eer(self, metrics, match):
@@ -473,7 +477,7 @@ def train():
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
-    trainer.fit(RAPP_model, celeba_data_module, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_checkpoints\saved_model\last.ckpt')
+    trainer.fit(RAPP_model, celeba_data_module)
     trainer.test(RAPP_model, celeba_data_module)
 
 
