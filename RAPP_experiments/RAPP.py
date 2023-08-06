@@ -40,7 +40,7 @@ def xor(a, b):
 
 def pattern():
     vector_length = 10
-    pattern = torch.tensor([1, 1, 1, 1])
+    pattern = torch.tensor([1, 0, 1, 0])
     vector = torch.cat([pattern[i % 4].unsqueeze(0) for i in range(vector_length)])
     vector = vector.to(torch.int32)
     return vector
@@ -248,10 +248,10 @@ class RAPP(pl.LightningModule):
         opt_g_fm = optim.Adam(itertools.chain(self.generator.parameters(), self.face_match.parameters()), lr=0.0002, betas=(beta1, beta2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(beta1, beta2))
 
-        '''
+
         
         lr_g_fm = {
-            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=2000, gamma=0.9),
+            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=8000, gamma=0.9),
             #'scheduler':optim.lr_scheduler.CosineAnnealingLR(opt_g_fm,T_max=16),
             'interval':'step',
             'frequency':1,
@@ -259,16 +259,16 @@ class RAPP(pl.LightningModule):
         }
 
         lr_d = {
-            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=2000, gamma=0.9),
+            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=8000, gamma=0.5),
             #'scheduler': optim.lr_scheduler.CosineAnnealingLR(opt_g_fm, T_max=16),
             'interval':'step',
             'frequency':n_critic,
             'name':'Discriminator_lr'
         }
-        '''
 
-        #return [opt_g_fm, opt_d], [lr_g_fm, lr_d]
-        return ({'optimizer':opt_g_fm, 'frequency':1}, {'optimizer':opt_d, 'frequency':n_critic})
+
+        return [opt_g_fm, opt_d], [lr_g_fm, lr_d]
+        #return ({'optimizer':opt_g_fm, 'frequency':1}, {'optimizer':opt_d, 'frequency':n_critic})
 
 
     def calculate_eer(self, metrics, match):
