@@ -12,9 +12,9 @@ from pytorch_lightning.loggers import TensorBoardLogger
 pl.seed_everything(83)
 
 from experiments.bottleneck_mine_experiments import MineNet
-from .RAPP import RAPP, Generator, Discriminator
+from RAPP import RAPP, Generator, Discriminator
 
-from .RAPP_Mine_data_interface import CelebaRAPPMineTrainingDatasetInterface, CelebaRAPPMineTestDatasetInterface, LFWRAPPMineDatasetInterface, AdienceRAPPMineDatasetInterface
+from RAPP_Mine_data_interface import CelebaRAPPMineTrainingDatasetInterface, CelebaRAPPMineTestDatasetInterface, LFWRAPPMineDatasetInterface, AdienceRAPPMineDatasetInterface
 
 
 
@@ -40,20 +40,27 @@ def standardize_tensor(x):
 def xor(a, b):
     return torch.logical_xor(a, b).int()
 
+device = torch.device('cuda' if torch.cuda.is_available() else "cpu") #******#
+# password 全为1的向量 []
+# seed 全为0101的向量
+def xor(a, b):
+    a = a.to(device)
+    b = b.to(device)
+    c = torch.logical_xor(a, b).int()
+    c = c.to(device)
+    return c
 
 def pattern():
     vector_length = 10
-    pattern = torch.tensor([0, 1, 0, 1])
+    pattern = torch.tensor([1, 0, 1, 0])
     vector = torch.cat([pattern[i % 4].unsqueeze(0) for i in range(vector_length)])
     vector = vector.to(torch.int32)
     return vector
 
 
-
-
 class RAPPMineExperiment(pl.LightningModule):
     def __init__(self, latent_dim, s_dim, patience):
-        super(RAPPMineExperiment).__init__()
+        super(RAPPMineExperiment, self).__init__()
         self.mine_net = MineNet(latent_dim, s_dim)
         self.latent_dim = latent_dim
         self.s_dim = s_dim
@@ -61,7 +68,7 @@ class RAPPMineExperiment(pl.LightningModule):
 
         # 创建RAPP网络 #
         RAPP_model = RAPP()
-        RAPP_model = RAPP_model.load_from_checkpoint(os.path.abspath(r'RAPP_experiments/lightning_logs/RAPP_experiments/checkpoints/saved_model/last.ckpt'))
+        RAPP_model = RAPP_model.load_from_checkpoint(os.path.abspath(r'lightning_logs/RAPP_checkpoints/saved_model/last.ckpt'))
         self.RAPP_model = RAPP_model
         self.RAPP_model.requires_grad_(False)
 
@@ -218,7 +225,7 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
 
 
     elif dataset_name == 'Adience_dataset':
-        data_module_adience = AdienceRAPPMineDatasetInterface(num_workers, dataset_name, batch_size, dim_img, data_dir,identity_nums, sensitive_attr, pin_memory=pin_memory)
+        data_module_adience = AdienceRAPPMineDatasetInterface(num_workers = num_workers, dataset_name = dataset_name,batch_size = batch_size, dim_img= dim_img, data_dir=data_dir,identity_nums=identity_nums, sensitive_attr=sensitive_attr, pin_memory=pin_memory)
         logger_adience = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='Adience_RAPP_Mine' + sensitive_attr + '_logger')
         trainer_adience = pl.Trainer(
             callbacks=[
@@ -248,7 +255,7 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
             enable_checkpointing=True,
             fast_dev_run=fast_dev_run
         )
-        print('LFW ' + sensitive_attr + ' dataset for RAPP MINE will be testing, the model will be create!')
+        print('Adience ' + sensitive_attr + ' dataset for RAPP MINE will be testing, the model will be create!')
         model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=15)
         trainer_adience.fit(model, data_module_adience)
 
@@ -266,16 +273,16 @@ if __name__ == '__main__':
     adience_data_dir = 'E:\datasets\Adience'
 
     # gender
-    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=True)
-    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=True)
-    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=True)
-    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=True)
+    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=128, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=128, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=128, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=128, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
 
     # race
-    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=True)
-    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=True)
-    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=True)
-    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=True)
+    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=128, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=128, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=128, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=128, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
 
 
 

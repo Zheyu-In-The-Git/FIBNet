@@ -189,8 +189,9 @@ class AdienceRAPPMineDatasetInterface(pl.LightningDataModule):
                  identity_nums: int,
                  sensitive_attr: str,
                  data_dir: str,
-                 **kwargs):
-        super(AdienceRAPPMineDatasetInterface).__init__()
+                 pin_memory:bool
+                 ):
+        super(AdienceRAPPMineDatasetInterface, self).__init__()
         self.num_workers = num_workers
         self.dataset_name = dataset_name
         self.batch_size = batch_size
@@ -199,21 +200,23 @@ class AdienceRAPPMineDatasetInterface(pl.LightningDataModule):
         # 数据集相关参数
         self.dim_img = dim_img
         self.identity = identity_nums
-        self.sensitive_attr = sensitive_attr
-        self.pin_memory = kwargs['pin_memory']
+
+        self.pin_memory = pin_memory
 
         self.prepare_data_per_node = True
         self.save_hyperparameters()
         self.allow_zero_length_dataloader_with_multiple_devices = True
 
-        if self.sensitive_attr == 'Male':
+        if sensitive_attr == 'Male':
             self.training_dataset = AdienceMineGenderData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=2284)
             self.test_dataset = AdienceMineGenderData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=2284)
-        elif self.sensitive_attr == 'Race':
+        elif sensitive_attr == 'Race':
             self.training_dataset = AdienceMineRaceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=2284)
             self.test_dataset = AdienceMineRaceData(dim_img=self.dim_img, data_dir=self.data_dir, identity_nums=2284)
         else:
             print('the dataset has not defined')
+
+        print(self.training_dataset)
 
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
@@ -237,9 +240,9 @@ class AdienceRAPPMineDatasetInterface(pl.LightningDataModule):
 
 if __name__ == '__main__':
     # 测试用例
-    celeba_data_dir = '/Volumes/xiaozhe_SSD/datasets/celeba'
-    lfw_data_dir = '/Volumes/xiaozhe_SSD/datasets/lfw/lfw112'
-    adience_data_dir = '/Volumes/xiaozhe_SSD/datasets/Adience'
+    celeba_data_dir = 'E:\datasets\celeba'
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    adience_data_dir = 'E:\datasets\Adience'
 
     # gender
     celeba_training_gender_dataloader = CelebaRAPPMineTrainingDatasetInterface(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=1, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False)

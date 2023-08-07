@@ -11,7 +11,7 @@ import math
 from pytorch_lightning.loggers import TensorBoardLogger
 from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface, CelebaAttackInterface
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
-from logistic_regression_attack import LogisticRegression, Attack, LogisticRegressionRaceAttack
+
 
 def batch_misclass_rate(y_pred, y_true):
     return np.sum(y_pred != y_true) / len(y_true)
