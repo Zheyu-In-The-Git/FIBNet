@@ -251,7 +251,7 @@ class RAPP(pl.LightningModule):
 
         
         lr_g_fm = {
-            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=8000, gamma=0.9),
+            'scheduler':optim.lr_scheduler.StepLR(opt_g_fm, step_size=8000, gamma=0.5),
             #'scheduler':optim.lr_scheduler.CosineAnnealingLR(opt_g_fm,T_max=16),
             'interval':'step',
             'frequency':1,
@@ -409,7 +409,7 @@ class RAPP(pl.LightningModule):
 
         RAPP_confusion_cos = {'fpr_cos': fpr_cos, 'tpr_cos': tpr_cos, 'thresholds_cos': thresholds_cos,
                                  'eer_cos': eer_cos}
-        torch.save(RAPP_confusion_cos, 'RAPP_cos.pt')
+        torch.save(RAPP_confusion_cos, 'lightning_logs/RAPP_cos.pt')
 
 
 
