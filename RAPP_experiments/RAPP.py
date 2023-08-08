@@ -417,7 +417,7 @@ def train():
     celeba_data_module = CelebaRAPPDatasetInterface(num_workers=3,
                                   dataset='celeba_data',
                                   batch_size=64,
-                                  dim_img=128,
+                                  dim_img=224,
                                   data_dir='E:\datasets\celeba',  # 'D:\datasets\celeba'
                                   sensitive_dim=1,
                                   identity_nums=10177,
@@ -467,8 +467,8 @@ def train():
         precision=32,
         enable_checkpointing=True,
         fast_dev_run=False,
-        min_epochs=20,
-        max_epochs=20
+        min_epochs=16,
+        max_epochs=16
     )
     trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
