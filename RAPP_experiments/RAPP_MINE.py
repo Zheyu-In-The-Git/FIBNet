@@ -16,7 +16,7 @@ from RAPP import RAPP, Generator, Discriminator
 
 from RAPP_Mine_data_interface import CelebaRAPPMineTrainingDatasetInterface, CelebaRAPPMineTestDatasetInterface, LFWRAPPMineDatasetInterface, AdienceRAPPMineDatasetInterface
 
-
+from arcface_resnet50 import ArcfaceResnet50
 
 
 def batch_misclass_rate(y_pred, y_true):
@@ -77,7 +77,14 @@ class RAPPMineExperiment(pl.LightningModule):
 
 
         # 人脸匹配器
-        self.RAPP_Facematcher_model = self.RAPP_model.face_match
+        #self.RAPP_Facematcher_model = self.RAPP_model.face_match
+
+        # 直接用arcface吧
+        arcface_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
+        pretrained_model = arcface_net.load_from_checkpoint(r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
+
+        self.RAPP_Facematcher_model = pretrained_model.resnet50
+
 
     def forward(self, z, s):
         loss = self.mine_net(z,s)
