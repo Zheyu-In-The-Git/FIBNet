@@ -74,6 +74,7 @@ class RAPPMineExperiment(pl.LightningModule):
 
         # 生成器
         self.RAPP_Generator_model = self.RAPP_model.generator
+        self.RAPP_Generator_model.requires_grad_(False)
 
 
         # 人脸匹配器
@@ -84,6 +85,7 @@ class RAPPMineExperiment(pl.LightningModule):
         pretrained_model = arcface_net.load_from_checkpoint(r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
 
         self.RAPP_Facematcher_model = pretrained_model.resnet50
+        self.RAPP_Facematcher_model.requires_grad_(False)
 
 
     def forward(self, z, s):
@@ -280,16 +282,16 @@ if __name__ == '__main__':
     adience_data_dir = 'E:\datasets\Adience'
 
     # gender
-    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=128, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=128, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=128, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=128, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
 
     # race
-    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=128, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=128, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=128, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=128, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
 
 
 
