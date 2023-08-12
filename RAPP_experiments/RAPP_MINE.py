@@ -282,10 +282,10 @@ if __name__ == '__main__':
     adience_data_dir = 'E:\datasets\Adience'
 
     # gender
-    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    #RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    #RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    #RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    #RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
 
     # race
     RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
