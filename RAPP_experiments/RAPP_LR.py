@@ -10,10 +10,10 @@ import torch.nn.functional as F
 from pytorch_lightning.loggers import TensorBoardLogger
 
 
-from .RAPP import RAPP, Generator, Discriminator
+from RAPP import RAPP, Generator, Discriminator
 
-from .RAPP_Mine_data_interface import CelebaRAPPMineTrainingDatasetInterface, LFWRAPPMineDatasetInterface, AdienceRAPPMineDatasetInterface
-
+from RAPP_Mine_data_interface import CelebaRAPPMineTrainingDatasetInterface, LFWRAPPMineDatasetInterface, AdienceRAPPMineDatasetInterface
+from arcface_resnet50 import ArcfaceResnet50
 
 def batch_misclass_rate(y_pred, y_true):
     return np.sum(y_pred != y_true) / len(y_true)
@@ -33,13 +33,20 @@ def standardize_tensor(x):
     return standardized_x
 
 
+device = torch.device('cuda' if torch.cuda.is_available() else "cpu") #******#
+# password 全为1的向量 []
+# seed 全为0101的向量
 def xor(a, b):
-    return torch.logical_xor(a, b).int()
+    a = a.to(device)
+    b = b.to(device)
+    c = torch.logical_xor(a, b).int()
+    c = c.to(device)
+    return c
 
 
 def pattern():
     vector_length = 10
-    pattern = torch.tensor([0, 1, 0, 1])
+    pattern = torch.tensor([1, 0, 1, 0])
     vector = torch.cat([pattern[i % 4].unsqueeze(0) for i in range(vector_length)])
     vector = vector.to(torch.int32)
     return vector
@@ -56,7 +63,7 @@ class RAPPLogisticRegressionAttack(pl.LightningModule):
 
         # 创建RAPP 网络
         RAPP_model = RAPP()
-        RAPP_model = RAPP_model.load_from_checkpoint(os.path.abspath(r'RAPP_experiments/lightning_logs/RAPP_experiments/checkpoints/saved_model/last.ckpt'))
+        RAPP_model = RAPP_model.load_from_checkpoint(os.path.abspath(r'lightning_logs/RAPP_checkpoints/saved_model/last.ckpt'))
         self.RAPP_model = RAPP_model
         self.RAPP_model.requires_grad_(False)
 
@@ -65,7 +72,13 @@ class RAPPLogisticRegressionAttack(pl.LightningModule):
         self.RAPP_Generator_model.requires_grad_(False)
 
         # 人脸匹配器
-        self.RAPP_Facematcher_model = self.RAPP_model.face_match
+        #self.RAPP_Facematcher_model = self.RAPP_model.face_match
+        #self.RAPP_Facematcher_model.requires_grad_(False)
+
+        arcface_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
+        pretrained_model = arcface_net.load_from_checkpoint(r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
+
+        self.RAPP_Facematcher_model = pretrained_model.resnet50
         self.RAPP_Facematcher_model.requires_grad_(False)
 
 
@@ -95,6 +108,7 @@ class RAPPLogisticRegressionAttack(pl.LightningModule):
         c = c.to(torch.int32)
         b = xor(a,c)
         b = b.to(torch.int32)
+        s = s.squeeze()
 
         x_prime = self.RAPP_Generator_model(x, b)
         z = self.RAPP_Facematcher_model(x_prime)
@@ -118,6 +132,7 @@ class RAPPLogisticRegressionAttack(pl.LightningModule):
         c = c.to(torch.int32)
         b = xor(a, c)
         b = b.to(torch.int32)
+        s = s.squeeze()
 
         x_prime = self.RAPP_Generator_model(x, b)
         z = self.RAPP_Facematcher_model(x_prime)
@@ -141,6 +156,7 @@ class RAPPLogisticRegressionAttack(pl.LightningModule):
         c = c.to(torch.int32)
         b = xor(a, c)
         b = b.to(torch.int32)
+        s = s.squeeze()
 
         x_prime = self.RAPP_Generator_model(x, b)
         z = self.RAPP_Facematcher_model(x_prime)
@@ -185,7 +201,7 @@ def GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_d
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'gender_LR_attack_models'),
         accelerator='auto',
         devices=1,
-        max_epochs=100,
+        max_epochs=60,
         min_epochs=50,
         logger=logger_celeba_train,
         log_every_n_steps=10,
@@ -211,10 +227,10 @@ def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir,
                                                                          data_dir=celeba_data_dir, identity_nums=10177,
                                                                          sensitive_attr='Race', pin_memory=pin_memory)
 
-    data_module_lfw = LFWRAPPMineDatasetInterface(num_workers=0, dataset_name='CelebA', batch_size=256, dim_img=224,
+    data_module_lfw = LFWRAPPMineDatasetInterface(num_workers=0, dataset_name='LFW', batch_size=256, dim_img=224,
                                                   data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Race',
                                                   pin_memory=pin_memory)
-    data_module_adience = AdienceRAPPMineDatasetInterface(num_workers=0, dataset_name='CelebA', batch_size=256,
+    data_module_adience = AdienceRAPPMineDatasetInterface(num_workers=0, dataset_name='Adience', batch_size=256,
                                                           dim_img=224, data_dir=adience_data_dir, identity_nums=10177,
                                                           sensitive_attr='Race', pin_memory=pin_memory)
 
@@ -240,7 +256,7 @@ def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir,
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'race_LR_attack_models'),
         accelerator='auto',
         devices=1,
-        max_epochs=100,
+        max_epochs=60,
         min_epochs=50,
         logger=logger_celeba_train,
         log_every_n_steps=10,
@@ -259,11 +275,11 @@ def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir,
 
 if __name__ == '__main__':
     celeba_data_dir = 'E:\datasets\celeba'
-    lfw_data_dir = 'E:\datasets\celeba'
-    adience_data_dir = 'E:\datasets\celeba'
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    adience_data_dir = 'E:\datasets\Adience'
 
-    GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=True)
-    RaceLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory=False, fast_dev_run=True)
+    GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=False)
+    RaceLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory=False, fast_dev_run=False)
 
 
 
