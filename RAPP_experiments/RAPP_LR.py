@@ -268,10 +268,10 @@ def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir,
 
     print('RAPP models on Logistic Regression Race ')
     model = RAPPLogisticRegressionAttack(dataset_name='CelebA_LFW_Adience')
-    trainer_celeba_training.fit(model, data_module_celeba_training)
-    trainer_celeba_training.test(model, data_module_celeba_training)
-    trainer_celeba_training.test(model, data_module_lfw)
-    trainer_celeba_training.test(model, data_module_adience)
+    #trainer_celeba_training.fit(model, data_module_celeba_training)
+    trainer_celeba_training.test(model, data_module_celeba_training,ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_LR_Race\checkpoints\race_LR_attack_models\epoch=10-step=5000.ckpt')
+    trainer_celeba_training.test(model, data_module_lfw, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_LR_Race\checkpoints\race_LR_attack_models\epoch=10-step=5000.ckpt')
+    trainer_celeba_training.test(model, data_module_adience, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_LR_Race\checkpoints\race_LR_attack_models\epoch=10-step=5000.ckpt')
 
 if __name__ == '__main__':
     celeba_data_dir = 'E:\datasets\celeba'

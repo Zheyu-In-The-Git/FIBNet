@@ -227,10 +227,10 @@ def GenderMLPAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory,
 
     print('RAPP models on Multiple Layer Perceptron Gender ')
     model = RAPPMultipleLayerPerceptron(dataset_name='CelebA_LFW_Adience')
-    trainer_celeba_training.fit(model, data_module_celeba_training)
-    trainer_celeba_training.test(model, data_module_celeba_training)
-    trainer_celeba_training.test(model, data_module_lfw)
-    trainer_celeba_training.test(model, data_module_adience)
+    #trainer_celeba_training.fit(model, data_module_celeba_training)
+    trainer_celeba_training.test(model, data_module_celeba_training,ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_MLP_Gender\checkpoints\gender_MLP_attack_models\epoch=11-step=5650.ckpt')
+    trainer_celeba_training.test(model, data_module_lfw, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_MLP_Gender\checkpoints\gender_MLP_attack_models\epoch=11-step=5650.ckpt')
+    trainer_celeba_training.test(model, data_module_adience, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_MLP_Gender\checkpoints\gender_MLP_attack_models\epoch=11-step=5650.ckpt')
 
 
 def RaceMLPAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory, fast_dev_run):
@@ -271,8 +271,8 @@ def RaceMLPAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory, f
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'race_MLP_attack_models'),
         accelerator='auto',
         devices=1,
-        max_epochs=26,
-        min_epochs=25,
+        max_epochs=5,
+        min_epochs=3,
         logger=logger_celeba_train,
         log_every_n_steps=10,
         precision=32,
@@ -294,7 +294,7 @@ if __name__ == '__main__':
     adience_data_dir = 'E:\datasets\Adience'
 
 
-    GenderMLPAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=False)
+    #GenderMLPAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=False)
     RaceMLPAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=False)
 
 
