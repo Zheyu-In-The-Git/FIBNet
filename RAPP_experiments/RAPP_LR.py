@@ -256,8 +256,8 @@ def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir,
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'race_LR_attack_models'),
         accelerator='auto',
         devices=1,
-        max_epochs=60,
-        min_epochs=50,
+        max_epochs=26,
+        min_epochs=25,
         logger=logger_celeba_train,
         log_every_n_steps=10,
         precision=32,
@@ -278,7 +278,7 @@ if __name__ == '__main__':
     lfw_data_dir = 'E:\datasets\lfw\lfw112'
     adience_data_dir = 'E:\datasets\Adience'
 
-    GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=False)
+    #GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=False)
     RaceLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory=False, fast_dev_run=False)
 
 

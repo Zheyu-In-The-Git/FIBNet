@@ -215,8 +215,8 @@ def GenderMLPAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory,
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'gender_MLP_attack_models'),
         accelerator='auto',
         devices=1,
-        max_epochs=60,
-        min_epochs=50,
+        max_epochs=26,
+        min_epochs=25,
         logger=logger_celeba_train,
         log_every_n_steps=10,
         precision=32,
@@ -271,8 +271,8 @@ def RaceMLPAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory, f
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'race_MLP_attack_models'),
         accelerator='auto',
         devices=1,
-        max_epochs=60,
-        min_epochs=50,
+        max_epochs=26,
+        min_epochs=25,
         logger=logger_celeba_train,
         log_every_n_steps=10,
         precision=32,
@@ -294,8 +294,8 @@ if __name__ == '__main__':
     adience_data_dir = 'E:\datasets\Adience'
 
 
-    GenderMLPAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=True)
-    RaceMLPAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=True)
+    GenderMLPAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=False)
+    RaceMLPAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=False)
 
 
 
