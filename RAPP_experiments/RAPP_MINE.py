@@ -96,8 +96,8 @@ class RAPPMineExperiment(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.mine_net.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=self.patience, min_lr=1e-8, threshold=1e-4)
+        optim_train = optim.Adam(self.mine_net.parameters(), lr=0.01, betas=(b1, b2))
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=self.patience, min_lr=1e-8, threshold=1e-2)
         return {'optimizer':optim_train, 'lr_cheduler':scheduler, 'monitor':'infor_loss'}
 
 
@@ -148,8 +148,8 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
             default_root_dir=os.path.join(CHECKPOINT_PATH, 'CelebA_training_RAPP_Mine_'+ sensitive_attr + '_models'),
             accelerator='auto',
             devices=1,
-            max_epochs=150,
-            min_epochs=120,
+            max_epochs=60,
+            min_epochs=50,
             logger=logger_celeba_train,
             log_every_n_steps=10,
             precision=32,
@@ -159,7 +159,7 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
         )
 
         print('CelebA training' + sensitive_attr + ' dataset for RAPP MINE will be testing, the model will be create!')
-        model = RAPPMineExperiment(latent_dim=512,s_dim=1, patience=5)
+        model = RAPPMineExperiment(latent_dim=512,s_dim=1, patience=3)
         trainer_celeba_training.fit(model, data_module_celeba_training)
 
     elif dataset_name == 'CelebA_test_dataset':
@@ -185,8 +185,8 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
             default_root_dir=os.path.join(CHECKPOINT_PATH, 'CelebA_test_RAPP_Mine_' + sensitive_attr + '_models'),
             accelerator='auto',
             devices=1,
-            max_epochs=150,
-            min_epochs=120,
+            max_epochs=60,
+            min_epochs=50,
             logger=logger_celeba_test,
             log_every_n_steps=10,
             precision=32,
@@ -194,7 +194,7 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
             fast_dev_run=fast_dev_run
         )
         print('CelebA test ' + sensitive_attr + ' dataset for RAPP MINE will be testing, the model will be create!')
-        model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=5)
+        model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=3)
         trainer_celeba_test.fit(model, data_module_celeba_test)
 
     elif dataset_name == 'LFW_dataset':
@@ -220,8 +220,8 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
             default_root_dir=os.path.join(CHECKPOINT_PATH, 'LFW_RAPP_Mine_' + sensitive_attr + '_models'),
             accelerator='auto',
             devices=1,
-            max_epochs=500,
-            min_epochs=350,
+            max_epochs=270,
+            min_epochs=250,
             logger=logger_lfw,
             log_every_n_steps=10,
             precision=32,
@@ -256,8 +256,8 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
             default_root_dir=os.path.join(CHECKPOINT_PATH, 'Adience_RAPP_Mine_' + sensitive_attr + '_models'),
             accelerator='auto',
             devices=1,
-            max_epochs=500,
-            min_epochs=350,
+            max_epochs=270,
+            min_epochs=250,
             logger=logger_adience,
             log_every_n_steps=10,
             precision=32,
@@ -285,13 +285,13 @@ if __name__ == '__main__':
     #RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
     #RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
     #RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
-    #RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
 
     # race
-    RAPPMine(num_workers=2, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=2, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=2, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=2, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
 
 
 

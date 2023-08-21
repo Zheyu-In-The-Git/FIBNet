@@ -78,11 +78,23 @@ class RAPPIdentityTest(pl.LightningModule):
         return fpr, tpr, thresholds, eer
 
     def test_step(self, batch, batch_idx):
-        img_1, img_2, match, attribute = batch
+        img_1, img_2, match= batch
 
-        a = attribute
+        batch_size = img_1.size(0)
+
+        a = pattern()
         c = pattern()
         b = xor(a, c)
+        #print(b.size())
+        a = a.unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+        a = a.expand(batch_size, -1, -1, -1)
+
+        b = b.unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+        b = b.expand(batch_size, -1, -1, -1)
+        #print(b.size())
+
+        a = a.to(device)
+        b = b.to(device)
 
         img_1 = self.generator(self.generator(img_1, b), a)
         img_2 = self.generator(self.generator(img_2, b), a)
