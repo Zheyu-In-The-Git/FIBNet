@@ -49,7 +49,7 @@ class LFWData(data.Dataset):
         self.trans = transforms.Compose([
                                     transforms.Resize(self.dim_img),
                                     transforms.ToTensor(),
-                                    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                                    #transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
                                     ])
 
         self.img_path_replace = img_path_replace
