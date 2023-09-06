@@ -383,3 +383,9 @@ print(pl.__version__)
 print(np.__version__)
 import torch
 print(torch.__version__)
+print(torch.cuda.is_available())
+print('hello')
+if torch.cuda.is_available():
+    print("GPU is available")
+else:
+    print("GPU is not available")
