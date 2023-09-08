@@ -389,3 +389,14 @@ if torch.cuda.is_available():
     print("GPU is available")
 else:
     print("GPU is not available")
+print('hello world!!')
+
+
+import os
+print(os.getcwd()) # 工作路径
+print(os.path.abspath('.'))
+
+path = "/data/qbx_20210083/datasets" #文件夹目录
+files= os.listdir(path)
+print(files)
+

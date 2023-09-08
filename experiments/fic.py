@@ -223,11 +223,93 @@ IBNets_0001_MLP_race_PIC = IBNets_0001_MLP_race_fic_rate - IBNets_0001_eer_rate
 IBNets_001_MLP_race_PIC = IBNets_001_MLP_race_fic_rate - IBNets_001_eer_rate
 IBNets_01_MLP_race_PIC = IBNets_01_MLP_race_fic_rate - IBNets_01_eer_rate
 IBNets_1_MLP_race_PIC = IBNets_1_MLP_race_fic_rate - IBNets_1_eer_rate
-print('IBNets_00001_MLP_race_PIC', IBNets_00001_MLP_race_PIC)
-print('IBNets_0001_MLP_race_PIC', IBNets_0001_MLP_race_PIC)
-print('IBNets_001_MLP_race_PIC', IBNets_001_MLP_race_PIC)
-print('IBNets_01_MLP_race_PIC', IBNets_01_MLP_race_PIC)
-print('IBNets_1_MLP_race_PIC', IBNets_1_MLP_race_PIC)
+#print('IBNets_00001_MLP_race_PIC', IBNets_00001_MLP_race_PIC)
+#print('IBNets_0001_MLP_race_PIC', IBNets_0001_MLP_race_PIC)
+#print('IBNets_001_MLP_race_PIC', IBNets_001_MLP_race_PIC)
+#print('IBNets_01_MLP_race_PIC', IBNets_01_MLP_race_PIC)
+#print('IBNets_1_MLP_race_PIC', IBNets_1_MLP_race_PIC)
+
+
+
+'''
+########################################
+### PFRNet_gender_fic ##################
+########################################
+'''
+PFRNet_eer = np.array([13.0142,	13.1333, 31.6734])
+
+PFRNet_LR_gender_acc = np.array([71.18, 57.06, 58.43])
+PFRNet_LR_gender_fic = 100-PFRNet_LR_gender_acc
+PFRNet_LR_gender_fic_rate = (PFRNet_LR_gender_fic - arcface_LR_gender_fic)/ arcface_LR_gender_fic
+PFRNet_LR_eer_rate = (PFRNet_eer - arcface_eer) / arcface_eer
+PFRNet_LR_gender_pic = PFRNet_LR_gender_fic_rate - PFRNet_LR_eer_rate
+#print(PFRNet_LR_gender_pic)
+
+
+PFRNet_MLP_gender_acc = np.array([93.96, 86.11, 67.66])
+PFRNet_MLP_gender_fic = 100 - PFRNet_MLP_gender_acc
+PFRNet_MLP_gender_fic_rate = (PFRNet_MLP_gender_fic - arcface_MLP_gender_fic)/arcface_MLP_gender_fic
+PFRNet_MLP_eer_rate = (PFRNet_eer - arcface_eer) / arcface_eer
+PFRNet_MLP_gender_pic = PFRNet_MLP_gender_fic_rate - PFRNet_MLP_eer_rate
+#print(PFRNet_MLP_gender_pic)
+
+'''
+########################################
+### PFRNet_race_fic ##################
+########################################
+'''
+PFRNet_LR_race_acc = np.array([70.69, 73.29, 50.78])
+PFRNet_LR_race_fic = 100 - PFRNet_LR_race_acc
+PFRNet_LR_race_fic_rate = (PFRNet_LR_race_fic - arcface_LR_race_fic) / arcface_LR_race_fic
+PFRNet_LR_eer_rate = (PFRNet_eer - arcface_eer)/arcface_eer
+PFRNet_LR_race_pic = PFRNet_LR_race_fic_rate - PFRNet_LR_eer_rate
+#print(PFRNet_LR_race_pic)
+
+
+PFRNet_MLP_race_acc = np.array([76.67, 70.39, 59.53])
+PFRNet_MLP_race_fic = 100 - PFRNet_MLP_race_acc
+PFRNet_MLP_race_fic_rate = (PFRNet_MLP_race_fic - arcface_MLP_race_fic) / arcface_MLP_race_fic
+PFRNet_MLP_eer_rate = (PFRNet_eer - arcface_eer)/arcface_eer
+PFRNet_MLP_race_pic = PFRNet_MLP_race_fic_rate - PFRNet_MLP_eer_rate
+# print(PFRNet_MLP_race_pic)
+
+'''
+#####################################
+### RAPP_gender_LR ##################
+#####################################
+'''
+RAPP_eer = np.array([30.819, 21.866, 27.63])
+
+RAPP_LR_gender_acc = np.array([77.14, 54.89, 57.63])
+RAPP_LR_gender_fic = 100 - RAPP_LR_gender_acc
+RAPP_LR_gender_fic_rate = (RAPP_LR_gender_fic - arcface_LR_gender_fic) / arcface_LR_gender_fic
+RAPP_LR_eer_rate = (RAPP_eer - arcface_eer)/arcface_eer
+RAPP_LR_gender_pic = RAPP_LR_gender_fic_rate - RAPP_LR_eer_rate
+#print(RAPP_LR_gender_pic)
+
+
+RAPP_MLP_gender_acc = np.array([96.21, 89.26, 65.85])
+RAPP_MLP_gender_fic = 100 - RAPP_MLP_gender_acc
+RAPP_MLP_gender_fic_rate = (RAPP_MLP_gender_fic - arcface_MLP_gender_fic) / arcface_MLP_gender_fic
+RAPP_MLP_gender_eer_rate = (RAPP_eer - arcface_eer) / arcface_eer
+RAPP_MLP_gender_pic = RAPP_MLP_gender_fic_rate - RAPP_MLP_gender_eer_rate
+#print(RAPP_MLP_gender_pic)
+
+RAPP_LR_race_acc = np.array([72.43, 72.06, 53.78])
+RAPP_LR_race_fic = 100-RAPP_LR_race_acc
+RAPP_LR_race_fic_rate = (RAPP_LR_race_fic - arcface_LR_race_fic) / arcface_LR_race_fic
+RAPP_LR_race_eer_rate = (RAPP_eer-arcface_eer)/arcface_eer
+RAPP_LR_race_pic = RAPP_LR_race_fic_rate - RAPP_LR_race_eer_rate
+#print(RAPP_LR_race_pic)
+
+RAPP_MLP_race_acc = np.array([81.26, 75.9, 60.87])
+RAPP_MLP_race_fic = 100 - RAPP_MLP_race_acc
+RAPP_MLP_race_fic_rate = (RAPP_MLP_race_fic - arcface_MLP_race_fic) / arcface_MLP_race_fic
+RAPP_MLP_race_eer_rate = (RAPP_eer - arcface_eer) / arcface_eer
+RAPP_MLP_race_pic = RAPP_MLP_race_fic_rate - RAPP_MLP_race_eer_rate
+print(RAPP_MLP_race_pic)
+
+
 
 
 
