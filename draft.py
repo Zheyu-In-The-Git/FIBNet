@@ -400,3 +400,11 @@ path = "/data/qbx_20210083/datasets" #文件夹目录
 files= os.listdir(path)
 print(files)
 
+
+import platform
+plat_sys = platform.system()
+print(plat_sys)
+
+
+
+
