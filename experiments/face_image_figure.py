@@ -109,4 +109,7 @@ for j in range(9):
 plt.tight_layout()
 plt.show()
 plt.close()
-fig.savefig('datasets_imgs.pdf', dpi=300)
+plt.axis('off')
+plt.xticks([])
+plt.yticks([])
+fig.savefig('datasets_imgs.pdf', dpi=300, bbox_inches='tight', pad_inches=0)
