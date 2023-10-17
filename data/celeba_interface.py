@@ -110,7 +110,7 @@ class CelebaRaceInterface(pl.LightningDataModule):
                                              data_dir=self.data_dir,
                                              sensitive_dim=self.sensitive_dim,
                                              identity_nums=self.identity_nums,
-                                             split='train_63%') # 63%
+                                             split='test_30%') # 63%
 
             valid_dataset = CelebaRaceDataset(dim_img=self.dim_img,
                                        data_dir=self.data_dir,

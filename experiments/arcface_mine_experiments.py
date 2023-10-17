@@ -63,7 +63,7 @@ class ArcfaceMineEstimator(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
         optim_train = optim.Adam(self.mine_net.parameters(), lr=0.01, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=5, min_lr=1e-8,verbose=True,
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=3, min_lr=1e-8,verbose=True,
                                                          threshold=1e-4)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "infor_loss"}
 
@@ -84,6 +84,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
 
     # 数据
 
+    '''
     
     #celeba数据
     data_module = CelebaInterface(num_workers=2,
@@ -95,7 +96,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                                   identity_nums=10177,
                                   sensitive_attr='Male',
                                   pin_memory=False)
-
+    '''
 
 
 
@@ -131,19 +132,19 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     '''
 
 
-    '''
+
     
     data_module = CelebaRaceInterface(
         num_workers=2,
         dataset='celeba_data',
         batch_size=256,
         dim_img=224,
-        data_dir='D:\datasets\celeba',  # 'D:\datasets\celeba'
+        data_dir='E:\datasets\celeba',  # 'D:\datasets\celeba'
         sensitive_dim=1,
         identity_nums=10177,
         pin_memory=False
     )
-    '''
+
     '''
     
     data_module = AdienceInterface(num_workers=2,
@@ -161,7 +162,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
 
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT',
-                                     'lightning_logs/arcface_mine_estimator_gender/checkpoints_celebatest/')
+                                     'lightning_logs/arcface_mine_estimator_race/checkpoints_celebatest/')
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='arcface_mine_estimator_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
@@ -190,7 +191,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         fast_dev_run=False,
     )
 
-    trainer.logger._log_graph = True  # If True, we plot the computation graph in tensorboard
+    trainer.logger._log_graph = None  # If True, we plot the computation graph in tensorboard
     trainer.logger._default_hp_metric = None  # Optional logging argument that we don't need
 
 
@@ -202,5 +203,5 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     # 记得要对celeba race 的训练集更改，更改成测试集
 
 if __name__ == '__main__':
-    model_path = r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
+    model_path = r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
     ArcfaceMineMain(model_path, latent_dim=512, save_name='arcface_mine_512')
