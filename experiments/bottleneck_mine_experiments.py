@@ -58,7 +58,7 @@ class BottleneckMineEstimator(pl.LightningModule):
         b1 = 0.5
         b2 = 0.99
         optim_train = optim.Adam(self.mine_net.parameters(), lr=0.01, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=3, min_lr=1e-8, threshold=1e-4)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=2, min_lr=1e-8, threshold=1e-4)
         return {'optimizer': optim_train, 'lr_scheduler':scheduler, 'monitor':'infor_loss'}
 
     def training_step(self, batch):
@@ -204,7 +204,7 @@ if __name__ == '__main__':
     latent_dim = 512
     save_name = 'bottleneck_mine_512_adience'
 
-    beta_arr = [0.0001,0.001, 0.01, 0.1]
+    beta_arr = [0.001]
     for beta in beta_arr:
         bottleneck_model_path = r'E:\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
         BottleneckMineMain(arcface_model_path, bottleneck_model_path, latent_dim, beta, save_name)
