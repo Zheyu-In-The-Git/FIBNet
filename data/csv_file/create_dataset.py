@@ -370,3 +370,50 @@ mask = slice(0,3,1)
 data = imgpath_race_id_celeba[mask]['img_path'][0]
 print(data)
 '''
+
+
+
+#######################Casia-FaceV5数据集#############
+'''
+
+CasiaFace = 'E:\datasets\CASIA-FaceV5'
+fn = partial(os.path.join, CasiaFace)
+
+text = np.load('E:\Bottleneck_Nets\data\csv_file\image_idx_list.npy')
+#print(text[:, 0])
+
+identity_1_casia = pd.DataFrame(text, columns = ['identity_1','sub_img_path_1'])
+new_identity_1_casia = identity_1_casia.drop_duplicates('identity_1', keep='first')
+new_identity_2_casia = identity_1_casia.drop_duplicates('identity_1', keep='last')
+
+match_img_x = new_identity_1_casia.rename(columns={'sub_img_path_1':'img_x'}).reset_index()
+match_img_x = match_img_x.drop(labels='index', axis=1)
+match_img_x = match_img_x.drop(labels='identity_1', axis=1)
+
+match_img_y = new_identity_2_casia.rename(columns={'sub_img_path_1':'img_y'}).reset_index()
+match_img_y = match_img_y.drop(labels='index', axis=1)
+match_img_y = match_img_y.drop(labels='identity_1', axis=1)
+#print(match_img_x)
+#print(match_img_y)
+
+match_img = pd.concat([match_img_x, match_img_y], axis=1)
+match_img.insert(loc = 2, column='match', value=np.ones(match_img.shape[0]))
+print(match_img)
+
+shuffled_img_y = match_img_y.sample(frac=1).reset_index().drop(labels='index', axis=1)
+
+#print(shuffled_img_y)
+non_match_img = pd.concat([match_img_x, shuffled_img_y], axis=1)
+non_match_img.insert(loc=2, column='match', value=np.zeros(non_match_img.shape[0]))
+print(non_match_img)
+
+casia_face_recognition_data = pd.concat([match_img, non_match_img], axis=0).reset_index()
+casia_face_recognition_data = casia_face_recognition_data.drop(labels='index', axis=1)
+print(casia_face_recognition_data)
+casia_face_recognition_data.to_csv("casia_face_verify_test_dataset.csv", encoding="utf_8_sig")
+'''
+
+
+
+
+
