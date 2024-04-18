@@ -236,7 +236,7 @@ class LFWCaisaRecognitionTestPairs(data.Dataset):
         ###############################
         lfw_casia_database_np = np.row_stack((lfw_face_recognition_data, casia_data_img_xy_match))
         self.lfw_casia_database_pd = pd.DataFrame(lfw_casia_database_np, columns=['img_x','img_y', 'match'])
-        print(self.lfw_casia_database_pd)
+        #print(self.lfw_casia_database_pd)
 
 
         self.trans = transforms.Compose([transforms.Resize((self.dim_img, self.dim_img)),

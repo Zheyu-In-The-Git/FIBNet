@@ -8,3 +8,4 @@ from .lfw_interface import LFWInterface
 from .adience_data import AdienceData, AdienceRaceData
 from .adience_interface import AdienceInterface
 
+from .lfw_casia_data import LFWCasiaData, LFWCaisaRecognitionTestPairs
