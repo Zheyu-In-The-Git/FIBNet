@@ -144,8 +144,9 @@ class LFWCasiaData(data.Dataset):
         x = PIL.Image.open(self.lfw_casia_database_pd.loc[index]['img_path'])
         x = self.trans(x)
 
-        u = 0
+        u = 1
         u = torch.tensor([u]).to(torch.float32)
+        u = u.long()
 
 
         s = self.lfw_casia_database_pd.loc[index]['sensitive_attr']

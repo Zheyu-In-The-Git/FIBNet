@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
-from lfw_casia_data import LFWCasiaData, LFWCaisaRecognitionTestPairs
+from .lfw_casia_data import LFWCasiaData, LFWCaisaRecognitionTestPairs
 
 class LFWCasiaInterface(pl.LightningDataModule):
     def __init__(self,
@@ -20,6 +20,9 @@ class LFWCasiaInterface(pl.LightningDataModule):
         self.lfw_data_dir = lfw_data_dir
         self.casia_data_dir = casia_data_dir
 
+        self.prepare_data_per_node = True
+        self.save_hyperparameters()
+        self.allow_zero_length_dataloader_with_multiple_devices = True
 
         if purpose == 'attr_extract':
             self.trainset = LFWCasiaData(dim_img=self.dim_img,

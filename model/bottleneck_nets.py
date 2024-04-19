@@ -178,6 +178,6 @@ class BottleneckNets(pl.LightningModule):
         self.log('eer_cos', eer_cos, on_epoch=True)
         bottleneck_net_confusion_cos = {'fpr_cos': fpr_cos, 'tpr_cos': tpr_cos, 'thresholds_cos': thresholds_cos,'eer_cos': eer_cos}
 
-        torch.save(bottleneck_net_confusion_cos, r'lightning_logs/bottleneck_roc_beta'+str(self.beta)+'.pt')
+        torch.save(bottleneck_net_confusion_cos, r'lightning_logs/bottleneck_roc_beta'+str(self.beta)+'casia_lfw'+'.pt')
 
 

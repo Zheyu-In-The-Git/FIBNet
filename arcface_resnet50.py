@@ -7,6 +7,7 @@ import torch.optim as optim
 import os
 import numpy as np
 from data import CelebaInterface
+from data import LFWCasiaInterface
 from pytorch_lightning.loggers import TensorBoardLogger
 from model import ResNet50, ArcMarginProduct, FocalLoss
 import torchvision.models as models
@@ -124,7 +125,7 @@ class ArcfaceResnet50(pl.LightningModule):
         self.log('eer_cos', eer_cos, prog_bar=True)
 
         arcface_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_cos':thresholds_cos,'eer_cos':eer_cos}
-        torch.save(arcface_confusion_cos, r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\lightning_log\roc_arcface_celeba_512.pt')
+        torch.save(arcface_confusion_cos, r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\roc_lfwcasia_arcface_celeba_512.pt')
 
 
 
@@ -149,6 +150,17 @@ def main(model_name, Resume, save_name=None):
                  identity_nums = 10177,
                  sensitive_attr = 'Male',
                  pin_memory=False)
+
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
+
+    lfw_casia_data = LFWCasiaInterface(dim_img=224,
+                                        batch_size=128,
+                                        dataset='lfw_casia_data',
+                                        sensitive_attr='White',
+                                        lfw_data_dir=lfw_data_dir,
+                                        casia_data_dir=casia_data_dir,
+                                        purpose='face_recognition')
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_logs', name='tensorboard_log')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
@@ -189,8 +201,8 @@ def main(model_name, Resume, save_name=None):
 
     if Resume:
         model = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
-        trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt')
-        trainer.test(model, data_module)
+        #trainer.fit(model, data_module, ckpt_path='lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt')
+        trainer.test(model, lfw_casia_data, ckpt_path=r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
         #trainer.save_checkpoint('lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50')
     else:
         resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
