@@ -12,7 +12,7 @@ from torchvision import transforms
 from sklearn.manifold import TSNE
 
 
-from tsne_data import CelebaTSNEExperiment, CelebaTSNERaceExperiment, LFWTSNEExperiment, AdienceTSNEGenderExperiment, AdienceTSNERaceExperiment
+from tsne_data import CelebaTSNEExperiment, CelebaTSNERaceExperiment, LFWTSNEExperiment, AdienceTSNEGenderExperiment, AdienceTSNERaceExperiment, LFWCasiaFaceExperiment
 from torch.utils.data import DataLoader
 from model import BottleneckNets, Encoder, Decoder
 import arcface_resnet50
@@ -32,8 +32,8 @@ def TSNEExperiment(model_name, sensitive_attr, dataloader, data_name):
     ###############################################
 
     if model_name == 'Arcface':
-        arcface_resnet50_net = arcface_resnet50.ArcfaceResnet50(in_features=1024, out_features=10177, s=64.0, m=0.50)
-        model = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt').to(device)
+        arcface_resnet50_net = arcface_resnet50.ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
+        model = arcface_resnet50_net.load_from_checkpoint(r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt').to(device)
 
         for param in model.parameters():
             param.requires_grad_(False)
@@ -111,12 +111,12 @@ def TSNEExperiment(model_name, sensitive_attr, dataloader, data_name):
     #####################################################
     elif model_name == 'Bottleneck_0.1':
         arcface_resnet50_net = arcface_resnet50.ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
-        arcface = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
+        arcface = arcface_resnet50_net.load_from_checkpoint(r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt')
         #arcface = arcface_resnet50_net.load_from_checkpoint(r'C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt')
         encoder = Encoder(latent_dim=512, arcface_model=arcface)
         decoder = Decoder(latent_dim=512, identity_nums=10177, s=64.0, m=0.50, easy_margin=False)
         bottlenecknets = BottleneckNets(model_name='bottleneck', encoder=encoder, decoder=decoder, beta=0.1,batch_size=64, identity_nums=10177)
-        model = bottlenecknets.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.1\checkpoints\saved_models\last.ckpt', encoder=encoder,decoder=decoder)
+        model = bottlenecknets.load_from_checkpoint(r'E:\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.1\checkpoints\saved_models\last.ckpt', encoder=encoder,decoder=decoder)
         #model = bottlenecknets.load_from_checkpoint(r'C:\Users\Administrator\PycharmProjects\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta0.1\checkpoints\saved_models\last.ckpt', encoder=encoder, decoder=decoder)
         model.to(device)
 
@@ -200,8 +200,12 @@ if __name__ == '__main__':
 
     # 数据集部分
     celeba_dir = 'D:\datasets\celeba'
-    lfw_dir = 'D:\datasets\lfw\lfw112'
     adience_dir = 'D:\datasets\Adience'
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
+
+    '''
+    
 
     # 性别
     celeba_gender_dataset = CelebaTSNEExperiment(dim_img=224, data_dir=celeba_dir, sensitive_attr='Male', split='test_30%')
@@ -257,6 +261,41 @@ if __name__ == '__main__':
     TSNEExperiment(model_name='Bottleneck_0.1', sensitive_attr='White', dataloader=celeba_race_dataloader, data_name='celeba')
     TSNEExperiment(model_name='Bottleneck_0.1', sensitive_attr='White', dataloader=lfw_race_dataloader, data_name='lfw')
     TSNEExperiment(model_name='Bottleneck_0.1', sensitive_attr='White', dataloader=adience_race_dataloader, data_name='adience')
+    
+    '''
+
+    #############################################################
+    #################   lfw+casia 补充实验部分  ###################
+    #############################################################
+
+    lfw_casia_gender_loader = LFWCasiaFaceExperiment(dim_img=224,
+                                                    lfw_data_dir=lfw_data_dir,
+                                                    casia_data_dir=casia_data_dir,
+                                                    sensitive_attr='Male',  # Male or White
+                                                    img_path_replace=True,
+                                                    split='all')
+    lfw_casia_gender_dataloader = DataLoader(lfw_casia_gender_loader, batch_size=50, shuffle=True)
+
+    # Arcface
+    # 性别
+    #TSNEExperiment(model_name='Arcface', sensitive_attr='Male', dataloader=lfw_casia_gender_dataloader, data_name='lfw_casia')
+    #TSNEExperiment(model_name='Bottleneck_0.1', sensitive_attr='Male', dataloader=lfw_casia_gender_dataloader, data_name='lfw_casia')
+
+    lfw_casia_race_loader = LFWCasiaFaceExperiment(dim_img=224,
+                                                    lfw_data_dir=lfw_data_dir,
+                                                    casia_data_dir=casia_data_dir,
+                                                    sensitive_attr='White',  # Male or White
+                                                    img_path_replace=True,
+                                                    split='all')
+    lfw_casia_race_dataloader = DataLoader(lfw_casia_race_loader, batch_size=50, shuffle=True)
+
+    TSNEExperiment(model_name='Arcface', sensitive_attr='White', dataloader=lfw_casia_race_dataloader, data_name='lfw_casia')
+    TSNEExperiment(model_name='Bottleneck_0.1', sensitive_attr='White', dataloader=lfw_casia_race_dataloader, data_name='lfw_casia')
+
+
+
+
+
 
 
 

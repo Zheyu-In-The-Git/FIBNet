@@ -11,7 +11,7 @@ from model import BottleneckNets, Encoder, Decoder
 from matplotlib import pyplot as plt
 from torchvision import transforms
 from arcface_resnet50 import ArcfaceResnet50
-from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface
+from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface, LFWCasiaInterface
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.manifold import TSNE
 import torch.nn.functional as F
@@ -58,7 +58,7 @@ class BottleneckMineEstimator(pl.LightningModule):
         b1 = 0.5
         b2 = 0.99
         optim_train = optim.Adam(self.mine_net.parameters(), lr=0.01, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=2, min_lr=1e-8, threshold=1e-4)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=10, min_lr=1e-8, threshold=1e-4)
         return {'optimizer': optim_train, 'lr_scheduler':scheduler, 'monitor':'infor_loss'}
 
     def training_step(self, batch):
@@ -91,10 +91,10 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                   sensitive_attr='Male',
                                   pin_memory=False)
 
-    '''
+    
 
 
-    '''
+    
     
     data_module = LFWInterface(num_workers=2,
                                dataset='lfw',
@@ -106,10 +106,10 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                pin_memory=False,
                                identity_nums=5749,
                                sensitive_dim=1)
-    '''
+    
 
 
-    '''
+    
     
     data_module = AdienceInterface(num_workers=2,
                                    dataset='adience',
@@ -121,7 +121,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
                                    pin_memory=False,
                                    identity_nums=5749,
                                    sensitive_dim=1)
-    '''
+    
 
 
 
@@ -139,7 +139,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
 
 
 
-    '''
+    
     
     data_module = AdienceInterface(num_workers=2,
                                    dataset='adience',
@@ -154,9 +154,18 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
 
     '''
 
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
 
+    lfw_casia_data = LFWCasiaInterface(dim_img=224,
+                                       batch_size=256,
+                                       dataset='lfw_casia_data',
+                                       sensitive_attr='White',
+                                       lfw_data_dir=lfw_data_dir,
+                                       casia_data_dir=casia_data_dir,
+                                       purpose='attr_extract')
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/bottleneck_mine_estimator_celebatest/checkpoints_beta'+str(beta))
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/bottleneck_mine_estimator_casialfw_race/checkpoints_beta'+str(beta))
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='bottleneck_mine_estimator_logger_beta' + str(beta))
 
@@ -180,8 +189,8 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=130,
-        min_epochs=120,
+        max_epochs=220,
+        min_epochs=200,
         logger=logger,
         log_every_n_steps=10,
         precision=32,
@@ -196,7 +205,7 @@ def BottleneckMineMain(arcface_model_path, bottleneck_model_path,latent_dim, bet
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
-    trainer.fit(bottlenecknetsmineestimator, data_module)
+    trainer.fit(bottlenecknetsmineestimator, lfw_casia_data)
 
 if __name__ == '__main__':
     arcface_model_path = r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'
@@ -204,7 +213,7 @@ if __name__ == '__main__':
     latent_dim = 512
     save_name = 'bottleneck_mine_512_adience'
 
-    beta_arr = [0.001]
+    beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
     for beta in beta_arr:
         bottleneck_model_path = r'E:\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
         BottleneckMineMain(arcface_model_path, bottleneck_model_path, latent_dim, beta, save_name)

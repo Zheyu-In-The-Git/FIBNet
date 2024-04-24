@@ -8,7 +8,7 @@ from model import BottleneckNets, Encoder, Decoder
 import numpy as np
 import os
 from pytorch_lightning.loggers import TensorBoardLogger
-from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface, CelebaAttackInterface
+from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface, CelebaAttackInterface, LFWCasiaInterface
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
 import math
 import torchmetrics
@@ -79,7 +79,7 @@ class PFRNet(pl.LightningModule):
                 m.bias.data.zero_()
 
         arcface_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
-        self.pretrained_model = arcface_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt')
+        self.pretrained_model = arcface_net.load_from_checkpoint(r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt')
         self.pretrained_model.requires_grad_(False)
 
         self.MSE = nn.MSELoss()
@@ -218,8 +218,8 @@ class PFRNet(pl.LightningModule):
         z_1 = arcface_model_resnet50(img_1)
         z_2 = arcface_model_resnet50(img_2)
 
-        z_1, _, _ = self.forward(z_1)
-        z_2, _, _ = self.forward(z_2)
+        _, z_1, _ = self.forward(z_1)
+        _, z_2, _ = self.forward(z_2)
         return {'z_1': z_1, 'z_2': z_2, 'match': match}
 
     def test_epoch_end(self, outputs):
@@ -235,7 +235,7 @@ class PFRNet(pl.LightningModule):
 
         PFRNet_confusion_cos = {'fpr_cos':fpr_cos,'tpr_cos':tpr_cos,'thresholds_cos':thresholds_cos,'eer_cos':eer_cos}
         torch.save(PFRNet_confusion_cos,
-                   r'lightning_logs/PFRNet_gender/checkpoints/PFRNet_confusion_cos_Adience.pt')
+                   r'lightning_logs/PFRNet_gender/checkpoints/PFRNet_confusion_cos_lfwcasia.pt')
 
 
 
@@ -246,13 +246,13 @@ class PFRNetMineEstimator(pl.LightningModule):
         self.latent_dim = latent_dim
         self.s_dim = s_dim
         PFRNet_model = PFRNet(latent_dim=512)
-        PFRNet_model = PFRNet_model.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints\saved_model\last.ckpt',latent_dim=512)
+        PFRNet_model = PFRNet_model.load_from_checkpoint(r'E:\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints\saved_model\last.ckpt',latent_dim=512)
         self.model = PFRNet_model
         self.model.requires_grad_(False)
 
 
         arcface_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
-        self.arcface_model = arcface_net.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt', latent_dim = latent_dim, s_dim = 1)
+        self.arcface_model = arcface_net.load_from_checkpoint(r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt', latent_dim = latent_dim, s_dim = 1)
         self.arcface_model.requires_grad_(False)
 
 
@@ -279,7 +279,7 @@ class PFRNetLogisticRegressionAttack(pl.LightningModule):
     def __init__(self, dataset_name):
         super(PFRNetLogisticRegressionAttack, self).__init__()
 
-        self.linear = nn.Linear(512, 2)
+        self.linear = nn.Linear(496, 2)
 
         nn.init.xavier_uniform_(self.linear.weight)
 
@@ -287,14 +287,14 @@ class PFRNetLogisticRegressionAttack(pl.LightningModule):
 
         PFRNet_model = PFRNet(latent_dim=512)
         PFRNet_model = PFRNet_model.load_from_checkpoint(
-            r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\PFRNet_gender\checkpoints\saved_model\last.ckpt',
+            r'E:\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints\saved_model\last.ckpt',
             latent_dim=512)
         self.model = PFRNet_model
         self.model.requires_grad_(False)
 
         arcface_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
         self.arcface_model = arcface_net.load_from_checkpoint(
-            r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt',
+            r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt',
             latent_dim=512, s_dim=1)
         self.arcface_model.requires_grad_(False)
 
@@ -342,7 +342,7 @@ class PFRNetLogisticRegressionAttack(pl.LightningModule):
 
         _, z = self.arcface_model(x, u)
         z = standardize_tensor(z)
-        z, _, _ = self.model(z)
+        _, z, _ = self.model(z)
 
         logits = self.forward(z)
         loss = F.cross_entropy(logits, s.long())
@@ -359,7 +359,7 @@ class PFRNetLogisticRegressionAttack(pl.LightningModule):
 
         _, z = self.arcface_model(x, u)
         z = standardize_tensor(z)
-        z, _, _ = self.model(z)
+        _, z, _ = self.model(z)
 
         logits = self.forward(z)
         loss = F.cross_entropy(logits, s.long())
@@ -376,7 +376,7 @@ class PFRNetMultipleLayerInceptionAttack(pl.LightningModule):
         super(PFRNetMultipleLayerInceptionAttack, self).__init__()
 
         self.mlp = nn.Sequential(
-            nn.Linear(512, 256),
+            nn.Linear(496, 256),
             nn.ReLU(),
             nn.Linear(256, 256),
             nn.ReLU(),
@@ -401,14 +401,14 @@ class PFRNetMultipleLayerInceptionAttack(pl.LightningModule):
 
         PFRNet_model = PFRNet(latent_dim=512)
         PFRNet_model = PFRNet_model.load_from_checkpoint(
-            r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\PFRNet_gender\checkpoints\saved_model\last.ckpt',
+            r'E:\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints\saved_model\last.ckpt',
             latent_dim=512)
         self.model = PFRNet_model
         self.model.requires_grad_(False)
 
         arcface_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
         self.arcface_model = arcface_net.load_from_checkpoint(
-            r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\epoch=48-step=95800.ckpt',
+            r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt',
             latent_dim=512, s_dim=1)
         self.arcface_model.requires_grad_(False)
 
@@ -438,7 +438,7 @@ class PFRNetMultipleLayerInceptionAttack(pl.LightningModule):
 
         _, z = self.arcface_model(x, u)
         z = standardize_tensor(z)
-        z, _, _ = self.model(z)
+        _, z, _ = self.model(z)
 
         logits = self.forward(z)
         loss = F.cross_entropy(logits, s.long())
@@ -456,7 +456,7 @@ class PFRNetMultipleLayerInceptionAttack(pl.LightningModule):
 
         _, z = self.arcface_model(x, u)
         z = standardize_tensor(z)
-        z, _, _ = self.model(z)
+        _, z, _ = self.model(z)
 
         logits = self.forward(z)
         loss = F.cross_entropy(logits, s.long())
@@ -473,7 +473,7 @@ class PFRNetMultipleLayerInceptionAttack(pl.LightningModule):
 
         _, z = self.arcface_model(x, u)
         z = standardize_tensor(z)
-        z, _, _ = self.model(z)
+        _, z, _ = self.model(z)
 
         logits = self.forward(z)
         loss = F.cross_entropy(logits, s.long())
@@ -486,6 +486,8 @@ class PFRNetMultipleLayerInceptionAttack(pl.LightningModule):
 
 
 def PFRNetExperiment():
+
+    '''
 
 
     data_module = CelebaInterface(num_workers=2,
@@ -519,6 +521,18 @@ def PFRNetExperiment():
                                            pin_memory=False,
                                            identity_nums=5749,
                                            sensitive_dim=1)
+    '''
+
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
+
+    lfw_casia_data = LFWCasiaInterface(dim_img=224,
+                                       batch_size=128,
+                                       dataset='lfw_casia_data',
+                                       sensitive_attr='White',
+                                       lfw_data_dir=lfw_data_dir,
+                                       casia_data_dir=casia_data_dir,
+                                       purpose='face_recognition')
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_gender/checkpoints/')
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_gender_logger')
@@ -557,8 +571,8 @@ def PFRNetExperiment():
     print('Model will be created')
     PFRNet_model = PFRNet(latent_dim=512)
     #trainer.fit(PFRNet_model, data_module)
-    PFRNet_model = PFRNet_model.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints\saved_model\last.ckpt', latent_dim=512)
-    trainer.test(PFRNet_model, adience_data_module)
+    #PFRNet_model = PFRNet_model.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints\saved_model\last.ckpt', latent_dim=512)
+    trainer.test(PFRNet_model, lfw_casia_data, ckpt_path=r'E:\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints\saved_model\last.ckpt')
     #PFRNet_model = PFRNet(latent_dim=512)
     #PFRNet_model = PFRNet_model.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet_gender\checkpoints_celebatest\saved_model\last.ckpt', latent_dim =512)
     #trainer.test(PFRNet_model, adience_data_module)
@@ -922,6 +936,9 @@ def PFRNetMINERace():
 
 
 def PFRNetLogisticRegressionGenderAttack():
+    '''
+
+
     celeba_data_module = CelebaAttackInterface(num_workers=2,
                                          dataset='celeba_data',
                                          batch_size=256,
@@ -953,12 +970,24 @@ def PFRNetLogisticRegressionGenderAttack():
                                            pin_memory=False,
                                            identity_nums=5749,
                                            sensitive_dim=1)
+    '''
+
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
+
+    lfw_casia_data = LFWCasiaInterface(dim_img=224,
+                                       batch_size=256,
+                                       dataset='lfw_casia_data',
+                                       sensitive_attr='Male',
+                                       lfw_data_dir=lfw_data_dir,
+                                       casia_data_dir=casia_data_dir,
+                                       purpose='attr_extract')
 
 
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_logistic_regression_gender_attack/checkpoints/')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_logistic_regression_gender_attack_logger_Adience')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_logistic_regression_gender_attack_logger_lfwcasia')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     trainer = pl.Trainer(
         callbacks=[
@@ -996,14 +1025,18 @@ def PFRNetLogisticRegressionGenderAttack():
     #trainer.test(logistic_attack_model, celeba_data_module)
 
     # 之后测试用
-    logistic_attack_model = PFRNetLogisticRegressionAttack('Adience')
+    logistic_attack_model = PFRNetLogisticRegressionAttack('LFW-Casia')
     #resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     #os.makedirs(resume_checkpoint_dir, exist_ok=True)
     #print('Model will be created')
     #trainer.fit(logistic_attack_model, celeba_data_module)
-    trainer.test(logistic_attack_model, adience_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\attack\PFRNet_logistic_regression_gender_attack\checkpoints\saved_model\last.ckpt')
+    trainer.test(logistic_attack_model, lfw_casia_data, ckpt_path=r'E:\Bottleneck_Nets\experiments\lightning_logs\PFRNet_logistic_regression_gender_attack\checkpoints\saved_model\last.ckpt')
 
 def PFRNetLogisticRegressionRaceAttack():
+
+    '''
+
+
     celeba_data_module = CelebaRaceInterface(
         num_workers=2,
         dataset='celeba_data',
@@ -1035,12 +1068,22 @@ def PFRNetLogisticRegressionRaceAttack():
                                            pin_memory=False,
                                            identity_nums=5749,
                                            sensitive_dim=1)
+    '''
 
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
 
+    lfw_casia_data = LFWCasiaInterface(dim_img=224,
+                                       batch_size=256,
+                                       dataset='lfw_casia_data',
+                                       sensitive_attr='White',
+                                       lfw_data_dir=lfw_data_dir,
+                                       casia_data_dir=casia_data_dir,
+                                       purpose='attr_extract')
 
-    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_logistic_regression_gender_attack/checkpoints/')
+    CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_logistic_regression_race_attack/checkpoints/')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_logistic_regression_race_attack_logger_adience')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_logistic_regression_race_attack_logger_lfwcasia')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     trainer = pl.Trainer(
         callbacks=[
@@ -1078,14 +1121,18 @@ def PFRNetLogisticRegressionRaceAttack():
     #trainer.test(logistic_attack_model, celeba_data_module)
 
     # 之后测试用
-    logistic_attack_model = PFRNetLogisticRegressionAttack('adience')
+    logistic_attack_model = PFRNetLogisticRegressionAttack('lfw_casia')
     #resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     #os.makedirs(resume_checkpoint_dir, exist_ok=True)
     #print('Model will be created')
     #trainer.fit(logistic_attack_model, celeba_data_module)
-    trainer.test(logistic_attack_model, adience_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\attack\PFRNet_logistic_regression_race_attack\saved_model\last-v1.ckpt')
+    trainer.test(logistic_attack_model, lfw_casia_data, ckpt_path=r'E:\Bottleneck_Nets\experiments\lightning_logs\PFRNet_logistic_regression_race_attack\checkpoints\saved_model\last.ckpt')
 
 def PFRNetMultipleLayerInceptionGenderAttack():
+
+    '''
+
+
     celeba_data_module = CelebaAttackInterface(num_workers=2,
                                          dataset='celeba_data',
                                          batch_size=256,
@@ -1117,12 +1164,23 @@ def PFRNetMultipleLayerInceptionGenderAttack():
                                            pin_memory=False,
                                            identity_nums=5749,
                                            sensitive_dim=1)
+    '''
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
+
+    lfw_casia_dataloader = LFWCasiaInterface(dim_img=224,
+                                        batch_size=100,
+                                        dataset='lfw_casia_data',
+                                        sensitive_attr='Male',
+                                        lfw_data_dir=lfw_data_dir,
+                                        casia_data_dir=casia_data_dir,
+                                        purpose='attr_extract')
 
 
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_MLP_gender_attack/checkpoints/')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_MLP_gender_attack_logger_adience')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_MLP_gender_attack_logger_lfwcasia')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     trainer = pl.Trainer(
         callbacks=[
@@ -1157,7 +1215,7 @@ def PFRNetMultipleLayerInceptionGenderAttack():
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     print('Model will be created')
     #trainer.fit(MLP_attack_model, celeba_data_module)
-    trainer.test(MLP_attack_model, adience_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\attack\PFRNet_MLP_gender_attack\checkpoints\saved_model\last.ckpt')
+    trainer.test(MLP_attack_model, lfw_casia_dataloader, ckpt_path=r'E:\Bottleneck_Nets\experiments\lightning_logs\PFRNet_MLP_gender_attack\checkpoints\saved_model\last.ckpt')
 
     # 之后测试用 LFW Adience
     #MLP_attack_model = PFRNetMultipleLayerInceptionAttack('CelebA')
@@ -1168,6 +1226,10 @@ def PFRNetMultipleLayerInceptionGenderAttack():
     #trainer.test(MLP_attack_model, celeba_data_module)
 
 def PFRNetMultipleLayerInceptionRaceAttack():
+
+    '''
+
+
     celeba_data_module = CelebaRaceInterface(
         num_workers=2,
         dataset='celeba_data',
@@ -1199,12 +1261,24 @@ def PFRNetMultipleLayerInceptionRaceAttack():
                                            pin_memory=False,
                                            identity_nums=5749,
                                            sensitive_dim=1)
+    '''
+
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
+
+    lfw_casia_data = LFWCasiaInterface(dim_img=224,
+                                       batch_size=256,
+                                       dataset='lfw_casia_data',
+                                       sensitive_attr='White',
+                                       lfw_data_dir=lfw_data_dir,
+                                       casia_data_dir=casia_data_dir,
+                                       purpose='attr_extract')
 
 
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/PFRNet_MLP_race_attack/checkpoints/')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_MLP_race_attack_logger_adience')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_MLP_race_attack_logger_lfwcasia')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
     trainer = pl.Trainer(
         callbacks=[
@@ -1239,7 +1313,7 @@ def PFRNetMultipleLayerInceptionRaceAttack():
     #os.makedirs(resume_checkpoint_dir, exist_ok=True)
     #print('Model will be created')
     #trainer.fit(MLP_attack_model, celeba_data_module)
-    trainer.test(MLP_attack_model, adience_data_module,ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\PFRNet\attack\PFRNet_MLP_race_attack\checkpoints\saved_model\last.ckpt')
+    trainer.test(MLP_attack_model, lfw_casia_data, ckpt_path=r'E:\Bottleneck_Nets\experiments\lightning_logs\PFRNet_MLP_race_attack\checkpoints\saved_model\last.ckpt')
 
     # 之后测试用
     #logistic_attack_model = PFRNetLogisticRegressionAttack('CelebA')

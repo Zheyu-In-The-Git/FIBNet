@@ -10,10 +10,57 @@ import torch.optim as optim
 from matplotlib import pyplot as plt
 from torchvision import transforms
 from arcface_resnet50 import ArcfaceResnet50
-from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface
+from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface, LFWCasiaInterface
+import math
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.manifold import TSNE
 import torch.nn.functional as F
+
+
+
+torch.autograd.set_detect_anomaly(True)
+
+EPS = 1e-6
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+#device = 'cpu'
+print("Device:", device)
+
+
+class EMALoss(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, running_ema):
+        ctx.save_for_backward(input, running_ema)
+        input_log_sum_exp = input.exp().mean().log()
+
+        return input_log_sum_exp
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, running_mean = ctx.saved_tensors
+        grad = grad_output * input.exp().detach() / \
+            (running_mean + EPS) / input.shape[0]
+        return grad, None
+
+
+def ema(mu, alpha, past_ema):
+    return alpha * mu + (1.0 - alpha) * past_ema
+
+
+def ema_loss(x, running_mean, alpha):
+    t_exp = torch.exp(torch.logsumexp(x, 0) - math.log(x.shape[0])).detach()
+    if running_mean == 0:
+        running_mean = t_exp
+    else:
+        running_mean = ema(t_exp, alpha, running_mean.item())
+    t_log = EMALoss.apply(x, running_mean)
+
+    # Recalculate ema
+
+    return t_log, running_mean
+
+
+
 
 
 class MineNet(nn.Module):
@@ -63,7 +110,7 @@ class ArcfaceMineEstimator(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
         optim_train = optim.Adam(self.mine_net.parameters(), lr=0.01, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=3, min_lr=1e-8,verbose=True,
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode="max", factor=0.1, patience=10, min_lr=1e-6,verbose=True,
                                                          threshold=1e-4)
         return {"optimizer": optim_train, "lr_scheduler": scheduler, "monitor": "infor_loss"}
 
@@ -129,7 +176,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                                pin_memory=False,
                                identity_nums=5749,
                                sensitive_dim=1)
-    '''
+    
 
 
 
@@ -145,7 +192,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         pin_memory=False
     )
 
-    '''
+    
     
     data_module = AdienceInterface(num_workers=2,
                                    dataset='adience',
@@ -159,10 +206,21 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
                                    sensitive_dim=1)
     '''
 
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
+
+    lfw_casia_data = LFWCasiaInterface(dim_img=224,
+                                       batch_size=256,
+                                       dataset='lfw_casia_data',
+                                       sensitive_attr='White',
+                                       lfw_data_dir=lfw_data_dir,
+                                       casia_data_dir=casia_data_dir,
+                                       purpose='attr_extract')
+
 
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT',
-                                     'lightning_logs/arcface_mine_estimator_race/checkpoints_celebatest/')
+                                     'lightning_logs/arcface_mine_estimator_race/checkpoints_casialfw/')
 
     logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='arcface_mine_estimator_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
 
@@ -182,8 +240,8 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=130,
-        min_epochs=120,
+        max_epochs=220,
+        min_epochs=200,
         logger=logger,
         log_every_n_steps=50,
         precision=32,
@@ -199,7 +257,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
-    trainer.fit(arcfacemineestimator, data_module)
+    trainer.fit(arcfacemineestimator, lfw_casia_data, ckpt_path=r'E:\Bottleneck_Nets\experiments\lightning_logs\arcface_mine_estimator_race\checkpoints_casialfw\saved_model\arcface_mine_512\last.ckpt')
     # 记得要对celeba race 的训练集更改，更改成测试集
 
 if __name__ == '__main__':
