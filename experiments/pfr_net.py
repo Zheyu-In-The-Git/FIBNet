@@ -262,14 +262,14 @@ class PFRNetMineEstimator(pl.LightningModule):
     def configure_optimizers(self):
         b1 = 0.5
         b2 = 0.999
-        optim_train = optim.Adam(self.mine_net.parameters(), lr=0.001, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=5, min_lr=1e-8, threshold=1e-4)
+        optim_train = optim.Adam(self.mine_net.parameters(), lr=0.01, betas=(b1, b2))
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=10, min_lr=1e-8, threshold=1e-4)
         return {'optimizer': optim_train, 'lr_scheduler':scheduler, 'monitor':'infor_loss'}
 
     def training_step(self, batch):
         x, u, s =batch
         _, z = self.arcface_model(x, u)
-        z, _, _ = self.model(z)
+        _, z, _ = self.model(z)
         infor_loss = self.mine_net(z, s)
         self.log('infor_loss', -infor_loss, on_step=True, on_epoch=True, prog_bar=True)
         return infor_loss
@@ -579,6 +579,8 @@ def PFRNetExperiment():
 
 
 def PFRNetMINEGender():
+    '''
+
 
     celeba_data_module = CelebaInterface(num_workers=2,
                                   dataset='celeba_data',
@@ -611,14 +613,27 @@ def PFRNetMINEGender():
                                    pin_memory=False,
                                    identity_nums=5749,
                                    sensitive_dim=1)
+     '''
+
+    lfw_casia_data_module = LFWCasiaInterface(dataset='LFW_CASIA',
+                                              batch_size=256,
+                                              dim_img=224,
+                                              sensitive_attr='Male',
+                                              lfw_data_dir='E:\datasets\lfw\lfw112',
+                                              casia_data_dir='E:\datasets\CASIA-FaceV5\dataset_jpg',
+                                              purpose='attr_extract')
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT','lightning_logs/PFRNet_mine_gender/checkpoints')
-
+    '''
     logger_celebA_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_celebA_train')
     logger_lfw = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_lfw')
     logger_Adience = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_adience')
     logger_celebA_test = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_gender_test')
+    '''
+    logger_lfw_casia = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name= 'PFRNet_mine_gender_lfw_casia')
 
+    '''
+    
     celeba_train_trainer = pl.Trainer(
         callbacks=[
             ModelCheckpoint(
@@ -734,29 +749,69 @@ def PFRNetMINEGender():
         enable_checkpointing=True,
         fast_dev_run=False,
     )
+    '''
+
+    lfw_casia_trainer = pl.Trainer(
+        callbacks=[
+            ModelCheckpoint(
+                mode="min",
+                monitor="infor_loss",
+                dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model'),
+                save_last=True,
+                every_n_train_steps=50
+            ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
+            LearningRateMonitor("epoch"),
+            # EarlyStopping(
+            #    monitor='infor_loss',
+            #    patience=5,
+            #    mode='min'
+            # )
+        ],  # Log learning rate every epoch
+
+        default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
+        accelerator="auto",
+        devices=1,
+        max_epochs=220,
+        min_epochs=200,
+        logger=logger_lfw_casia,
+        log_every_n_steps=50,
+        precision=32,
+        enable_checkpointing=True,
+        fast_dev_run=False,
+    )
+
 
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
-    print('Model will be created celeba train')
+    #print('Model will be created celeba train')
     #PFRNet_MINE_gender_model_celeba_train = PFRNetMineEstimator(latent_dim=512, s_dim=1)
     #celeba_train_trainer.fit(PFRNet_MINE_gender_model_celeba_train, celeba_data_module)
 
-    print('Model will be created lfw')
+    #print('Model will be created lfw')
 
     #PFRNet_MINE_gender_model_lfw = PFRNetMineEstimator(latent_dim=512, s_dim=1)
     #lfw_trainer.fit(PFRNet_MINE_gender_model_lfw, lfw_data_module)
 
-    print('Model will be created adience')
+    #print('Model will be created adience')
 
     #PFRNet_MINE_gender_model_adience = PFRNetMineEstimator(latent_dim=512, s_dim=1)
     #adience_trainer.fit(PFRNet_MINE_gender_model_adience, adience_data_module)
 
-    print('Model will be created celebatest')
-    PFRNet_MINE_gender_model_Celeba_test = PFRNetMineEstimator(latent_dim=512, s_dim=1)
-    celeba_test_trainer.fit(PFRNet_MINE_gender_model_Celeba_test, celeba_data_module)
+    #print('Model will be created celebatest')
+    #PFRNet_MINE_gender_model_Celeba_test = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    #celeba_test_trainer.fit(PFRNet_MINE_gender_model_Celeba_test, celeba_data_module)
+
+    print('Model will be created LFW+CASIA')
+    PFRNet_MINE_gender_model_LFW_CASIA = PFRNetMineEstimator(latent_dim=496,s_dim=1)
+    lfw_casia_trainer.fit(PFRNet_MINE_gender_model_LFW_CASIA, lfw_casia_data_module)
+
 
 
 def PFRNetMINERace():
+
+    '''
+
+
     celeba_data_module = CelebaRaceInterface(
         num_workers=2,
         dataset='celeba_data',
@@ -789,14 +844,28 @@ def PFRNetMINERace():
                                    pin_memory=False,
                                    identity_nums=5749,
                                    sensitive_dim=1)
+    '''
+
+    lfw_casia_data_module = LFWCasiaInterface(dataset='LFW_CASIA',
+                                              batch_size=256,
+                                              dim_img=224,
+                                              sensitive_attr='White',
+                                              lfw_data_dir='E:\datasets\lfw\lfw112',
+                                              casia_data_dir='E:\datasets\CASIA-FaceV5\dataset_jpg',
+                                              purpose='attr_extract')
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT','lightning_logs/PFRNet_mine_race/checkpoints')
-
+    '''
+    
     logger_celebA_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_race_celebA_train')
     logger_lfw = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_race_lfw')
     logger_Adience = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_race_adience')
     logger_celebA_test = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_race_test')
+    '''
+    logger_lfw_caisa = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='PFRNet_mine_race_lfw_casia')
 
+    '''
+    
     celeba_train_trainer = pl.Trainer(
         callbacks=[
             ModelCheckpoint(
@@ -912,26 +981,59 @@ def PFRNetMINERace():
         enable_checkpointing=True,
         fast_dev_run=False,
     )
+    '''
+
+    lfw_casia_trainer = pl.Trainer(
+        callbacks=[
+            ModelCheckpoint(
+                mode="min",
+                monitor="infor_loss",
+                dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model'),
+                save_last=True,
+                every_n_train_steps=50
+            ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
+            LearningRateMonitor("epoch"),
+            # EarlyStopping(
+            #    monitor='infor_loss',
+            #    patience=5,
+            #    mode='min'
+            # )
+        ],  # Log learning rate every epoch
+
+        default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
+        accelerator="auto",
+        devices=1,
+        max_epochs=220,
+        min_epochs=200,
+        logger=logger_lfw_caisa,
+        log_every_n_steps=50,
+        precision=32,
+        enable_checkpointing=True,
+        fast_dev_run=False,
+    )
 
     resume_checkpoint_dir = os.path.join(CHECKPOINT_PATH, 'saved_models')
     os.makedirs(resume_checkpoint_dir, exist_ok=True)
-    print('Model will be created celeba train')
+    #print('Model will be created celeba train')
     #PFRNet_MINE_race_model_celeba_train = PFRNetMineEstimator(latent_dim=512, s_dim=1)
     #celeba_train_trainer.fit(PFRNet_MINE_race_model_celeba_train, celeba_data_module)
 
-    print('Model will be created lfw')
+    #print('Model will be created lfw')
 
     #PFRNet_MINE_race_model_lfw = PFRNetMineEstimator(latent_dim=512, s_dim=1)
     #lfw_trainer.fit(PFRNet_MINE_race_model_lfw, lfw_data_module)
 
-    print('Model will be created adience')
+    #print('Model will be created adience')
 
     #PFRNet_MINE_race_model_adience = PFRNetMineEstimator(latent_dim=512, s_dim=1)
     #adience_trainer.fit(PFRNet_MINE_race_model_adience, adience_data_module)
 
-    print('Model will be created celebatest')
-    PFRNet_MINE_race_model_Celeba_test = PFRNetMineEstimator(latent_dim=512, s_dim=1)
-    celeba_test_trainer.fit(PFRNet_MINE_race_model_Celeba_test, celeba_data_module)
+    #print('Model will be created celebatest')
+    #PFRNet_MINE_race_model_Celeba_test = PFRNetMineEstimator(latent_dim=512, s_dim=1)
+    #celeba_test_trainer.fit(PFRNet_MINE_race_model_Celeba_test, celeba_data_module)
+
+    PFRNet_mine_race_model_lfw_casia = PFRNetMineEstimator(latent_dim=496, s_dim=1)
+    lfw_casia_trainer.fit(PFRNet_mine_race_model_lfw_casia, lfw_casia_data_module)
 
 
 
@@ -1327,9 +1429,9 @@ if __name__ == '__main__':
     #PFRNetExperiment()
 
 
-    #PFRNetMINEGender()
+    PFRNetMINEGender()
 
-    #PFRNetMINERace() # celeba test 做得不好
+    PFRNetMINERace() # celeba test 做得不好
 
 
     # ######################### 本周末的实验 ############
@@ -1340,7 +1442,7 @@ if __name__ == '__main__':
 
     #PFRNetMultipleLayerInceptionGenderAttack()
 
-    PFRNetMultipleLayerInceptionRaceAttack()
+    #PFRNetMultipleLayerInceptionRaceAttack()
 
 
 

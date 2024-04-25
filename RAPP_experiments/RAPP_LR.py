@@ -12,7 +12,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 from RAPP import RAPP, Generator, Discriminator
 
-from RAPP_Mine_data_interface import CelebaRAPPMineTrainingDatasetInterface, LFWRAPPMineDatasetInterface, AdienceRAPPMineDatasetInterface
+from RAPP_Mine_data_interface import CelebaRAPPMineTrainingDatasetInterface, LFWRAPPMineDatasetInterface, AdienceRAPPMineDatasetInterface, LFWCasiaMineDatasetInterface
 from arcface_resnet50 import ArcfaceResnet50
 
 def batch_misclass_rate(y_pred, y_true):
@@ -172,13 +172,15 @@ class RAPPLogisticRegressionAttack(pl.LightningModule):
         self.log('test_acc_'+self.dataset_name, acc, on_step=True, on_epoch=True, prog_bar=True)
         return {'test_loss', loss, 'test_s_accuracy', acc}
 
-def GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory, fast_dev_run):
+def GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, casia_data_dir, pin_memory, fast_dev_run):
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP_LR_Gender/checkpoints')
 
 
     data_module_celeba_training = CelebaRAPPMineTrainingDatasetInterface(num_workers=0, dataset_name='CelebA', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=pin_memory)
     data_module_lfw = LFWRAPPMineDatasetInterface(num_workers=0, dataset_name='LFW', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=pin_memory)
     data_module_adience = AdienceRAPPMineDatasetInterface(num_workers=0, dataset_name='Adience', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=pin_memory)
+    data_module_lfw_casia = LFWCasiaMineDatasetInterface(dataset_name='LFW_CASIA', batch_size=256, dim_img=224, lfw_data_dir=lfw_data_dir, casia_data_dir=casia_data_dir, sensitive_attr='Male')
+
     logger_celeba_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='gender_LR_attack_logger_celeba')
 
     trainer_celeba_training = pl.Trainer(
@@ -213,13 +215,14 @@ def GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_d
 
     print('RAPP models on Logistic Regression Gender ')
     model = RAPPLogisticRegressionAttack(dataset_name='CelebA_LFW_Adience')
-    trainer_celeba_training.fit(model, data_module_celeba_training)
-    trainer_celeba_training.test(model, data_module_celeba_training)
-    trainer_celeba_training.test(model, data_module_lfw)
-    trainer_celeba_training.test(model, data_module_adience)
+    #trainer_celeba_training.fit(model, data_module_celeba_training)
+    #trainer_celeba_training.test(model, data_module_celeba_training)
+    #trainer_celeba_training.test(model, data_module_lfw)
+    #trainer_celeba_training.test(model, data_module_adience)
+    trainer_celeba_training.test(model, data_module_lfw_casia, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_LR_Gender\checkpoints\gender_LR_attack_models\last.ckpt')
 
 
-def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir, pin_memory, fast_dev_run):
+def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir, casia_data_dir, pin_memory, fast_dev_run):
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/RAPP_LR_Race/checkpoints')
 
     data_module_celeba_training = CelebaRAPPMineTrainingDatasetInterface(num_workers=0, dataset_name='CelebA',
@@ -233,6 +236,8 @@ def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir,
     data_module_adience = AdienceRAPPMineDatasetInterface(num_workers=0, dataset_name='Adience', batch_size=256,
                                                           dim_img=224, data_dir=adience_data_dir, identity_nums=10177,
                                                           sensitive_attr='Race', pin_memory=pin_memory)
+
+    data_module_lfw_casia = LFWCasiaMineDatasetInterface(dataset_name='LFW_CASIA', batch_size=256, dim_img=224, lfw_data_dir=lfw_data_dir, casia_data_dir=casia_data_dir, sensitive_attr='Race')
 
     logger_celeba_train = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='race_LR_attack_logger_celeba')
 
@@ -269,17 +274,19 @@ def RaceLogisticRegressionAttack(celeba_data_dir,lfw_data_dir, adience_data_dir,
     print('RAPP models on Logistic Regression Race ')
     model = RAPPLogisticRegressionAttack(dataset_name='CelebA_LFW_Adience')
     #trainer_celeba_training.fit(model, data_module_celeba_training)
-    trainer_celeba_training.test(model, data_module_celeba_training,ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_LR_Race\checkpoints\race_LR_attack_models\epoch=10-step=5000.ckpt')
-    trainer_celeba_training.test(model, data_module_lfw, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_LR_Race\checkpoints\race_LR_attack_models\epoch=10-step=5000.ckpt')
-    trainer_celeba_training.test(model, data_module_adience, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_LR_Race\checkpoints\race_LR_attack_models\epoch=10-step=5000.ckpt')
+    #trainer_celeba_training.test(model, data_module_celeba_training,ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_LR_Race\checkpoints\race_LR_attack_models\epoch=10-step=5000.ckpt')
+    #trainer_celeba_training.test(model, data_module_lfw, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_LR_Race\checkpoints\race_LR_attack_models\epoch=10-step=5000.ckpt')
+    #trainer_celeba_training.test(model, data_module_adience, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_LR_Race\checkpoints\race_LR_attack_models\epoch=10-step=5000.ckpt')
+    trainer_celeba_training.test(model, data_module_lfw_casia, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_LR_Race\checkpoints\race_LR_attack_models\epoch=10-step=5000.ckpt')
 
 if __name__ == '__main__':
     celeba_data_dir = 'E:\datasets\celeba'
     lfw_data_dir = 'E:\datasets\lfw\lfw112'
     adience_data_dir = 'E:\datasets\Adience'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
 
-    #GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir,adience_data_dir,pin_memory=False, fast_dev_run=False)
-    RaceLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, pin_memory=False, fast_dev_run=False)
+    GenderLogisticRegressionAttack(celeba_data_dir, lfw_data_dir,adience_data_dir, casia_data_dir, pin_memory=False, fast_dev_run=False)
+    RaceLogisticRegressionAttack(celeba_data_dir, lfw_data_dir, adience_data_dir, casia_data_dir, pin_memory=False, fast_dev_run=False)
 
 
 

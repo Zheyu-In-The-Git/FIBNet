@@ -14,7 +14,9 @@ pl.seed_everything(83)
 from experiments.bottleneck_mine_experiments import MineNet
 from RAPP import RAPP, Generator, Discriminator
 
-from RAPP_Mine_data_interface import CelebaRAPPMineTrainingDatasetInterface, CelebaRAPPMineTestDatasetInterface, LFWRAPPMineDatasetInterface, AdienceRAPPMineDatasetInterface
+from RAPP_Mine_data_interface import CelebaRAPPMineTrainingDatasetInterface, \
+    CelebaRAPPMineTestDatasetInterface, LFWRAPPMineDatasetInterface, \
+    AdienceRAPPMineDatasetInterface, LFWCasiaMineDatasetInterface
 
 from arcface_resnet50 import ArcfaceResnet50
 
@@ -268,8 +270,45 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
         model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=15)
         trainer_adience.fit(model, data_module_adience)
 
+    elif dataset_name == 'LFW_CASIA_dataset':
+        data_module_lfw_casia = LFWCasiaMineDatasetInterface(dataset_name='LFW_CASIA', batch_size=batch_size, dim_img=dim_img,
+                                                             lfw_data_dir='E:\datasets\lfw\lfw112', casia_data_dir=data_dir,
+                                                             sensitive_attr=sensitive_attr)
+        logger_lfw_casia = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='LFW_CASIA_RAPP_Mine' + sensitive_attr + '_logger')
+        trainer_lfw_casia = pl.Trainer(
+            callbacks = [
+                ModelCheckpoint(
+                    mode = 'min',
+                    monitor= 'infor_loss',
+                    dirpath=os.path.join(CHECKPOINT_PATH, 'LFW_CASIA_RAPP_Mine_' + sensitive_attr + '_model'),
+                    save_last=True,
+                    every_n_train_steps=50
+                ),
+                LearningRateMonitor('epoch'),
+                EarlyStopping(
+                    monitor='infor_loss',
+                    patience=5,
+                    mode='max'
+                )
+            ],
+            default_root_dir=os.path.join(CHECKPOINT_PATH, 'LFW_CASIA_RAPP_Mine_' + sensitive_attr + '_models'),
+            accelerator='auto',
+            devices=1,
+            max_epochs=270,
+            min_epochs=250,
+            logger=logger_lfw_casia,
+            log_every_n_steps=10,
+            precision=32,
+            enable_checkpointing=True,
+            fast_dev_run=fast_dev_run
+        )
+        print('LFW_CASIA ' + sensitive_attr + ' dataset for RAPP MINE will be testing, the model will be create!')
+        model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=15)
+        trainer_lfw_casia.fit(model, data_module_lfw_casia)
+
+
     else:
-        print('please check the correct datasets name: CelebA_training_dataset, CelebA_test_dataset, LFW_dataset, Adience_dataset')
+        print('please check the correct datasets name: CelebA_training_dataset, CelebA_test_dataset, LFW_dataset, Adience_dataset, LFW_CAISA_dataset')
 
 
 
@@ -280,18 +319,23 @@ if __name__ == '__main__':
     celeba_data_dir = 'E:\datasets\celeba'
     lfw_data_dir = 'E:\datasets\lfw\lfw112'
     adience_data_dir = 'E:\datasets\Adience'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
 
     # gender
     #RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
     #RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
     #RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    #RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='LFW_CASIA_dataset', batch_size=256, dim_img=224, data_dir=casia_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+
 
     # race
-    RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    #RAPPMine(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    #RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    #RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    #RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+    RAPPMine(num_workers=0, dataset_name='LFW_CASIA_dataset', batch_size=256, dim_img=224, data_dir=casia_data_dir, identity_nums=10177, sensitive_attr='Race', pin_memory=False, fast_dev_run=False)
+
 
 
 

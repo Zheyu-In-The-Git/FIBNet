@@ -221,6 +221,11 @@ class CelebaRAPPDatasetInterface(pl.LightningDataModule):
 
 
 
+
+
+
+
+
 if __name__ == '__main__':
     data_dir = 'E:\datasets\celeba'
     '''

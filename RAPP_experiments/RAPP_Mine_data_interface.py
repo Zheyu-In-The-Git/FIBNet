@@ -3,7 +3,8 @@ from torch.utils.data import DataLoader
 import os
 import pytorch_lightning as pl
 
-from RAPP_Mine_data import CelebaRAPPMineGenderData, CelebaRAPPMineRaceData, LFWRAPPMineGenderData, LFWRAPPMineRaceData, AdienceMineGenderData, AdienceMineRaceData
+from RAPP_Mine_data import CelebaRAPPMineGenderData, CelebaRAPPMineRaceData, LFWRAPPMineGenderData, LFWRAPPMineRaceData, \
+    AdienceMineGenderData, AdienceMineRaceData, LFWCasiaMineData
 
 import platform
 import sys
@@ -232,6 +233,71 @@ class AdienceRAPPMineDatasetInterface(pl.LightningDataModule):
         return DataLoader(self.Test_Dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, pin_memory=self.pin_memory)
 
 
+class LFWCasiaMineDatasetInterface(pl.LightningDataModule):
+    def __init__(self,
+                 dataset_name:str,
+                 batch_size:int,
+                 dim_img: int,
+                 lfw_data_dir:str,
+                 casia_data_dir:str,
+                 sensitive_attr: str,
+                 ):
+        super(LFWCasiaMineDatasetInterface).__init__()
+
+        self.save_hyperparameters()
+        self.dataset_name = dataset_name
+        self.batch_size = batch_size
+        self.dim_img = dim_img
+        self.lfw_data_dir = lfw_data_dir
+        self.casia_data_dir = casia_data_dir
+        self.sensitive_attr = sensitive_attr
+
+        self.prepare_data_per_node = True
+        self.allow_zero_length_dataloader_with_multiple_devices = True
+        print('warninig: this dataset has no test dataloader')
+
+        if self.sensitive_attr == 'Male':
+            self.training_dataset = LFWCasiaMineData(dim_img=self.dim_img,
+                                                     lfw_data_dir=self.lfw_data_dir,
+                                                     casia_data_dir=self.casia_data_dir,
+                                                     sensitive_attr='Male',
+                                                     img_path_replace=True,
+                                                     split='all')
+            self.test_dataset = LFWCasiaMineData(dim_img=self.dim_img,
+                                                 lfw_data_dir=self.lfw_data_dir,
+                                                 casia_data_dir=self.casia_data_dir,
+                                                 sensitive_attr='Male',
+                                                 img_path_replace=True,
+                                                 split='all')
+
+        elif self.sensitive_attr == 'Race':
+            self.training_dataset = LFWCasiaMineData(dim_img=self.dim_img,
+                                                     lfw_data_dir=self.lfw_data_dir,
+                                                     casia_data_dir=self.casia_data_dir,
+                                                     sensitive_attr='White',
+                                                     img_path_replace=True,
+                                                     split='all')
+            self.test_dataset = LFWCasiaMineData(dim_img=self.dim_img,
+                                                 lfw_data_dir=self.lfw_data_dir,
+                                                 casia_data_dir=self.casia_data_dir,
+                                                 sensitive_attr='White',
+                                                 img_path_replace=True,
+                                                 split='all')
+
+        else:
+            print('the dataset has not define')
+
+    def setup(self, stage=None):
+        if stage == 'fit' or stage is None:
+            self.Train_Dataset = self.training_dataset
+        if stage == 'test' or stage is None:
+            self.Test_Dataset = self.test_dataset
+
+    def train_dataloader(self):
+        return DataLoader(self.Train_Dataset, batch_size=self.batch_size)
+
+    def test_dataloader(self):
+        return DataLoader(self.Test_Dataset, batch_size=self.batch_size)
 
 
 
@@ -243,7 +309,21 @@ if __name__ == '__main__':
     celeba_data_dir = 'E:\datasets\celeba'
     lfw_data_dir = 'E:\datasets\lfw\lfw112'
     adience_data_dir = 'E:\datasets\Adience'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
 
+    LFWCasia_test_gender_dataloader = LFWCasiaMineDatasetInterface(dataset_name='LFW_Casia', batch_size=200, dim_img=224, lfw_data_dir=lfw_data_dir, casia_data_dir=casia_data_dir,sensitive_attr='Race')
+    LFWCasia_test_gender_dataloader.setup(stage='test')
+    for i, item in enumerate(LFWCasia_test_gender_dataloader.test_dataloader()):
+        x, u, a, s = item
+        print(a)
+
+
+
+
+
+
+
+    '''
     # gender
     celeba_training_gender_dataloader = CelebaRAPPMineTrainingDatasetInterface(num_workers=0, dataset_name='CelebA_training_dataset', batch_size=1, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False)
     celeba_test_gender_dataloader = CelebaRAPPMineTestDatasetInterface(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=1, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False)
@@ -277,7 +357,7 @@ if __name__ == '__main__':
             print(a)
             break
 
-    '''
+    
     
     def dataloader_test(dataloader):
         dataloader.setup(stage='fit')

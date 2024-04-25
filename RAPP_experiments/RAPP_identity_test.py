@@ -9,7 +9,7 @@ import numpy as np
 import os
 import math
 from pytorch_lightning.loggers import TensorBoardLogger
-from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface, CelebaAttackInterface
+from data import CelebaInterface, LFWInterface, AdienceInterface, CelebaRaceInterface, CelebaAttackInterface, LFWCasiaInterface
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
 import torchmetrics
 
@@ -153,6 +153,17 @@ def IdentityTestFunction(dataset_name):
                                            identity_nums=5749,
                                            sensitive_dim=1)
 
+    lfw_data_dir = 'E:\datasets\lfw\lfw112'
+    casia_data_dir = 'E:\datasets\CASIA-FaceV5\dataset_jpg'
+
+    lfw_casia_dataloader = LFWCasiaInterface(dim_img=224,
+                                        batch_size=100,
+                                        dataset='lfw_casia_data',
+                                        sensitive_attr='White',
+                                        lfw_data_dir=lfw_data_dir,
+                                        casia_data_dir=casia_data_dir,
+                                        purpose='face_recognition')
+
     trainer = pl.Trainer(
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
         accelerator="auto",
@@ -175,6 +186,8 @@ def IdentityTestFunction(dataset_name):
         trainer.test(identity_test_model, celeba_data_module)
     elif dataset_name == 'LFW':
         trainer.test(identity_test_model, lfw_data_module)
+    elif dataset_name == 'LFW_CASIA':
+        trainer.test(identity_test_model, lfw_casia_dataloader)
     else:
         trainer.test(identity_test_model, adience_data_module)
 
@@ -182,6 +195,7 @@ def IdentityTestFunction(dataset_name):
 
 if __name__ == '__main__':
     #IdentityTestFunction('CelebA')
-    IdentityTestFunction('LFW')
-    IdentityTestFunction('Adience')
+    #IdentityTestFunction('LFW')
+    #IdentityTestFunction('Adience')
+    IdentityTestFunction('LFW_CASIA')
 

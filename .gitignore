@@ -2,3 +2,4 @@
 /experiments/lightning_logs/
 /RAPP_experiments/lightning_logs/
 /T-SNE/files_npz_pdf/*
+/data_analysis/*
