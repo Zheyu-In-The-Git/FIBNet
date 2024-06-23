@@ -260,7 +260,7 @@ def MLPGenderAttack(latent_dim, pretrained_model_name, pretrained_model_path, be
     #trainer.fit(mlp_attack_model, celeba_data_module)
     #trainer.test(mlp_attack_model, celeba_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\MLP_gender_attack\checkpoints\Bottleneck0.1\saved_model\last.ckpt')
     #trainer.test(mlp_attack_model, lfw_data_module, ckpt_path=r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\MLP_gender_attack\checkpoints\Bottleneck1.0\saved_model\last.ckpt')
-    trainer.test(mlp_attack_model, lfw_casia_data,  ckpt_path=r'E:\Bottleneck_Nets\experiments\lightning_logs\MLP_gender_attack\checkpoints\Bottleneck1.0\saved_model\last.ckpt')
+    trainer.test(mlp_attack_model, lfw_casia_data,  ckpt_path=r'E:\Bottleneck_Nets\experiments\lightning_logs\MLP_gender_attack\checkpoints\Bottleneck0.0001\saved_model\last.ckpt')
 
 def MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, dataset_name):
     mlp_attack_model = MultipleLayerInception(latent_dim, pretrained_model_name, pretrained_model_path, beta,
@@ -367,18 +367,18 @@ if __name__ == '__main__':
     #LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta, 'celeba')
 
 
-    #pretrained_model_name = 'Bottleneck'
+    pretrained_model_name = 'Bottleneck'
+    beta_arr = [0.0001]
+    for beta in beta_arr:
+        pretrained_model_path = r'E:\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
+
+        MLPGenderAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'lfw_casia')
+
+
     #beta_arr = [1.0]
     #for beta in beta_arr:
     #    pretrained_model_path = r'E:\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
-
-    #    MLPGenderAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'lfw_casia')
-
-
-    beta_arr = [1.0]
-    for beta in beta_arr:
-        pretrained_model_path = r'E:\Bottleneck_Nets\lightning_logs\bottleneck_experiment_latent_new_512_beta' + str(beta) + '\checkpoints\saved_models\last.ckpt'
-        MLPRaceAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'lfw_casia')
+    #    MLPRaceAttack(latent_dim, 'Bottleneck', pretrained_model_path, str(beta), 'lfw_casia')
 
     #beta_arr = [0.0001, 0.001, 0.01, 0.1, 1.0]
     #for beta in beta_arr:

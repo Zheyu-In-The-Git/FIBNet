@@ -99,7 +99,7 @@ class RAPPMineExperiment(pl.LightningModule):
         b1 = 0.5
         b2 = 0.999
         optim_train = optim.Adam(self.mine_net.parameters(), lr=0.01, betas=(b1, b2))
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=self.patience, min_lr=1e-8, threshold=1e-2)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optim_train, mode='max', factor=0.1, patience=self.patience, min_lr=1e-8, threshold=1e-4)
         return {'optimizer':optim_train, 'lr_cheduler':scheduler, 'monitor':'infor_loss'}
 
 
@@ -267,7 +267,7 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
             fast_dev_run=fast_dev_run
         )
         print('Adience ' + sensitive_attr + ' dataset for RAPP MINE will be testing, the model will be create!')
-        model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=15)
+        model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=10)
         trainer_adience.fit(model, data_module_adience)
 
     elif dataset_name == 'LFW_CASIA_dataset':
@@ -285,11 +285,6 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
                     every_n_train_steps=50
                 ),
                 LearningRateMonitor('epoch'),
-                EarlyStopping(
-                    monitor='infor_loss',
-                    patience=5,
-                    mode='max'
-                )
             ],
             default_root_dir=os.path.join(CHECKPOINT_PATH, 'LFW_CASIA_RAPP_Mine_' + sensitive_attr + '_models'),
             accelerator='auto',
@@ -303,8 +298,8 @@ def RAPPMine(num_workers, dataset_name, batch_size, dim_img, data_dir, identity_
             fast_dev_run=fast_dev_run
         )
         print('LFW_CASIA ' + sensitive_attr + ' dataset for RAPP MINE will be testing, the model will be create!')
-        model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=15)
-        trainer_lfw_casia.fit(model, data_module_lfw_casia)
+        model = RAPPMineExperiment(latent_dim=512, s_dim=1, patience=10)
+        trainer_lfw_casia.fit(model, data_module_lfw_casia, ckpt_path=r'E:\Bottleneck_Nets\RAPP_experiments\lightning_logs\RAPP_Mine_Race\checkpoints\LFW_CASIA_RAPP_Mine_Race_model\last.ckpt')
 
 
     else:
@@ -326,7 +321,7 @@ if __name__ == '__main__':
     #RAPPMine(num_workers=0, dataset_name='CelebA_test_dataset', batch_size=256, dim_img=224, data_dir=celeba_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
     #RAPPMine(num_workers=0, dataset_name='LFW_dataset', batch_size=256, dim_img=224, data_dir=lfw_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
     #RAPPMine(num_workers=0, dataset_name='Adience_dataset', batch_size=256, dim_img=224, data_dir=adience_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
-    RAPPMine(num_workers=0, dataset_name='LFW_CASIA_dataset', batch_size=256, dim_img=224, data_dir=casia_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
+    #RAPPMine(num_workers=0, dataset_name='LFW_CASIA_dataset', batch_size=256, dim_img=224, data_dir=casia_data_dir, identity_nums=10177, sensitive_attr='Male', pin_memory=False, fast_dev_run=False)
 
 
     # race
