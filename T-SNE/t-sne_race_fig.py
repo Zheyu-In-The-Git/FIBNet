@@ -153,7 +153,7 @@ with plt.style.context(['science','ieee', 'high-contrast','grid']):
     obj_white = bottleneck_adience_ax.scatter(Bottleneck_01_adience_boolean_1[:, 0], Bottleneck_01_adience_boolean_1[:, 1], label='Male', s=5, c='b', marker='.', alpha=0.5)
     obj_colored_people = bottleneck_adience_ax.scatter(Bottleneck_01_adience_boolean_0[:, 0], Bottleneck_01_adience_boolean_0[:, 1], label='Female', s=5, c='r', marker='.', alpha=0.5)
 
-    fig.legend((obj_white, obj_colored_people ),['White', 'non-White'],
+    fig.legend((obj_white, obj_colored_people ),['White', 'Non-White'],
                loc="lower center", ncol=6, bbox_to_anchor=(0, 0.0, 1, 0))  # bbox_to_anchor=(0, 1.02, 1, 0.1)
 
 
