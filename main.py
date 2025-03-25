@@ -9,7 +9,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from data import CelebaInterface
 from data import LFWCasiaInterface
 from utils import load_model_path_by_args
-from model import Encoder, Decoder, LatentDiscriminator, UtilityDiscriminator, BottleneckNets
+from model import Encoder, Decoder, BottleneckNets
 from arcface_resnet50 import ArcfaceResnet50
 
 
