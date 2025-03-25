@@ -70,7 +70,7 @@ def main(args):
 
 
     #打开记录器
-    logger = TensorBoardLogger(save_dir=load_path, name='tensorboard_log')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=load_path, name='tensorboard_log')
 
     # 加载网络模块，并构建BottleneckNets
     arcface_resnet50_net =ArcfaceResnet50(in_features=args.latent_dim, out_features=10177, s=64.0, m=0.50)

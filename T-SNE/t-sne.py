@@ -60,7 +60,7 @@ def TSNEExperiment(model_name, sensitive_attr, dataloader, data_name):
         tsne = TSNE(n_components=2, perplexity=30.0, early_exaggeration=100.0, learning_rate=20.0, n_iter=4300,
                     n_iter_without_progress=300, min_grad_norm=1e-07, metric='cosine', init='pca', verbose=1,
                     random_state=89, method='barnes_hut',
-                    angle=0.5)  # 这里metric可以换成cosine 到时候试一下  3*perplexity < nrow(data) - 1
+                    angle=0.5)
         X_tsne = tsne.fit_transform(Z_data.cpu())
 
         print(X_tsne)
@@ -149,7 +149,7 @@ def TSNEExperiment(model_name, sensitive_attr, dataloader, data_name):
         print(X_tsne)
 
         X_tsne_data = np.hstack((X_tsne, S_data))
-        np.savez('t-sne'+'_'+ sensitive_attr +'_' + model_name +'_'+ data_name +'.npz', X_tsne_data=X_tsne_data)  # 可能就是前500个是1，后500个是0
+        np.savez('t-sne'+'_'+ sensitive_attr +'_' + model_name +'_'+ data_name +'.npz', X_tsne_data=X_tsne_data)
         # 打开查看用np.load(t-sne.npz)
 
 

@@ -162,23 +162,23 @@ def main(model_name, Resume, save_name=None):
                                         casia_data_dir=casia_data_dir,
                                         purpose='face_recognition')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_logs', name='tensorboard_log')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH + '/lightning_logs', name='tensorboard_log')
 
     # Create a PyTorch Lightning trainer with the generation callback
     trainer = pl.Trainer(
         callbacks=[
             ModelCheckpoint(
-                mode="max",#最大
-                monitor="valid_acc_epoch",#用valid_acc比较好
+                mode="max",
+                monitor="valid_acc_epoch",
                 dirpath=os.path.join(CHECKPOINT_PATH, 'saved_model', save_name),
                 save_last=True,
                 every_n_train_steps=50
             ),  # Save the best checkpoint based on the maximum val_acc recorded. Saves only weights and not optimizer
             LearningRateMonitor("epoch"),
             EarlyStopping(
-                monitor='valid_acc_epoch',#用valid_acc比较好
-                patience = 5,#用valid_acc比较好5吧 间隔为3个epoch为一周期
-                mode='max'#用valid_acc比较好 保存top_k 3个比较好把
+                monitor='valid_acc_epoch',
+                patience = 5,
+                mode='max'
             )
         ],  # Log learning rate every epoch
 
