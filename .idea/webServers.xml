@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="b406a86c-e47a-4b4a-b39a-3bf547202e50" name="10.129.31.1">
+        <fileTransfer rootFolder="/public/home/qbx_20210083" accessType="SFTP" sshConfigId="4482df43-2408-4c6c-a8df-9dc18d2d5630" sshConfig="qbx_20210083@10.129.31.1:22229 key">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
