@@ -127,7 +127,6 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
 
     # 网络模型
     arcfacemineestimator = ArcfaceMineEstimator(latent_dim = latent_dim, s_dim = 1, pretrained_model = pretrained_model)
-    #arcfacemineestimator = arcfacemineestimator.load_from_checkpoint(r'C:\Users\40398\PycharmProjects\Bottleneck_Nets\experiments\lightning_logs\arcface_mine_estimator2\checkpoints\saved_model\arcface_mine_512_celeba_traindataset\last.ckpt', latent_dim = latent_dim, s_dim = 1, pretrained_model = pretrained_model)
 
     # 数据
 
@@ -222,7 +221,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT',
                                      'lightning_logs/arcface_mine_estimator_race/checkpoints_casialfw/')
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='arcface_mine_estimator_logger')  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='arcface_mine_estimator_logger')
 
     trainer = pl.Trainer(
         callbacks=[
@@ -258,7 +257,7 @@ def ArcfaceMineMain(model_path, latent_dim, save_name): # savename需要写 模�
     resume_checkpoint_path = os.path.join(resume_checkpoint_dir, save_name)
     print('Model will be created')
     trainer.fit(arcfacemineestimator, lfw_casia_data, ckpt_path=r'E:\Bottleneck_Nets\experiments\lightning_logs\arcface_mine_estimator_race\checkpoints_casialfw\saved_model\arcface_mine_512\last.ckpt')
-    # 记得要对celeba race 的训练集更改，更改成测试集
+
 
 if __name__ == '__main__':
     model_path = r'E:\Bottleneck_Nets\lightning_logs\arcface_recognizer_resnet50_latent512\checkpoints\saved_model\face_recognition_resnet50\last.ckpt'

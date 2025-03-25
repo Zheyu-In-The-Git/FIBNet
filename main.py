@@ -159,7 +159,7 @@ if __name__ == '__main__':
     # Restart Control
     parser.add_argument('--load_best', action='store_true')
     parser.add_argument('--load_dir', default = CHECKPOINT_PATH, type=str, help = 'The root directory of checkpoints.')
-    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.5', type=str, help = '训练和加载模型的命名 采用')
+    parser.add_argument('--load_ver', default='bottleneck_experiment_latent512_beta0.1', type=str, help = '训练和加载模型的命名 采用')
     parser.add_argument('--load_v_num', default = 1, type=int)
     parser.add_argument('--RESUME', default=True, type=bool, help = '是否需要重载模型')
     parser.add_argument('--ckpt_name', default='lightning_logs/bottleneck_experiment_latent_new_512_beta0.5/checkpoints/saved_models/last.ckpt', type = str )
@@ -178,16 +178,16 @@ if __name__ == '__main__':
     # 数据集参数设置
     parser.add_argument('--dataset', default='celeba_data', type=str)
     parser.add_argument('--data_dir', default=DATASET_PATH, type=str)
-    parser.add_argument('--num_workers', default=2, type=int)
+    parser.add_argument('--num_workers', default=0, type=int)
     parser.add_argument('--sensitive_attr', default='Male', type=str)
     parser.add_argument('--pin_memory', default = True)
 
     # bottleneck_nets的参数
     parser.add_argument('--model_name', default='bottleneck', type=str)
-    parser.add_argument('--beta', default=1.0, type=float)
+    parser.add_argument('--beta', default=0.1, type=float)
     parser.add_argument('--batch_size', default=64, type=int)
-    parser.add_argument('--max_epochs', default=200, type = int)
-    parser.add_argument('--min_epochs', default=100, type=int)
+    parser.add_argument('--max_epochs', default=50, type = int)
+    parser.add_argument('--min_epochs', default=50, type=int)
 
 
     # 日志参数

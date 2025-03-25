@@ -7,16 +7,7 @@ class Encoder(nn.Module):
 
         super(Encoder, self).__init__()
 
-        # 将arcface的resnet部分中的layer[1],[2],[3]冻结住
         self.arcface_model_resnet50 = arcface_model.resnet50
-        #for name, param in self.arcface_model_resnet50.named_parameters():
-        #    param.requires_grad_(False)
-
-        #for param in self.arcface_model_resnet50.layer4.parameters():
-        #    param.requires_grad = True
-
-        #for param in self.arcface_model_resnet50.fc.parameters():
-        #    param.requires_grad = True
 
         in_features = self.arcface_model_resnet50.fc.in_features
 
@@ -30,7 +21,7 @@ class Encoder(nn.Module):
 
         self.log_var_fc = nn.Linear(512, latent_dim)
 
-    def forward(self, x): # 输入的是表征
+    def forward(self, x):
         x = self.arcface_model_resnet50(x)
         x = self.batchnorm512(x)
         x = self.leakyrelu(x)
@@ -44,7 +35,7 @@ if __name__ == '__main__':
 
      from arcface_resnet50 import *
      arcface_resnet50_net = ArcfaceResnet50(in_features=512, out_features=10177, s=64.0, m=0.50)
-     #model = arcface_resnet50_net.load_from_checkpoint('/Users/xiaozhe/PycharmProjects/Bottleneck_Nets/lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/epoch=140-step=279350.ckpt')
+
      net = Encoder(latent_dim=512, arcface_model=arcface_resnet50_net)
      print(net)
      x = torch.randn(5, 3, 224, 224)

@@ -49,10 +49,6 @@ class Decoder(nn.Module):
 
 
 if __name__ == '__main__':
-    # net = ResNet50Decoder(latent_dim=1024, identity_nums=identity_nums, act_fn='Softmax')
-    # x = torch.randn(2, 1024)
-    # out = net(x)
-    # print(out.shape)
 
 
     decoder = Decoder(latent_dim=512, identity_nums=10177, s = 64.0, m=0.5, easy_margin=False)
