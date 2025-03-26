@@ -2,5 +2,5 @@
 /experiments/lightning_logs/
 /T-SNE/files_npz_pdf/*
 
-
+__pycache__/*.pyc
 
