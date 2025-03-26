@@ -241,8 +241,8 @@ def MLPGenderAttack(latent_dim, pretrained_model_name, pretrained_model_path, be
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=400,
-        min_epochs=100,
+        max_epochs=10,
+        min_epochs=10,
         logger=logger,
         log_every_n_steps=50,
         check_val_every_n_epoch=5,
@@ -333,8 +333,8 @@ def MLPRaceAttack(latent_dim, pretrained_model_name, pretrained_model_path, beta
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=400,
-        min_epochs=50,
+        max_epochs=10,
+        min_epochs=10,
         logger=logger,
         log_every_n_steps=50,
         check_val_every_n_epoch=5,

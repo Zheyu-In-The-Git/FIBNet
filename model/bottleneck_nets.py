@@ -89,16 +89,8 @@ class BottleneckNets(pl.LightningModule):
         scheduler_train = optim.lr_scheduler.ReduceLROnPlateau(opt_train, mode='min', factor=0.1, patience=5, min_lr=1e-6, threshold=1e-4)
 
 
-        #opt_encoder = optim.Adam(self.encoder.parameters(), lr=0.00001, betas = (b1, b2))
-        #scheduler_encoder = optim.lr_scheduler.ReduceLROnPlateau(opt_encoder, mode='min', factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
-
-        #opt_decoder = optim.Adam(self.decoder.parameters(), lr=0.0001, betas=(b1, b2))
-        #scheduler_decoder = optim.lr_scheduler.ReduceLROnPlateau(opt_decoder, mode='min', factor=0.1, patience=3, min_lr=1e-8, threshold=1e-2)
-
-
         return {'optimizer': opt_train, 'lr_scheduler':scheduler_train, 'monitor':'train_loss'}
-            #({"optimizer": opt_encoder, "lr_scheduler": scheduler_encoder, "monitor": "KL_divergence"},
-             #   {"optimizer": opt_decoder, "lr_scheduler": scheduler_decoder, "monitor": "entropy_loss"})
+
 
     def loss_fn_KL(self, mu, log_var):
         loss = 0.5 * (torch.pow(mu, 2) + torch.exp(log_var) - log_var - 1).sum(1).mean()

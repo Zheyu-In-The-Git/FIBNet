@@ -154,7 +154,7 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
 
     CHECKPOINT_PATH = os.environ.get('PATH_CHECKPOINT', 'lightning_logs/logistic_regression_attack/checkpoints/'+ pretrained_model_name + beta)
 
-    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='logistic_regression_logger'+str(dataset_name))  # 把记录器放在模型的目录下面 lightning_logs\bottleneck_test_version_1\checkpoints\lightning_logs
+    logger = TensorBoardLogger(save_dir=CHECKPOINT_PATH, name='logistic_regression_logger'+str(dataset_name))
 
     '''
     
@@ -219,8 +219,8 @@ def Attack(latent_dim, pretrained_model_name, pretrained_model_path, beta, datas
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=400,
-        min_epochs=100,
+        max_epochs=10,
+        min_epochs=10,
         logger=logger,
         log_every_n_steps=50,
         check_val_every_n_epoch=5,
@@ -312,8 +312,8 @@ def LogisticRegressionRaceAttack(latent_dim, pretrained_model_name, pretrained_m
         default_root_dir=os.path.join(CHECKPOINT_PATH, 'saved_model'),  # Where to save models
         accelerator="auto",
         devices=1,
-        max_epochs=400,
-        min_epochs=100,
+        max_epochs=10,
+        min_epochs=10,
         logger=logger,
         log_every_n_steps=50,
         check_val_every_n_epoch=5,

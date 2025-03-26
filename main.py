@@ -163,7 +163,7 @@ if __name__ == '__main__':
     parser.add_argument('--load_v_num', default = 1, type=int)
     parser.add_argument('--RESUME', default=True, type=bool, help = '是否需要重载模型')
     parser.add_argument('--ckpt_name', default='lightning_logs/bottleneck_experiment_latent_new_512_beta0.5/checkpoints/saved_models/last.ckpt', type = str )
-    parser.add_argument('--arcface_resnet50_path', default=r'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt') # 尝试用last.ckpt
+    parser.add_argument('--arcface_resnet50_path', default=r'lightning_logs/arcface_recognizer_resnet50_latent512/checkpoints/saved_model/face_recognition_resnet50/last.ckpt')
 
 
     #基本超参数，构建小网络的基本参数
