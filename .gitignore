@@ -1,7 +1,6 @@
 /lightning_logs/
 /experiments/lightning_logs/
 /T-SNE/files_npz_pdf/*
-/data_analysis/*
-/RAPP_experiments/
+/RAPP_experiments/*
 /experiments/fic.py
-/data/csv_file
+/data/csv_file/
