@@ -2,5 +2,6 @@
 /experiments/lightning_logs/
 /T-SNE/files_npz_pdf/*
 
-/RAPP_experiments/__pycache__
+__pycache__/
+*.pyc
 
